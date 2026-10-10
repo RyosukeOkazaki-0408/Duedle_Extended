@@ -41,7 +41,7 @@ class StorageUtil {
 
     static async editData(table, idproperty, id, property, value) {
         this.validateTable(table, idproperty);
-        if (!["show", "status", "notified"].includes(property)) {
+        if (!["show", "status"].includes(property)) {
             throw new Error("Invalid task property");
         }
         if (!this.isBackground) {
@@ -65,7 +65,7 @@ class StorageUtil {
             const merged = { ...old, ...data };
             merged[idproperty] = Number(data[idproperty]);
             merged.show = old?.show ?? data.show ?? true;
-            merged.notified = old && old.due === data.due ? (old.notified ?? false) : false;
+            delete merged.notified; // Retire legacy reminder metadata when a task is saved.
             if (old?.maxp != null && data.maxp == null) merged.maxp = old.maxp;
             if (old?.point != null && data.point == null) merged.point = old.point;
             if (old?.status === "complete" && data.status === "unknown") merged.status = old.status;

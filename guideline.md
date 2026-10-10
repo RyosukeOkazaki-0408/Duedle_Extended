@@ -35,7 +35,7 @@ src/
 │   ├── class/            # 取得・解析・保存・表示の共通クラス
 │   ├── display/          # ダッシュボードとフィルター
 │   ├── auto_refresh.js   # 表示中の自動更新
-│   ├── service_worker.js # 保存・更新の調整・タブ収集、Chromeの通知
+│   ├── service_worker.js # 保存・更新の調整・タブ収集
 │   └── background.html   # Safariの非永続背景ページ
 ├── notionnav/            # Notion風ナビゲーション（navigation.js）
 ├── qol/                  # ファイルプレビュー

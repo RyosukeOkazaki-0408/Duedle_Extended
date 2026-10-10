@@ -11,13 +11,14 @@ const extInner =
     <button class="btn btn-secondary" id="displaybutton">課題メニュー表示を切り替える</button>
     <button class="btn btn-secondary" id="deletebutton"></button>
     <p id="collectionstatus" role="status" aria-live="polite" class="my-2"></p>
-    <div id="filter" class="filter-group my-2 p-2 border-radius border">
+    <p id="listupdated" class="my-2 small text-muted"></p>
+    <div hidden id="filter" class="filter-group my-2 p-2 border-radius border">
         <fieldset id="fieldfilter">
         </fieldset>
         <fieldset id="fieldcolor">
         </fieldset>
     </div>
-    <div id="display">
+    <div hidden id="display">
     </div>`;
 ext_dashboard.insertAdjacentHTML("beforeend", extInner);
 if (header) header.after(ext_dashboard);
@@ -29,9 +30,10 @@ const fieldset = document.querySelector("#fieldfilter");
 const fieldcolor = document.querySelector("#fieldcolor");
 const scrapebutton = document.querySelector("#scrapebutton");
 const collectionstatus = document.querySelector("#collectionstatus");
-const noexistmsg = "表示するものがありません";
 const COOLDOWN_MS = 3 * 60 * 60 * 1000;
 let collectionRunning = false;
+let collectionErrorReason = null;
+let completionError = "";
 let cooldownTimer;
 
 //scrape mode
@@ -117,6 +119,8 @@ async function updateCooldownButton() {
 scrapebutton.addEventListener("click", async () => {
     if (collectionRunning) return;
     collectionRunning = true;
+    collectionErrorReason = null;
+    completionError = "";
     scrapebutton.disabled = true;
     scrapebutton.textContent = "更新中…";
     collectionstatus.textContent = "更新が終わるまで、このページを開いたままにしてください。";
@@ -144,7 +148,7 @@ scrapebutton.addEventListener("click", async () => {
         if (!claim?.ok) throw new Error(claim?.error || "課題情報を更新できませんでした");
         if (!claim.granted) {
             collectionstatus.textContent = claim.reason === "cooldown"
-                ? "全件更新のクールダウン中です。"
+                ? "課題更新のクールダウン中です。"
                 : "課題情報を更新しています。完了までお待ちください。";
             return;
         }
@@ -177,14 +181,19 @@ scrapebutton.addEventListener("click", async () => {
         }
         await rerender();
     } catch (error) {
+        collectionErrorReason = error.code === "AUTH_REQUIRED" ? "auth" : null;
         if (error.code === "REFRESH_CANCELLED") outcome = "cancelled";
         collectionstatus.textContent = error.message || "課題情報を更新できませんでした。もう一度お試しください。";
     } finally {
         clearInterval(heartbeatTimer);
         if (token) {
-            await ext.runtime.sendMessage({
-                type: "REFRESH_FINISH", token, outcome, fullSweep: true
-            }).catch(console.error);
+            try {
+                const finished = await ext.runtime.sendMessage({
+                    type: "REFRESH_FINISH", token, outcome, fullSweep: true, reason: collectionErrorReason
+                });
+                if (!finished?.ok || !finished.owned) throw new Error("更新結果を保存できませんでした。次回の更新で再試行します。");
+            } catch (error) { completionError = error.message; collectionstatus.textContent = completionError; }
+
         }
         collectionRunning = false;
         updateCooldownButton().catch(console.error);
@@ -280,19 +289,31 @@ colorTypesValue.map((value, index) => {
 
 
 
-//display appendまで待機
-(async () => {
-    const savedDisplayShow = (await ext.storage.sync.get(["displayShow"])).displayShow;
-    if (savedDisplayShow === undefined) {
-        display.setAttribute("hidden", "");
-    }
-})();
-
-async function rerender() {
-    document.querySelector("#display").innerHTML = ""; // 表示をクリア
-    const alldata = await StorageUtil.getAllData();
-    display.textContent = noexistmsg;
-    await displaybox(alldata); // データを再表示
+// Missing preferences show the menu. A saved false is never overwritten.
+function applyMenuVisibility(value) {
+    display.hidden = value === false;
+    filter.hidden = value === false;
+    displaybutton.setAttribute("aria-expanded", String(value !== false));
+}
+const menuReady = ext.storage.sync.get("displayShow").then(saved => applyMenuVisibility(saved.displayShow));
+let renderChain = Promise.resolve();
+function rerender() {
+    renderChain = renderChain.catch(() => {}).then(renderList);
+    return renderChain;
+}
+async function renderList() {
+    const [alldata, stored] = await Promise.all([
+        StorageUtil.getAllData(), ext.storage.local.get(["refreshHistory", "refreshCoordinator"]), menuReady
+    ]);
+    display.textContent = "";
+    const visible = await displaybox(alldata);
+    const state = TaskListState.describe({ total: alldata.length, visible,
+        history: stored.refreshHistory, coordinator: stored.refreshCoordinator });
+    if (!visible) display.textContent = state.empty;
+    if (!collectionRunning) collectionstatus.textContent = completionError || state.status;
+    const updated = document.querySelector("#listupdated");
+    updated.textContent = TaskListState.timestamp(stored.refreshHistory);
+    updated.title = "締切一覧確認は対象期間の一覧確認です。各課題の詳細情報は順次更新します。";
 }
 
 // Refresh open lists when another page or an automatic batch saves task details.
@@ -316,8 +337,10 @@ const queueRerender = () => {
     }, 750);
 };
 ext.storage.onChanged?.addListener((changes, area) => {
+    if (area === "sync" && changes.displayShow) applyMenuVisibility(changes.displayShow.newValue);
+    if (area === "sync" && Object.keys(changes).some(key => key.startsWith("selected"))) queueRerender();
     if (area !== "local") return;
-    if (changes.assign_list || changes.quiz_list) queueRerender();
+    if (changes.assign_list || changes.quiz_list || changes.refreshHistory || changes.refreshCoordinator) queueRerender();
     if (changes.scrapeCooldown || changes.refreshCoordinator) {
         updateCooldownButton().catch(console.error);
     }
@@ -354,13 +377,6 @@ const applyColor = (type, toColor) => {
     }
 };
 
-
-//初期状態のlocalstorage
-ext.storage.sync.get(["displayShow"], (result) => {
-    if (result.displayShow === undefined) {
-        ext.storage.sync.set({ displayShow: true });
-    }
-});
 
 const colorDefault_light = ["#90ee90", "#add8e6", "#ffffe0", "#ffffff", "#ffb681", "#ff9090", "#c8c8c8", "#eac1ff"];
 const colorDefault_dark = ["#063906", "#12515e", "#57422a", "#000000", "#7c3316", "#821f1f", "#454545", "#4a1745"];

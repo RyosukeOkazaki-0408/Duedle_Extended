@@ -421,6 +421,36 @@
         }
     });
 
+    test("coverage advances only after successful complete acquisition and save", async () => {
+        const env = environment(dueState());
+        let claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
+        await env.coordinator.finish({ token: claim.token, outcome: "success", fullSweep: true }, sender(1));
+        equal(env.state.refreshHistory.fullSweepAt, baseTime);
+        assert(!env.state.refreshHistory.calendarAt);
+        env.clock.now += 4 * 60 * minute;
+        claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
+        await env.coordinator.finish({ token: claim.token, outcome: "partial", fullSweep: true }, sender(1));
+        equal(env.state.refreshHistory.fullSweepAt, baseTime);
+        equal(env.state.refreshHistory.attempt.outcome, "partial");
+        claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
+        env.failNextWrite();
+        await rejects(() => env.coordinator.finish({ token: claim.token, outcome: "success", fullSweep: true }, sender(1)), /Storage failed/);
+        equal(env.state.refreshHistory.fullSweepAt, baseTime);
+        assert(env.state.refreshCoordinator.lease, "Failed finish does not claim completion");
+    });
+
+    test("partial pagination never advances the last completed calendar timestamp", async () => {
+        const env = environment(dueState());
+        let claim = await env.coordinator.claim({ mode: "auto" }, sender(1));
+        const first = await env.coordinator.finish({ token: claim.token, outcome: "success", moreWork: true, listComplete: false }, sender(1));
+        assert(!env.state.refreshHistory.calendarAt);
+        env.clock.now = first.nextAt;
+        claim = await env.coordinator.claim({ mode: "auto" }, sender(1));
+        await env.coordinator.finish({ token: claim.token, outcome: "success", listComplete: true }, sender(1));
+        equal(env.state.refreshHistory.calendarAt, env.clock.now);
+        assert(!env.state.refreshHistory.fullSweepAt);
+    });
+
     async function run() {
         let failures = 0;
         for (const entry of tests) {

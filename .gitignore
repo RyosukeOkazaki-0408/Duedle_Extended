@@ -7,3 +7,6 @@ safari/build/
 safari/DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# Offline developer extension
+build/

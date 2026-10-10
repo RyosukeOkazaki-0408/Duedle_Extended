@@ -1,0 +1,6 @@
+body { font: 15px/1.6 system-ui,sans-serif; background:#f6f7fa; color:#202631; margin:0; }
+main { max-width:1050px; padding:24px; margin:auto; }
+section,header,details,#ext_dashboard { padding:16px; margin:12px 0; background:white; border-radius:12px; }
+button,select { font:inherit; padding:7px 10px; margin:5px; } button { cursor:pointer; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
+[hidden] { display:none!important; } a { color:#145db0; }

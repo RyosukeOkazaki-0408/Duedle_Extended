@@ -100,7 +100,6 @@ class ScrapeQuiz extends Scrape {
             maxcount: maxcount,
             status: a_status,
             show: true, //default
-            notified: false
         }
         return data;
 

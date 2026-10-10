@@ -1,0 +1,14 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Duedle 開発用</title>
+<link rel="stylesheet" href="../storage/display/style.css"><link rel="stylesheet" href="debug.css"></head>
+<body class="loggedin"><main><h1>Duedle 開発用</h1><p>ダミーデータ専用です。Moodleへの通信は無効です。同じ画面を別タブで開くと排他制御を確認できます。</p>
+<section id="controls"><label>シナリオ <select id="scenario"><option value="normal">通常</option><option value="empty">課題0件</option><option value="new">新規追加</option><option value="deadline">締切変更</option><option value="submitted">提出済み</option><option value="grade">成績変更</option><option value="pagination">105件・ページング</option><option value="login">ログイン切れ</option><option value="network">通信失敗</option><option value="rate-limit">429</option><option value="save-failure">保存失敗</option></select></label>
+<button id="manual-now">クールなし手動更新</button><button id="auto-now">自動更新を今実行</button>
+<label>時刻を進める <select id="advance-value"><option value="1">1ミリ秒</option><option value="60000">1分</option><option value="180000">3分</option><option value="3300000">55分</option><option value="4500000">75分</option><option value="10799999">3時間 − 1ミリ秒</option><option value="10800000">3時間</option><option value="43199999">12時間 − 1ミリ秒</option><option value="43200000">12時間</option><option value="86399999">24時間 − 1ミリ秒</option><option value="86400000">24時間</option></select></label><button id="advance">進める</button>
+<button id="reset">ダミーデータリセット</button><p id="debug-status" role="status"></p></section>
+<header><h2>課題一覧（本番と同じUI）</h2></header><div data-course-id="1"></div><input type="hidden" name="sesskey" value="DUMMY123">
+<details open><summary>診断</summary><pre id="diagnostics"></pre></details></main>
+<script src="adapter.js"></script><script src="fixtures.js"></script><script src="../common/common.js"></script><script src="../common/utils.js"></script>
+<script src="../storage/class/StorageUtil.js"></script><script src="../storage/class/RefreshCoordinator.js"></script><script src="../storage/class/scrape/Scrape.js"></script><script src="../storage/class/scrape/ScrapeAssign.js"></script><script src="../storage/class/scrape/ScrapeQuiz.js"></script>
+<script src="../storage/class/CourseCollector.js"></script><script src="../storage/class/AutoRefreshCollector.js"></script><script src="../storage/auto_refresh.js"></script>
+<script src="../storage/class/task/TaskBox.js"></script><script src="../storage/class/task/AssignBox.js"></script><script src="../storage/class/task/QuizBox.js"></script><script src="../storage/class/filter/FilterSelect.js"></script><script src="../storage/class/TaskListState.js"></script>
+<script src="../storage/display/filter.js"></script><script src="../storage/display/displaybox.js"></script><script src="ui.js"></script></body></html>

@@ -72,7 +72,7 @@ class ScrapeQuizReview extends Scrape {
             maxcount: oldData.maxcount,
             status: a_status,
             show: oldData.show,
-            notified: oldData.notified
+
         }
         return newData;
     }

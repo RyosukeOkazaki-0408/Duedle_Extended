@@ -16,9 +16,10 @@ const darkmode_setup = () => {
 (async () => {
   //0:sync
   //1:on, 2:off
-  let thememode = (await ext.storage.local.get("thememode")).thememode ?? 0;
+  const saved = await ext.storage.local.get(["thememode", "themeDefault"]);
+  let thememode = saved.thememode ?? saved.themeDefault ?? 0;
   let shouldBeDarkmode =
-    (thememode == 0 && isBrowserDarkMode()) || thememode == 1;
+    (thememode == 0 && window.matchMedia("(prefers-color-scheme: dark)").matches) || thememode == 1;
   if (shouldBeDarkmode) {
     document.body.classList.add("darkmode");
     darkmode_setup();

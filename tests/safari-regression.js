@@ -163,7 +163,7 @@
         equal(state.assign_list.map(item => item.assignId).sort(), [11, 12, 13]);
     });
 
-    test("refresh preserves visibility, notifications, reviewed grades and completion", async () => {
+    test("refresh preserves visibility, reviewed grades and completion", async () => {
         const { state, StorageUtil } = mockStorage({
             quiz_list: [{ quizId: 23, show: false, notified: true, maxp: 10, point: 0, status: "complete", quizName: "Old title" }]
         });
@@ -173,7 +173,7 @@
         const quiz = state.quiz_list[0];
         equal(state.quiz_list.length, 1);
         equal(quiz.show, false);
-        equal(quiz.notified, true);
+        equal(quiz.notified, undefined);
         equal(quiz.maxp, 10);
         equal(quiz.point, 0);
         equal(quiz.status, "complete");
@@ -190,7 +190,7 @@
         equal(state.assign_list[0].assignName, "After");
     });
 
-    test("changed deadlines reset reminders and a fetched zero grade replaces an old grade", async () => {
+    test("legacy reminder flags are removed and a fetched zero grade replaces an old grade", async () => {
         const { state, StorageUtil } = mockStorage({
             quiz_list: [{ quizId: 32, show: false, notified: true, due: "2026-10-10T12:00:00Z", point: 9 }]
         });
@@ -198,7 +198,7 @@
             quizId: 32, show: true, notified: true, due: "2026-10-11T12:00:00Z", point: 0
         });
         equal(state.quiz_list[0].show, false);
-        equal(state.quiz_list[0].notified, false);
+        equal(state.quiz_list[0].notified, undefined);
         equal(state.quiz_list[0].point, 0);
     });
 
@@ -307,7 +307,7 @@
         for (const grade of ["8 / 10", "成績は非公開です"]) {
             const old = {
                 group: "quiz_list", quizId: 63, courseName: "Course", quizName: "Quiz", point: 9, maxp: 10,
-                required: 5, count: 1, maxcount: null, status: "qualify", show: true, notified: false, start: null, due: null,
+                required: 5, count: 1, maxcount: null, status: "qualify", show: true, start: null, due: null,
                 fetchedAt: 1700000000000, courseId: 615
             };
             const env = mockStorage({ quiz_list: [old] });
@@ -569,7 +569,7 @@
         if (options.alarms) env.ext.alarms = options.alarms;
         const { RefreshCoordinator } = production("src/storage/class/RefreshCoordinator.js", ["RefreshCoordinator"], { URL: URLClass });
         const background = production("src/storage/service_worker.js", [
-            "navigateTab", "runTabScraping", "createNotification", "checkDeadlines", "ensureReminderAlarm"
+            "navigateTab", "runTabScraping", "initializeInstallation"
         ], {
             ext: env.ext, StorageUtil: env.StorageUtil, RefreshCoordinator, importScripts() {}, URL: URLClass,
             setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
@@ -583,66 +583,29 @@
         equal(env.timers.count(), 0, "Load timeout is removed");
     }
 
-    test("Safari background starts and keeps reminders pending without notification APIs", async () => {
-        const env = backgroundEnvironment({
-            assign_list: [{ assignId: 91, due: new Date(Date.now() + 3600000).toISOString(), notified: false, status: "incomplete" }]
+    test("notification removal never registers delivery or click handlers", async () => {
+        const clicked = extensionEvent();
+        const alarm = extensionEvent();
+        const env = backgroundEnvironment({}, {
+            notifications: { onClicked: clicked, create() { throw new Error("Must not notify"); } },
+            alarms: { onAlarm: alarm, create() { throw new Error("Must not schedule"); } }
         });
-        await env.ensureReminderAlarm();
-        await env.checkDeadlines();
-        equal(await env.createNotification(moodle, "Title", "Message"), false);
-        equal(env.state.assign_list[0].notified, false);
-        equal(env.writes.length, 0);
+        equal(clicked.count(), 0);
+        equal(alarm.count(), 0);
         equal(env.ext.runtime.onMessage.count(), 1);
-        equal(env.ext.runtime.onInstalled.count(), 1);
     });
 
-    test("background reports Safari notification capability through messaging", async () => {
-        const env = backgroundEnvironment();
-        let response;
-        const keepAlive = env.ext.runtime.onMessage.emit({ type: "GET_CAPABILITIES" }, {}, value => { response = value; });
-        equal(keepAlive, [true]);
-        await flushPromises();
-        equal(response, { ok: true, notifications: false });
-        equal(env.ext.runtime.onMessage.emit({ type: "UNRELATED" }, {}, () => {}), [false]);
-    });
-
-    test("notification failures do not mark tasks as notified", async () => {
-        const clicked = extensionEvent();
-        let attempts = 0;
-        const env = backgroundEnvironment({
-            assign_list: [{ assignId: 92, courseName: "Course", assignName: "Assignment", due: new Date(Date.now() + 3600000).toISOString(), notified: false, status: "incomplete" }]
-        }, {
-            notifications: { onClicked: clicked, async create() { attempts++; throw new Error("Notifications unavailable"); } }
-        });
-        await env.checkDeadlines();
-        equal(attempts, 1);
-        equal(env.state.assign_list[0].notified, false);
-        equal(clicked.count(), 1, "Click listener registers only once");
-    });
-
-    test("successful reminders notify an incomplete task once and leave completed tasks alone", async () => {
-        const clicked = extensionEvent();
-        const notices = [];
-        const due = new Date(Date.now() + 3600000).toISOString();
-        const env = backgroundEnvironment({
-            assign_list: [
-                { assignId: 93, courseName: "Course", assignName: "Assignment", due, notified: false, status: "incomplete" },
-                { assignId: 94, courseName: "Course", assignName: "Finished", due, notified: false, status: "complete" }
-            ]
-        }, {
-            notifications: { onClicked: clicked, async create(id, properties) { notices.push({ id, properties }); return id; } }
-        });
-        await env.checkDeadlines();
-        await env.checkDeadlines();
-        equal(notices.length, 1);
-        equal(notices[0].id, moodle + "mod/assign/view.php?id=93");
-        equal(env.state.assign_list[0].notified, true);
-        equal(env.state.assign_list[1].notified, false);
-        equal(clicked.count(), 1);
-        clicked.emit(notices[0].id);
-        clicked.emit("https://example.com/unrelated");
-        await flushPromises();
-        equal(env.created, [{ url: moodle + "mod/assign/view.php?id=93" }]);
+    test("fresh installs use light while upgrades and explicit themes are preserved", async () => {
+        for (const reason of ["install", "update"]) {
+            for (const mode of [undefined, 0, 1, 2, 3]) {
+                const env = backgroundEnvironment(mode === undefined ? {} : { thememode: mode });
+                await env.initializeInstallation({ reason });
+                equal(env.state.themeDefault, reason === "install" ? 2 : 0);
+                equal(env.state.thememode, mode);
+                await env.initializeInstallation({ reason: "update" });
+                equal(env.state.themeDefault, reason === "install" ? 2 : 0);
+            }
+        }
     });
 
     test("navigation catches cached-page completion before update resolves", async () => {
@@ -752,7 +715,7 @@
             async getElement() { return this.data; }
         }
         const ui = production("src/storage/display/displaybox.js", ["displaybox", "changeActivityColor", "transDue"], {
-            document, display, location: { href: moodle + "my/" },
+            document, display, rerender: async () => {}, location: { href: moodle + "my/" },
             ext: { storage: { sync: { async get() { return settings || {}; } } } },
             StorageUtil: { async getAllData() { return []; } }, AssignBox: Box, QuizBox: Box,
             noexistmsg: "表示するものがありません", colorTypesValue: [], colorDefault_light: [], colorDefault_dark: [],

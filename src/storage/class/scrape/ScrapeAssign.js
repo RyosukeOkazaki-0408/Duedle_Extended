@@ -47,7 +47,6 @@ class ScrapeAssign extends Scrape {
             filenum: filenum,
             status: a_status,
             show: true, //default
-            notified: false //default
         }
         return data;
     }

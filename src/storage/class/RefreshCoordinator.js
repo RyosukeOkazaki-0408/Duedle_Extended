@@ -215,6 +215,17 @@ class RefreshCoordinator {
             const now = this.now();
             const manual = state.lease.mode === "manual";
             const extra = {};
+            const storedHistory = (await this.storage.get("refreshHistory")).refreshHistory || {};
+            extra.refreshHistory = { ...storedHistory,
+                attempt: { at: now, mode: manual ? "manual" : "auto", outcome: message.outcome,
+                    reason: typeof message.reason === "string" ? message.reason.slice(0, 40) : null } };
+            if (message.outcome === "success") {
+                if (manual && message.fullSweep === true && message.moreWork !== true) {
+                    extra.refreshHistory.fullSweepAt = now;
+                } else if (!manual && message.listComplete === true) {
+                    extra.refreshHistory.calendarAt = now;
+                }
+            }
             if (message.outcome === "success") {
                 state.failures = 0;
                 if (message.listComplete === true) state.nextListAt = now + this.interval(55, 75);

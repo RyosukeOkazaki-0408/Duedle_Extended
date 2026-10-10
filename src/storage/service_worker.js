@@ -9,7 +9,7 @@ const refreshCoordinator = new RefreshCoordinator({ storage: ext.storage.local }
 let tabCollection = null;
 
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || !["SAVE_TASK", "EDIT_TASK", "TAB_COURSE", "GET_CAPABILITIES",
+  if (!msg || !["SAVE_TASK", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
     "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS"].includes(msg.type)) return false;
   const operation = async () => {
     switch (msg.type) {
@@ -19,8 +19,9 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "EDIT_TASK":
         await StorageUtil.editData(msg.table, msg.idproperty, msg.id, msg.property, msg.value);
         return { ok: true };
-      case "GET_CAPABILITIES":
-        return { ok: true, notifications: Boolean(ext.notifications?.create) };
+      case "GET_SETTINGS":
+        await installationReady;
+        return { ok: true, ...(await ext.storage.local.get(["thememode", "themeDefault"])) };
       case "REFRESH_CLAIM":
         return refreshCoordinator.claim(msg, sender);
       case "REFRESH_HEARTBEAT":
@@ -182,59 +183,16 @@ function navigateTab(tabId, url, timeout = 20000) {
   });
 }
 
-async function createNotification(url, title, message) {
-  if (!ext.notifications?.create) return false;
-  try {
-    await ext.notifications.create(url, {
-      type: "basic", iconUrl: ext.runtime.getURL("storage/icon.jpg"), title, message
-    });
-    return true;
-  } catch (error) {
-    console.warn("通知を表示できませんでした", error);
-    return false;
+
+// An absent theme in an older installation means browser sync, not a new install.
+let installationReady = Promise.resolve();
+async function initializeInstallation(details) {
+  const settings = await ext.storage.local.get(["thememode", "themeDefault"]);
+  if (settings.themeDefault === undefined) {
+    await ext.storage.local.set({ themeDefault: details.reason === "install" ? 2 : 0 });
   }
 }
-
-// Register once at top level; Safari can unload and restart its background context.
-if (ext.notifications?.onClicked) {
-  ext.notifications.onClicked.addListener(notificationId => {
-    if (notificationId.startsWith(MOODLE_ROOT)) ext.tabs.create({ url: notificationId });
-  });
-}
-
-async function checkDeadlines() {
-  if (!ext.notifications?.create) return;
-  for (const [table, idproperty, name, module] of [
-    ["assign_list", "assignId", "assignName", "assign"],
-    ["quiz_list", "quizId", "quizName", "quiz"]
-  ]) {
-    // Reminder edits share the same storage queue as foreground refreshes.
-    await StorageUtil.mutate(table, async items => {
-      for (const item of items) {
-        const remaining = new Date(item.due).getTime() - Date.now();
-        if (!item.due || remaining <= 0 || remaining > 24 * 60 * 60 * 1000
-            || item.notified || item.status === "complete") continue;
-        const sent = await createNotification(`${MOODLE_ROOT}mod/${module}/view.php?id=${item[idproperty]}`,
-          "締切間近", `${item.courseName} コースの ${item[name]} の締切が近いです`);
-        if (sent) item.notified = true;
-      }
-      return items;
-    });
-  }
-}
-
-async function ensureReminderAlarm() {
-  if (!ext.alarms?.create || !ext.notifications?.create) return;
-  await ext.alarms.create("task_notice", { periodInMinutes: 10 });
-}
-
-if (ext.alarms?.onAlarm) {
-  ext.alarms.onAlarm.addListener(alarm => {
-    if (alarm.name === "task_notice") checkDeadlines().catch(console.error);
-  });
-}
-ext.runtime.onInstalled.addListener(() => ensureReminderAlarm().catch(console.error));
-if (ext.runtime.onStartup) {
-  ext.runtime.onStartup.addListener(() => ensureReminderAlarm().catch(console.error));
-}
-ensureReminderAlarm().catch(console.error);
+ext.runtime.onInstalled.addListener(details => {
+  installationReady = initializeInstallation(details);
+  installationReady.catch(console.error);
+});

@@ -196,7 +196,7 @@
         equal(h.runs[0], { state: { cursor: 0 }, listDue: true, courseIds: [12, 13, 14] });
         const finish = h.messages.find(message => message.type === "REFRESH_FINISH");
         equal(finish, { type: "REFRESH_FINISH", token: "lease-1", outcome: "partial",
-            collectorState: { cursor: 7 }, moreWork: true, listComplete: false });
+            collectorState: { cursor: 7 }, moreWork: true, listComplete: false, reason: null });
         equal(h.doc.events.filter(type => type === "duedle:tasks-updated").length, 1);
         equal([...h.timers.values()][0].at, h.now() + 300000);
         equal(h.count("REFRESH_HEARTBEAT"), 0);
@@ -453,6 +453,7 @@
         assert(!Object.prototype.hasOwnProperty.call(stored, "scrapeCooldown"));
     });
 
+    let completed = false, failure;
     (async () => {
         let failed = 0;
         for (const { name, run } of tests) {
@@ -464,5 +465,10 @@
             if (node) process.exitCode = 1;
             else throw new Error(failed + " automatic controller checks failed");
         }
-    })();
+    })().then(() => { completed = true; }, error => { completed = true; failure = error; if (node) process.exitCode = 1; });
+    if (!node && typeof drainMicrotasks === "function") {
+        drainMicrotasks();
+        if (!completed) throw new Error("Pending asynchronous test work");
+        if (failure) throw failure;
+    }
 })();

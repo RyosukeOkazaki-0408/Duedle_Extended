@@ -48,7 +48,7 @@ def stage_resources() -> None:
     shutil.copytree(
         SOURCE,
         RESOURCES,
-        ignore=shutil.ignore_patterns(".DS_Store", "*.ts", "*.map"),
+        ignore=shutil.ignore_patterns(".DS_Store", "*.ts", "*.map", "dev", "debug"),
     )
     (RESOURCES / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

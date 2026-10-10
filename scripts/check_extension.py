@@ -21,7 +21,11 @@ def main() -> None:
     if missing:
         raise SystemExit("Missing manifest resources: " + ", ".join(missing))
 
-    javascript = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "src").rglob("*.js"))
+    for output in (ROOT / "src", ROOT / "safari" / "build" / "extension"):
+        if output.exists() and any(path.name in {"dev", "debug"} for path in output.rglob("*")):
+            raise SystemExit("Developer assets in production output: " + str(output))
+
+    javascript = sorted(str(path.relative_to(ROOT)) for folder in ("src", "dev") for path in (ROOT / folder).rglob("*.js"))
     node = shutil.which("node")
     if JSC.is_file():
         subprocess.run([str(JSC), "-e", "for (const path of arguments) new Function(readFile(path));", "--", *javascript], cwd=ROOT, check=True)
@@ -36,6 +40,7 @@ def main() -> None:
     for suite in (
         "tests/safari-regression.js",
         "tests/ui-regression.js",
+        "tests/list-state-regression.js",
         "tests/refresh-coordinator-regression.js",
         "tests/auto-refresh-regression.js",
         "tests/auto-refresh-controller-regression.js",

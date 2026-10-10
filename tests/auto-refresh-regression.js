@@ -447,7 +447,7 @@
         const result = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(result.saved, 1);
         const saved = env.storage.state.quiz_list[0];
-        equal([saved.show, saved.status, saved.notified, saved.point, saved.maxp], [false, "complete", true, 0, 10]);
+        equal([saved.show, saved.status, saved.notified, saved.point, saved.maxp], [false, "complete", undefined, 0, 10]);
         assert(saved.fetchedAt >= epoch);
         equal(env.storage.state.quiz_list.length, 1);
     });

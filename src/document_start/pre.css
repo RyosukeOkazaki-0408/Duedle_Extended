@@ -1,5 +1,2 @@
-html {
-
-  opacity: 0;
-  transition: opacity 0.5s;
-}
+html { opacity: 0; animation: duedle-reveal 0s 3s forwards; }
+@keyframes duedle-reveal { to { opacity: 1; } }

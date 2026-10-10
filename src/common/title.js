@@ -18,7 +18,7 @@ time.style.position = "absolute";
 time.style.left = "50%";
 time.style.transform = "translateX(-50%)";
 const sel = document.querySelector("ul.navbar-nav");
-sel.after(time);
+if (sel) sel.after(time);
 
 function twoDigit(num) {
     let ret;
@@ -36,7 +36,10 @@ function showClock() {
     let msg = nowHour + ":" + nowMin + ":" + nowSec;
     document.getElementById("realtime").innerHTML = msg;
 }
-setInterval('showClock()', 1000);
+if (sel) {
+    showClock();
+    setInterval(showClock, 1000);
+}
 
 
 

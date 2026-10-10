@@ -243,6 +243,7 @@ class AutoRefreshController {
                     collectorState: job.result?.state ?? job.collector?.state ?? job.state,
                     moreWork: Boolean(job.result?.moreWork),
                     listComplete: Boolean(job.result?.listComplete),
+                    reason: job.result?.stopReason || null,
                 });
                 if (!response?.ok) throw new Error("Refresh coordinator unavailable");
                 this.failures = 0;

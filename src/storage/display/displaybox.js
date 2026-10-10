@@ -1,5 +1,6 @@
 const displaybox = async (data) => {
     const display = document.querySelector("#display");
+    let rendered = 0;
     const settings = await ext.storage.sync.get(["selectedType", "selectedStatus", "selectedDue", "selectedShow"]);
     if (data) {
         for (const item of data) {
@@ -58,9 +59,7 @@ const displaybox = async (data) => {
             if (savedDue === "progressing" && remainhours < 0) {
                 continue;
             }
-            if (display.textContent === noexistmsg) {
-                display.textContent = "";
-            }
+
 
             if (item.start) { item.start = new Date(item.start); }
             if (item.due) { item.due = new Date(item.due); }
@@ -68,15 +67,18 @@ const displaybox = async (data) => {
                 const assignbox = new AssignBox(item);
                 const assign = await assignbox.getElement();
                 display.appendChild(assign);
+                rendered++;
             } else if (item.group === "quiz_list") {
                 const quizbox = new QuizBox(item);
                 const quiz = await quizbox.getElement();
                 display.appendChild(quiz);
+                rendered++;
             }
         }
     }
     checkUnvisited();
     colorReload();
+    return rendered;
 };
 
 const setActivityStatus = (element, status) => {
@@ -210,8 +212,4 @@ const transDue = (txt) => {
     }
 };
 
-(async () => {
-    const alldata = await StorageUtil.getAllData();
-    display.textContent = "表示するものがありません";
-    await displaybox(alldata);
-})().catch(console.error);
+rerender().catch(console.error);
