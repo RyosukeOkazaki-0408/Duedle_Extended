@@ -1,0 +1,979 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		77A448B2307A730A00E482F7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448B1307A730A00E482F7 /* AppDelegate.swift */; };
+		77A448B4307A730A00E482F7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448B3307A730A00E482F7 /* SceneDelegate.swift */; };
+		77A448B7307A730A00E482F7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 77A448B5307A730A00E482F7 /* LaunchScreen.storyboard */; };
+		77A448BA307A730A00E482F7 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 77A448B8307A730A00E482F7 /* Main.storyboard */; };
+		77A448C3307A730A00E482F7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448C2307A730A00E482F7 /* AppDelegate.swift */; };
+		77A448C6307A730A00E482F7 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 77A448C4307A730A00E482F7 /* Main.storyboard */; };
+		77A448CD307A730A00E482F7 /* Duedle Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77A448CC307A730A00E482F7 /* Duedle Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		77A448D7307A730A00E482F7 /* Duedle Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77A448D6307A730A00E482F7 /* Duedle Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		77A448DC307A730A00E482F7 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A1307A730900E482F7 /* Main.html */; };
+		77A448DD307A730A00E482F7 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A1307A730900E482F7 /* Main.html */; };
+		77A448DE307A730A00E482F7 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A3307A730900E482F7 /* Icon.png */; };
+		77A448DF307A730A00E482F7 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A3307A730900E482F7 /* Icon.png */; };
+		77A448E0307A730A00E482F7 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A4307A730900E482F7 /* Style.css */; };
+		77A448E1307A730A00E482F7 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A4307A730900E482F7 /* Style.css */; };
+		77A448E2307A730A00E482F7 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A5307A730900E482F7 /* Script.js */; };
+		77A448E3307A730A00E482F7 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A5307A730900E482F7 /* Script.js */; };
+		77A448E4307A730A00E482F7 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448A6307A730900E482F7 /* ViewController.swift */; };
+		77A448E5307A730A00E482F7 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448A6307A730900E482F7 /* ViewController.swift */; };
+		77A448E6307A730A00E482F7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A7307A730A00E482F7 /* Assets.xcassets */; };
+		77A448E7307A730A00E482F7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 77A448A7307A730A00E482F7 /* Assets.xcassets */; };
+		77A448E8307A730A00E482F7 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448A9307A730A00E482F7 /* SafariWebExtensionHandler.swift */; };
+		77A448E9307A730A00E482F7 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A448A9307A730A00E482F7 /* SafariWebExtensionHandler.swift */; };
+		77A44906307A730A00E482F7 /* notionnav in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FB307A730A00E482F7 /* notionnav */; };
+		77A44907307A730A00E482F7 /* login_screen in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FC307A730A00E482F7 /* login_screen */; };
+		77A44908307A730A00E482F7 /* storage in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FD307A730A00E482F7 /* storage */; };
+		77A44909307A730A00E482F7 /* syllabus in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FE307A730A00E482F7 /* syllabus */; };
+		77A4490A307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
+		77A4490B307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
+		77A4490C307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
+		77A4490D307A730A00E482F7 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* lib */; };
+		77A4490E307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
+		77A4490F307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
+		77A44910307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
+		77A44911307A730A00E482F7 /* notionnav in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FB307A730A00E482F7 /* notionnav */; };
+		77A44912307A730A00E482F7 /* login_screen in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FC307A730A00E482F7 /* login_screen */; };
+		77A44913307A730A00E482F7 /* storage in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FD307A730A00E482F7 /* storage */; };
+		77A44914307A730A00E482F7 /* syllabus in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FE307A730A00E482F7 /* syllabus */; };
+		77A44915307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
+		77A44916307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
+		77A44917307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
+		77A44918307A730A00E482F7 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* lib */; };
+		77A44919307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
+		77A4491A307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
+		77A4491B307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		77A448CE307A730A00E482F7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 77A4489B307A730900E482F7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 77A448CB307A730A00E482F7;
+			remoteInfo = "Duedle Extension (iOS)";
+		};
+		77A448D8307A730A00E482F7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 77A4489B307A730900E482F7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 77A448D5307A730A00E482F7;
+			remoteInfo = "Duedle Extension (macOS)";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		77A448EF307A730A00E482F7 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				77A448CD307A730A00E482F7 /* Duedle Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+		77A448F6307A730A00E482F7 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				77A448D7307A730A00E482F7 /* Duedle Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		77A448A2307A730900E482F7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		77A448A3307A730900E482F7 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		77A448A4307A730900E482F7 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		77A448A5307A730900E482F7 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		77A448A6307A730900E482F7 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		77A448A7307A730A00E482F7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		77A448A9307A730A00E482F7 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		77A448AE307A730A00E482F7 /* Duedle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Duedle.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77A448B1307A730A00E482F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		77A448B3307A730A00E482F7 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		77A448B6307A730A00E482F7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		77A448B9307A730A00E482F7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		77A448BB307A730A00E482F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		77A448C0307A730A00E482F7 /* Duedle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Duedle.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77A448C2307A730A00E482F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		77A448C5307A730A00E482F7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		77A448C7307A730A00E482F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		77A448CC307A730A00E482F7 /* Duedle Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Duedle Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		77A448D1307A730A00E482F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		77A448D6307A730A00E482F7 /* Duedle Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Duedle Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		77A448DB307A730A00E482F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		77A448FB307A730A00E482F7 /* notionnav */ = {isa = PBXFileReference; lastKnownFileType = folder; name = notionnav; path = ../../build/extension/notionnav; sourceTree = "<group>"; };
+		77A448FC307A730A00E482F7 /* login_screen */ = {isa = PBXFileReference; lastKnownFileType = folder; name = login_screen; path = ../../build/extension/login_screen; sourceTree = "<group>"; };
+		77A448FD307A730A00E482F7 /* storage */ = {isa = PBXFileReference; lastKnownFileType = folder; name = storage; path = ../../build/extension/storage; sourceTree = "<group>"; };
+		77A448FE307A730A00E482F7 /* syllabus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = syllabus; path = ../../build/extension/syllabus; sourceTree = "<group>"; };
+		77A448FF307A730A00E482F7 /* common */ = {isa = PBXFileReference; lastKnownFileType = folder; name = common; path = ../../build/extension/common; sourceTree = "<group>"; };
+		77A44900307A730A00E482F7 /* theme */ = {isa = PBXFileReference; lastKnownFileType = folder; name = theme; path = ../../build/extension/theme; sourceTree = "<group>"; };
+		77A44901307A730A00E482F7 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../build/extension/manifest.json; sourceTree = "<group>"; };
+		77A44902307A730A00E482F7 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../build/extension/lib; sourceTree = "<group>"; };
+		77A44903307A730A00E482F7 /* document_start */ = {isa = PBXFileReference; lastKnownFileType = folder; name = document_start; path = ../../build/extension/document_start; sourceTree = "<group>"; };
+		77A44904307A730A00E482F7 /* qol */ = {isa = PBXFileReference; lastKnownFileType = folder; name = qol; path = ../../build/extension/qol; sourceTree = "<group>"; };
+		77A44905307A730A00E482F7 /* cource */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cource; path = ../../build/extension/cource; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		77A448AB307A730A00E482F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		77A448BD307A730A00E482F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		77A448C9307A730A00E482F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		77A448D3307A730A00E482F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		77A4489A307A730900E482F7 = {
+			isa = PBXGroup;
+			children = (
+				77A4489F307A730900E482F7 /* Shared (App) */,
+				77A448A8307A730A00E482F7 /* Shared (Extension) */,
+				77A448B0307A730A00E482F7 /* iOS (App) */,
+				77A448C1307A730A00E482F7 /* macOS (App) */,
+				77A448D0307A730A00E482F7 /* iOS (Extension) */,
+				77A448DA307A730A00E482F7 /* macOS (Extension) */,
+				77A448AF307A730A00E482F7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		77A4489F307A730900E482F7 /* Shared (App) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448A6307A730900E482F7 /* ViewController.swift */,
+				77A448A7307A730A00E482F7 /* Assets.xcassets */,
+				77A448A0307A730900E482F7 /* Resources */,
+			);
+			path = "Shared (App)";
+			sourceTree = "<group>";
+		};
+		77A448A0307A730900E482F7 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				77A448A1307A730900E482F7 /* Main.html */,
+				77A448A3307A730900E482F7 /* Icon.png */,
+				77A448A4307A730900E482F7 /* Style.css */,
+				77A448A5307A730900E482F7 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		77A448A8307A730A00E482F7 /* Shared (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448FA307A730A00E482F7 /* Resources */,
+				77A448A9307A730A00E482F7 /* SafariWebExtensionHandler.swift */,
+			);
+			path = "Shared (Extension)";
+			sourceTree = "<group>";
+		};
+		77A448AF307A730A00E482F7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				77A448AE307A730A00E482F7 /* Duedle.app */,
+				77A448C0307A730A00E482F7 /* Duedle.app */,
+				77A448CC307A730A00E482F7 /* Duedle Extension.appex */,
+				77A448D6307A730A00E482F7 /* Duedle Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		77A448B0307A730A00E482F7 /* iOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448B1307A730A00E482F7 /* AppDelegate.swift */,
+				77A448B3307A730A00E482F7 /* SceneDelegate.swift */,
+				77A448B5307A730A00E482F7 /* LaunchScreen.storyboard */,
+				77A448B8307A730A00E482F7 /* Main.storyboard */,
+				77A448BB307A730A00E482F7 /* Info.plist */,
+			);
+			path = "iOS (App)";
+			sourceTree = "<group>";
+		};
+		77A448C1307A730A00E482F7 /* macOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448C2307A730A00E482F7 /* AppDelegate.swift */,
+				77A448C4307A730A00E482F7 /* Main.storyboard */,
+				77A448C7307A730A00E482F7 /* Info.plist */,
+			);
+			path = "macOS (App)";
+			sourceTree = "<group>";
+		};
+		77A448D0307A730A00E482F7 /* iOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448D1307A730A00E482F7 /* Info.plist */,
+			);
+			path = "iOS (Extension)";
+			sourceTree = "<group>";
+		};
+		77A448DA307A730A00E482F7 /* macOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				77A448DB307A730A00E482F7 /* Info.plist */,
+			);
+			path = "macOS (Extension)";
+			sourceTree = "<group>";
+		};
+		77A448FA307A730A00E482F7 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				77A448FB307A730A00E482F7 /* notionnav */,
+				77A448FC307A730A00E482F7 /* login_screen */,
+				77A448FD307A730A00E482F7 /* storage */,
+				77A448FE307A730A00E482F7 /* syllabus */,
+				77A448FF307A730A00E482F7 /* common */,
+				77A44900307A730A00E482F7 /* theme */,
+				77A44901307A730A00E482F7 /* manifest.json */,
+				77A44902307A730A00E482F7 /* lib */,
+				77A44903307A730A00E482F7 /* document_start */,
+				77A44904307A730A00E482F7 /* qol */,
+				77A44905307A730A00E482F7 /* cource */,
+			);
+			name = Resources;
+			path = "Shared (Extension)";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		77A448AD307A730A00E482F7 /* Duedle (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77A448F0307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle (iOS)" */;
+			buildPhases = (
+				77A448AA307A730A00E482F7 /* Sources */,
+				77A448AB307A730A00E482F7 /* Frameworks */,
+				77A448AC307A730A00E482F7 /* Resources */,
+				77A448EF307A730A00E482F7 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				77A448CF307A730A00E482F7 /* PBXTargetDependency */,
+			);
+			name = "Duedle (iOS)";
+			productName = "Duedle (iOS)";
+			productReference = 77A448AE307A730A00E482F7 /* Duedle.app */;
+			productType = "com.apple.product-type.application";
+		};
+		77A448BF307A730A00E482F7 /* Duedle (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77A448F7307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle (macOS)" */;
+			buildPhases = (
+				77A448BC307A730A00E482F7 /* Sources */,
+				77A448BD307A730A00E482F7 /* Frameworks */,
+				77A448BE307A730A00E482F7 /* Resources */,
+				77A448F6307A730A00E482F7 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				77A448D9307A730A00E482F7 /* PBXTargetDependency */,
+			);
+			name = "Duedle (macOS)";
+			productName = "Duedle (macOS)";
+			productReference = 77A448C0307A730A00E482F7 /* Duedle.app */;
+			productType = "com.apple.product-type.application";
+		};
+		77A448CB307A730A00E482F7 /* Duedle Extension (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77A448EC307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle Extension (iOS)" */;
+			buildPhases = (
+				77A448C8307A730A00E482F7 /* Sources */,
+				77A448C9307A730A00E482F7 /* Frameworks */,
+				77A448CA307A730A00E482F7 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "Duedle Extension (iOS)";
+			productName = "Duedle Extension (iOS)";
+			productReference = 77A448CC307A730A00E482F7 /* Duedle Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		77A448D5307A730A00E482F7 /* Duedle Extension (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77A448F3307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle Extension (macOS)" */;
+			buildPhases = (
+				77A448D2307A730A00E482F7 /* Sources */,
+				77A448D3307A730A00E482F7 /* Frameworks */,
+				77A448D4307A730A00E482F7 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "Duedle Extension (macOS)";
+			productName = "Duedle Extension (macOS)";
+			productReference = 77A448D6307A730A00E482F7 /* Duedle Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		77A4489B307A730900E482F7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					77A448AD307A730A00E482F7 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					77A448BF307A730A00E482F7 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					77A448CB307A730A00E482F7 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					77A448D5307A730A00E482F7 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 77A4489E307A730900E482F7 /* Build configuration list for PBXProject "Duedle" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 77A4489A307A730900E482F7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 77A448AF307A730A00E482F7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				77A448AD307A730A00E482F7 /* Duedle (iOS) */,
+				77A448BF307A730A00E482F7 /* Duedle (macOS) */,
+				77A448CB307A730A00E482F7 /* Duedle Extension (iOS) */,
+				77A448D5307A730A00E482F7 /* Duedle Extension (macOS) */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		77A448AC307A730A00E482F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				77A448DE307A730A00E482F7 /* Icon.png in Resources */,
+				77A448B7307A730A00E482F7 /* LaunchScreen.storyboard in Resources */,
+				77A448DC307A730A00E482F7 /* Main.html in Resources */,
+				77A448E2307A730A00E482F7 /* Script.js in Resources */,
+				77A448E6307A730A00E482F7 /* Assets.xcassets in Resources */,
+				77A448BA307A730A00E482F7 /* Main.storyboard in Resources */,
+				77A448E0307A730A00E482F7 /* Style.css in Resources */,
+			);
+		};
+		77A448BE307A730A00E482F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				77A448DF307A730A00E482F7 /* Icon.png in Resources */,
+				77A448E1307A730A00E482F7 /* Style.css in Resources */,
+				77A448C6307A730A00E482F7 /* Main.storyboard in Resources */,
+				77A448E3307A730A00E482F7 /* Script.js in Resources */,
+				77A448E7307A730A00E482F7 /* Assets.xcassets in Resources */,
+				77A448DD307A730A00E482F7 /* Main.html in Resources */,
+			);
+		};
+		77A448CA307A730A00E482F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				77A44916307A730A00E482F7 /* theme in Resources */,
+				77A44917307A730A00E482F7 /* manifest.json in Resources */,
+				77A44918307A730A00E482F7 /* lib in Resources */,
+				77A44915307A730A00E482F7 /* common in Resources */,
+				77A44913307A730A00E482F7 /* storage in Resources */,
+				77A44912307A730A00E482F7 /* login_screen in Resources */,
+				77A44911307A730A00E482F7 /* notionnav in Resources */,
+				77A44919307A730A00E482F7 /* document_start in Resources */,
+				77A4491B307A730A00E482F7 /* cource in Resources */,
+				77A44914307A730A00E482F7 /* syllabus in Resources */,
+				77A4491A307A730A00E482F7 /* qol in Resources */,
+			);
+		};
+		77A448D4307A730A00E482F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				77A4490B307A730A00E482F7 /* theme in Resources */,
+				77A4490C307A730A00E482F7 /* manifest.json in Resources */,
+				77A4490D307A730A00E482F7 /* lib in Resources */,
+				77A4490A307A730A00E482F7 /* common in Resources */,
+				77A44908307A730A00E482F7 /* storage in Resources */,
+				77A44907307A730A00E482F7 /* login_screen in Resources */,
+				77A44906307A730A00E482F7 /* notionnav in Resources */,
+				77A4490E307A730A00E482F7 /* document_start in Resources */,
+				77A44910307A730A00E482F7 /* cource in Resources */,
+				77A44909307A730A00E482F7 /* syllabus in Resources */,
+				77A4490F307A730A00E482F7 /* qol in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		77A448AA307A730A00E482F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				77A448E4307A730A00E482F7 /* ViewController.swift in Sources */,
+				77A448B2307A730A00E482F7 /* AppDelegate.swift in Sources */,
+				77A448B4307A730A00E482F7 /* SceneDelegate.swift in Sources */,
+			);
+		};
+		77A448BC307A730A00E482F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				77A448E5307A730A00E482F7 /* ViewController.swift in Sources */,
+				77A448C3307A730A00E482F7 /* AppDelegate.swift in Sources */,
+			);
+		};
+		77A448C8307A730A00E482F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				77A448E8307A730A00E482F7 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+		77A448D2307A730A00E482F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				77A448E9307A730A00E482F7 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		77A448CF307A730A00E482F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 77A448CB307A730A00E482F7 /* Duedle Extension (iOS) */;
+			targetProxy = 77A448CE307A730A00E482F7 /* PBXContainerItemProxy */;
+		};
+		77A448D9307A730A00E482F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 77A448D5307A730A00E482F7 /* Duedle Extension (macOS) */;
+			targetProxy = 77A448D8307A730A00E482F7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		77A448A1307A730900E482F7 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				77A448A2307A730900E482F7 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		77A448B5307A730A00E482F7 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				77A448B6307A730A00E482F7 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		77A448B8307A730A00E482F7 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				77A448B9307A730A00E482F7 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		77A448C4307A730A00E482F7 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				77A448C5307A730A00E482F7 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		77A448EA307A730A00E482F7 /* Debug configuration for PBXProject "Duedle" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		77A448EB307A730A00E482F7 /* Release configuration for PBXProject "Duedle" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		77A448ED307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Duedle Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari.Extension;
+				PRODUCT_NAME = "Duedle Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		77A448EE307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Duedle Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari.Extension;
+				PRODUCT_NAME = "Duedle Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		77A448F1307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Duedle;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari;
+				PRODUCT_NAME = Duedle;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		77A448F2307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Duedle;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari;
+				PRODUCT_NAME = Duedle;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		77A448F4307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Duedle Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari.Extension;
+				PRODUCT_NAME = "Duedle Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		77A448F5307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Duedle Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari.Extension;
+				PRODUCT_NAME = "Duedle Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		77A448F8307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Duedle;
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari;
+				PRODUCT_NAME = Duedle;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		77A448F9307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Duedle;
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.duedle.safari;
+				PRODUCT_NAME = Duedle;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		77A4489E307A730900E482F7 /* Build configuration list for PBXProject "Duedle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77A448EA307A730A00E482F7 /* Debug configuration for PBXProject "Duedle" */,
+				77A448EB307A730A00E482F7 /* Release configuration for PBXProject "Duedle" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		77A448EC307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle Extension (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77A448ED307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle Extension (iOS)" */,
+				77A448EE307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle Extension (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		77A448F0307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77A448F1307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle (iOS)" */,
+				77A448F2307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		77A448F3307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle Extension (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77A448F4307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle Extension (macOS)" */,
+				77A448F5307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle Extension (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		77A448F7307A730A00E482F7 /* Build configuration list for PBXNativeTarget "Duedle (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77A448F8307A730A00E482F7 /* Debug configuration for PBXNativeTarget "Duedle (macOS)" */,
+				77A448F9307A730A00E482F7 /* Release configuration for PBXNativeTarget "Duedle (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 77A4489B307A730900E482F7 /* Project object */;
+	validationLevel = 1;
+}

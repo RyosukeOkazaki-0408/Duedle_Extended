@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json.schemastore.org/chrome-manifest.json",
+  "name": "Duedle",
+  "version": "1.2.0",
+  "manifest_version": 3,
+  "description": "Moodleの拡張機能です。名工大のMoodleを最強にします",
+  "permissions": ["storage", "alarms", "tabs", "notifications"],
+  "host_permissions": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+  "background": {
+    "service_worker": "./storage/service_worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "js": [
+        "./common/common.js",
+        "./storage/class/StorageUtil.js",
+        "./storage/class/task/TaskBox.js",
+        "./storage/class/task/AssignBox.js",
+        "./storage/class/task/QuizBox.js",
+        "./storage/class/filter/FilterSelect.js",
+        "./storage/class/scrape/Scrape.js",
+        "./storage/class/scrape/ScrapeAssign.js",
+        "./storage/class/scrape/ScrapeQuiz.js",
+        "./storage/class/scrape/ScrapeQuizReview.js"
+      ]
+    },
+      {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "exclude_matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*",
+          "https://cms7.ict.nitech.ac.jp/moodle40a/login/index.php"
+        ],
+      "js": [
+        "./common/utils.js",
+        "./common/hide_username.js",
+        "./common/title.js",
+        "./common/delete_underLink.js",
+        "./common/navigation.js",
+        "./theme/main.js",
+        "./document_start/pre.js"
+      ],
+      "css": [
+        "./theme/dark.css",
+        "./theme/light.css",
+        "./common/ui/switch.css",
+        "./common/common.css"
+      ]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "exclude_matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/login/auth_oidc.php",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/login/index.php"
+      ],
+      "js": ["./common/history_view.js"]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "exclude_matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/course/mycourse_config/*"
+      ],
+      "css": ["./theme/dark.css", "./theme/light.css", "./common/ui/switch.css"]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "exclude_matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*"
+      ],
+      "css": ["./document_start/pre.css"],
+      "js": ["./document_start/pre.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/login/auth*"],
+      "js": [
+        "./login_screen/login_screen.js",
+        "./common/change_order_freely.js"
+      ]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*"],
+      "js": ["./syllabus/darkmode.js"],
+      "css": ["./syllabus/darkmode.css"]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/*"],
+      "exclude_matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/login/*",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/auth/*",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*"
+      ],
+      "js": [
+        "./storage/class/CourseCollector.js",
+        "./storage/class/AutoRefreshCollector.js",
+        "./storage/auto_refresh.js"
+      ]
+    },
+    {
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=*"
+      ],
+      "js": [
+        "./qol/assign_files.js",
+        "./storage/cs_scrapeAssign.js"
+      ]
+    },
+    {
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/view.php?id=*"
+      ],
+      "js": ["./storage/cs_scrapeQuiz.js"]
+    },
+    {
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/my/*",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php?id=*"
+      ],
+      "js": [
+        "./storage/cs_scrapeTaskList.js",
+        "./storage/display/filter.js",
+        "./storage/display/displaybox.js"
+      ],
+      "css": ["./storage/display/style.css"]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/my/*"],
+      "js": ["./storage/getCourseIds.js"]
+    },
+    {
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/review.php?*"
+      ],
+      "js": ["./storage/cs_scrapeQuizReview.js"]
+    },
+    {
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/moodle40a/my/",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/my/index.php",
+        "https://cms7.ict.nitech.ac.jp/moodle40a/course/mycourse_config/reorder.php"
+      ],
+      "js": ["./common/change_order_freely.js"]
+    },
+    {
+      "matches": ["https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php*"],
+      "js": [
+        "./cource/hide_closedTab.js",
+        "./common/history_update.js",
+        "./notionnav/navigation.js",
+        "./storage/getCourseIdfromUrl.js"
+      ],
+      "css": ["./notionnav/style.css"]
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+#notion {
+    position: sticky;
+    top: 10%;
+    white-space: nowrap;
+    overflow: auto;
+    max-height: 75vh;
+}
+
+.notionnavlink {
+    font-size: 14.6px;
+    display: block;
+    padding: 4px 0;
+    margin-left: 10px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.duedle-section-title {
+    cursor: pointer;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.3;
+    margin-bottom: 0;
+    white-space: normal;
+}
+
+.darkmode .duedle-section-title {
+    color: #dddddf;
+}
+
+@media (min-width: 768px) {
+    #page-content.blocks-post .columnright {
+        flex: 0 0 32%;
+        padding: 0 1rem;
+        max-width: 32%;
+    }
+}
+
+@media (min-width: 992px) {
+    #page-content.blocks-post .columnright {
+        flex: 0 0 25%;
+        padding: 0 1rem;
+        max-width: 25%;
+    }
+}
+
+@media (min-width: 1200px) {
+    #page-content.blocks-post .columnright {
+        flex: 0 0 20%;
+        padding: 0 1rem;
+        max-width: 20%;
+    }
+}
+
+@media (max-width: 767px) {
+    #page-content.blocks-post .columnright {
+        flex: 0 0 100%;
+        max-width: 100%;
+        order: -1;
+    }
+
+    #notion {
+        position: static;
+        white-space: normal;
+        max-height: none;
+    }
+
+    .duedle-section-title {
+        padding: 8px 0;
+    }
+
+    .duedle-section-links {
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+
+    .notionnavlink {
+        min-height: 44px;
+        padding: 10px 0;
+        margin-left: 0;
+    }
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
