@@ -21,19 +21,18 @@ class ScrapeAssign extends Scrape {
         const files = Array.from(doc.querySelectorAll(".submissionstatustable .fileuploadsubmission a")).map(a => a.textContent.trim());
         const filenum = files.length;
         const file = files[0] || "?"; // 最初のファイル名、存在しない場合は?
-        let a_status;
-        if (filenum === 0) {
-            a_status = "incomplete"; // ファイルが見つからない場合は未完了とみなす
-            if (this.calldue(doc) && Math.ceil((this.calldue(doc) - Date.now()) / (1000 * 60 * 60 * 24)) < 3) {
-                a_status = "warning";
-            }
-            //締め切りを過ぎている場合はexpiredにする
-            if (this.calldue(doc) && Math.ceil((this.calldue(doc) - Date.now()) / (1000 * 60 * 60 * 24)) < 0) {
-                a_status = "expired";
-            }
-        } else {
-            a_status = "complete"; // ファイルが見つかった場合は完了とみなす
-        }
+        const due = this.calldue(doc);
+        const submitted = doc.querySelector(".submissionstatustable .submissionstatussubmitted");
+        const pending = doc.querySelector(".submissionstatustable .submissionstatusdraft, .submissionstatustable .submissionstatusnew, .submissionstatustable .submissionstatusreopened")
+            // Moodle 4.0 renders the initial state without a status CSS class.
+            || [...doc.querySelectorAll(".submissionstatustable tr")].some(row => {
+                const cells = row.querySelectorAll("th, td");
+                if (cells.length < 2 || !/^(提出ステータス|Submission status)$/i.test(cells[0].textContent.trim())) return false;
+                return /^(まだ提出されていません[。.]?|何も提出されていません[。.]?|未提出|No submissions have been made yet[.]?|No submission[.]?|Nothing has been submitted[.]?)$/i.test(cells[1].textContent.trim());
+            });
+        // Files and online text may both be drafts. An unfamiliar page is unknown,
+        // rather than claiming that the student has completed a submission.
+        const a_status = this.statusAt(submitted ? "complete" : pending ? "incomplete" : "unknown", due);
 
         const data = {
             ...this.detailMetadata(doc, pageURL),
@@ -42,7 +41,7 @@ class ScrapeAssign extends Scrape {
             courseName: courseName,
             assignName: assignName,
             start: this.callstart(doc)?.toISOString() ?? null,
-            due: this.calldue(doc)?.toISOString() ?? null,
+            due: due?.toISOString() ?? null,
             file: file,
             filenum: filenum,
             status: a_status,

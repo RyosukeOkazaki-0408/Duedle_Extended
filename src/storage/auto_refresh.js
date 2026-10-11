@@ -44,6 +44,7 @@ class AutoRefreshController {
     }
 
     eligible() {
+        if (globalThis.duedleAccountActive === false) return false;
         if (!this.started || this.suspended || this.temporary || !this.visible()) return false;
         if (this.window && this.window.top !== this.window.self) return false;
         const href = this.location?.href || "";

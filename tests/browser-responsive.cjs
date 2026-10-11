@@ -5,7 +5,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
 const root = 'https://cms7.ict.nitech.ac.jp/moodle40a/';
 const fixture = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moodle fixture</title><style>
 body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height:40px} #ext_dashboard{padding:16px;box-sizing:border-box} @media(max-width:767px){#usernavigation{display:none}}
-</style></head><body><nav id="usernavigation"></nav><header><h1>コース</h1></header><main id="region-main"><a id="course-link" href="${root}course/view.php?id=1">コースへ</a></main></body></html>`;
+</style></head><body><script>var M={}; M.cfg={"sesskey":"abc123test"};</script><div id="nav-notification-popover-container" data-userid="1"></div><nav id="usernavigation"></nav><header><h1>コース</h1></header><main id="region-main"><a id="course-link" href="${root}course/view.php?id=1">コースへ</a></main></body></html>`;
 (async () => {
  const context = await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(),'duedle-responsive-')),{
   headless:true,ignoreDefaultArgs:['--disable-extensions'],executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -29,7 +29,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
         };
   const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id)); assert(worker);
   await worker.evaluate(async () => {
-   await chrome.storage.local.set({assign_list:Array.from({length:5},(_,i)=>({group:'assign_list',assignId:i+1,courseId:1,courseName:'回帰テストコース 2026',assignName:'課題 '+(i+1),status:'incomplete',show:true,start:Date.now()-3600000,due:Date.now()+86400000,filenum:1,file:i===0?'長いファイル名'.repeat(20):'report.pdf'}))});
+   await chrome.storage.local.set({assign_list:Array.from({length:5},(_,i)=>({group:'assign_list',assignId:i+1,courseId:1,courseName:'回帰テストコース 2026',assignName:'課題 '+(i+1),status:'incomplete',show:true,start:Date.now()-3600000,due:Date.now()+4*86400000,filenum:1,file:i===0?'long_ascii_filename_'.repeat(20):'report.pdf'}))});
    await chrome.storage.sync.set({selectedShow:'all',selectedType:'all',selectedStatus:'all'});
   });
   await page.reload(); await page.waitForSelector('#display > .assign');
@@ -47,6 +47,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
     assert(await page.locator('#display > .assign').first().isVisible(),'Cards stay visible with settings collapsed');
    }
    await openSettings();
+   assert.equal(await page.locator('#thememode_selection').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;}),1,'Settings label stays on one line at '+width);
    const buttons=await page.locator('.duedle-dashboard-actions > button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right,width:r.width}}));
    assert.equal(buttons.length,3);
    assert(buttons.every(button=>Math.abs(button.top-buttons[0].top)<1&&button.width>0&&button.left>=0&&button.right<=width),'All three actions stay in one row at '+width);
@@ -59,6 +60,16 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   }
   await page.setViewportSize({width:390,height:844});
   await page.locator('#thememode_selection').click();
+  await page.locator('#duedle-theme-menu').waitFor({state:'visible'});
+  assert.equal(await page.locator('#duedle-theme-menu').getAttribute('popover'),'manual','Native automatic dismissal cannot race the trigger tap');
+  await page.locator('#thememode_selection').tap();
+  await page.locator('#duedle-theme-menu').waitFor({state:'hidden'});
+  assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'),'false','Second tap closes the native popover');
+  await page.locator('#thememode_selection').tap();
+  await page.locator('#duedle-theme-menu').waitFor({state:'visible'});
+  await page.locator('header h1').tap();
+  await page.locator('#duedle-theme-menu').waitFor({state:'hidden'});
+  await page.locator('#thememode_selection').tap();
   await page.locator('#duedle-theme-menu').waitFor({state:'visible'});
   const menuLayout=await page.locator('#duedle-theme-menu').evaluate(menu=>{
     const rows=[...menu.querySelectorAll('button')];
@@ -84,9 +95,11 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   assert.equal(await page.evaluate(()=>document.activeElement.id),'thememode_selection','Escape returns focus to trigger');
   await page.locator('#duedle-theme-menu').evaluate(menu=>menu.removeAttribute('popover'));
   await page.locator('#thememode_selection').click();await page.locator('#duedle-theme-menu').waitFor({state:'visible'});
+  await page.locator('#thememode_selection').tap();await page.locator('#duedle-theme-menu').waitFor({state:'hidden'});
+  await page.locator('#thememode_selection').tap();await page.locator('#duedle-theme-menu').waitFor({state:'visible'});
   await page.locator('header h1').click();
   assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'),'false','Fallback menu closes on outside pointer without cancelling navigation');
-  await page.locator('#duedle-theme-menu').evaluate(menu=>menu.setAttribute('popover','auto'));
+  await page.locator('#duedle-theme-menu').evaluate(menu=>menu.setAttribute('popover','manual'));
 
   await page.waitForFunction(()=>document.querySelector('#duedle-theme-control')?.parentElement.id==='duedle-theme-toolbar');
   await openSettings();

@@ -178,6 +178,14 @@ ul.navbar-nav.d-none.d-md-flex {
 }
 
 /* Keep the desktop navigation placement; use document flow on compact pages. */
+/* Moodle's 70% feedback box leaves the final grade offset from the attempt table. */
+body#page-mod-quiz-view #region-main .generalbox#feedback {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+}
 #thememode_selection {
   max-width: 100%;
   min-width: 0;
@@ -256,6 +264,7 @@ ul.navbar-nav.d-none.d-md-flex {
 
 #duedle-theme-control {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 8px;
   max-width: 100%;
@@ -263,6 +272,9 @@ ul.navbar-nav.d-none.d-md-flex {
 }
 #thememode_selection {
   min-height: 44px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: max-content;
   margin: 0;
   padding: 6px 8px;
   font-size: 16px;

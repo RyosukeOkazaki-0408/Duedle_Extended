@@ -1,4 +1,13 @@
 class Scrape {
+    // Deadline warnings are derived at display time as well as on a detail read.
+    static statusAt(status, due, now = Date.now()) {
+        if (!["incomplete", "warning", "expired"].includes(status)) return status;
+        const deadline = due ? new Date(due).getTime() : NaN;
+        if (!Number.isFinite(deadline)) return "incomplete";
+        if (deadline < now) return "expired";
+        return deadline - now <= 3 * 86400000 ? "warning" : "incomplete";
+    }
+
     // Only a complete detail-page read advances freshness; review/visibility edits do not.
     static detailMetadata(doc, pageURL) {
         const metadata = { fetchedAt: Date.now() };

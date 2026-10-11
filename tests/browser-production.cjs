@@ -16,7 +16,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
         await context.route('**/*', route => {
             requests++;
             if (route.request().resourceType()!=='document') return route.abort();
-            return route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="ja"><head><title>Moodle fixture</title></head><body><header><h1>テストコース</h1></header><main id="region-main"></main></body></html>'});
+            return route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="ja"><head><title>Moodle fixture</title></head><body><script>var M={}; M.cfg={"sesskey":"abc123test"};</script><div id="nav-notification-popover-container" data-userid="1"></div><header><h1>テストコース</h1></header><main id="region-main"></main></body></html>'});
         });
         const page=await context.newPage();
         page.on('pageerror',error=>errors.push(error.message));

@@ -214,6 +214,8 @@ class AutoRefreshCollector {
     async fetchDocument(url) {
         const doc = this.parse(await this.request(url));
         if (doc.querySelector('form#login, #loginform, input[name="password"]')) throw this.error("auth", "Moodleへのログインが必要です");
+        try { globalThis.duedleAssertAccountDocument?.(doc, url); }
+        catch (error) { throw this.error("auth", error.message); }
         return doc;
     }
 

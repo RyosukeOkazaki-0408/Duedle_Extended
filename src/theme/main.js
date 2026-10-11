@@ -135,7 +135,9 @@ function installThemeMenu() {
   menu.setAttribute("role", "menu");
   menu.setAttribute("aria-label", "Duedle設定");
   menu.hidden = true;
-  if (typeof menu.showPopover === "function") menu.setAttribute("popover", "auto");
+  // Outside taps are handled below. Native auto-dismiss can close the menu
+  // before the trigger's click on iOS, causing that click to reopen it.
+  if (typeof menu.showPopover === "function") menu.setAttribute("popover", "manual");
   const modes = document.createElement("div");
   modes.setAttribute("role", "group");
   modes.setAttribute("aria-label", "カラーモード");

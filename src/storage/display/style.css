@@ -19,7 +19,7 @@
 .fieldcolor {
     padding-top: 5px;
 }
-.type {
+#display .type {
     display: flex;
     gap: 20px;
     align-items: center;
@@ -29,8 +29,8 @@
     margin-left: 20px;
 }
 
-.assign:not(.activity),
-.quiz:not(.activity) {
+#display > .assign,
+#display > .quiz {
     margin: 5px;
     margin-top: 20px;
     border-color: rgb(95, 160, 124);
@@ -44,7 +44,7 @@
 }
 
 
-.title {
+#display .title {
     font-size: 24px;
     font-weight: bold;
     margin-bottom: 10px;
@@ -52,158 +52,56 @@
     white-space: nowrap;
 }
 
-.darkmode div.no-overflow div.no-overflow{
-    background-color: rgb(29, 40, 49);
+
+/* Status colors belong to Duedle roots, never Moodle descendants. */
+#display > .complete, .duedle-task-status.complete { --duedle-status-color: #90ee90; }
+body.darkmode #display > .complete, body.darkmode .duedle-task-status.complete { --duedle-status-color: #063906; }
+#display > .qualify, .duedle-task-status.qualify { --duedle-status-color: #add8e6; }
+body.darkmode #display > .qualify, body.darkmode .duedle-task-status.qualify { --duedle-status-color: #12515e; }
+#display > .incomplete, .duedle-task-status.incomplete { --duedle-status-color: #ffffe0; }
+body.darkmode #display > .incomplete, body.darkmode .duedle-task-status.incomplete { --duedle-status-color: #57422a; }
+#display > .stuck, .duedle-task-status.stuck { --duedle-status-color: #ffffff; }
+body.darkmode #display > .stuck, body.darkmode .duedle-task-status.stuck { --duedle-status-color: #000000; }
+#display > .warning, .duedle-task-status.warning { --duedle-status-color: #ffb681; }
+body.darkmode #display > .warning, body.darkmode .duedle-task-status.warning { --duedle-status-color: #7c3316; }
+#display > .expired, .duedle-task-status.expired { --duedle-status-color: #ff9090; }
+body.darkmode #display > .expired, body.darkmode .duedle-task-status.expired { --duedle-status-color: #821f1f; }
+#display > .unknown, .duedle-task-status.unknown { --duedle-status-color: #c8c8c8; }
+body.darkmode #display > .unknown, body.darkmode .duedle-task-status.unknown { --duedle-status-color: #454545; }
+#display > .unvisited, .duedle-task-status.unvisited { --duedle-status-color: #eac1ff; }
+body.darkmode #display > .unvisited, body.darkmode .duedle-task-status.unvisited { --duedle-status-color: #4a1745; }
+#display > .assign, #display > .quiz {
+    background-color: var(--duedle-status-color, #f0f0f0);
+    color: var(--duedle-status-text, #1d2125);
 }
-
-.unvisited {
-    background-color:#eac1ff;
+body.darkmode #display > .assign, body.darkmode #display > .quiz {
+    color: var(--duedle-status-text, #dddddf);
 }
-.darkmode .unvisited,
-.darkmode .unvisited .type,
-.darkmode .unvisited .title,
-.darkmode .unvisited .info,
-.darkmode .unvisited .date,
-.darkmode .unvisited h6,
-.darkmode .unvisited .overflow-auto,
-.darkmode .unvisited div:not(.activityiconcontainer){
-    background-color:#4a1745;
-    color: white;
+#display > .assign .coursemenubtn, #display > .quiz .coursemenubtn,
+body.darkmode #display > .assign li, body.darkmode #display > .quiz li {
+    color: inherit;
 }
-
-
-
-.complete .title {
-    color: green;
-
+.duedle-task-status {
+    border-left: 4px solid var(--duedle-status-border, var(--duedle-status-color, #788a99));
 }
-
-.darkmode .complete,
-.darkmode .complete .type,
-.darkmode .complete .title,
-.darkmode .complete .info,
-.darkmode .complete .date,
-.darkmode .complete h6,
-.darkmode .complete .overflow-auto,
-.darkmode .complete div:not(.activityiconcontainer){
-    background-color: rgb(6, 57, 6);
+/* Upcoming events are compact status cards; course descriptions stay separate. */
+body .event.duedle-task-status {
+    background-color: var(--duedle-status-color);
+    border-left-color: var(--duedle-status-color);
+    color: var(--duedle-status-text, #1d2125);
 }
-
-.darkmode .complete .title{
-    color:chartreuse;
+body.darkmode .event.duedle-task-status {
+    color: var(--duedle-status-text, #dddddf);
 }
-
-
-.qualify {
-    background-color: lightblue;
+body .event.duedle-task-status .date {
+    color: inherit;
 }
-
-.qualify .title {
-    color: rgb(76, 76, 189);
-}
-
-.darkmode .qualify,
-.darkmode .qualify .type,
-.darkmode .qualify .title,
-.darkmode .qualify .info,
-.darkmode .qualify .date,
-.darkmode .qualify h6,
-.darkmode .qualify .overflow-auto,
-.darkmode .qualify div:not(.activityiconcontainer){
-    background-color: rgb(18, 81, 94);
-}
-
-.darkmode .qualify .title {
-    color: rgb(115, 199, 222);
-}
-
-
-.incomplete {
-    background-color: #ffffe0;
-}
-
-.darkmode .incomplete,
-.darkmode .incomplete .type,
-.darkmode .incomplete .info,
-.darkmode .incomplete .title,
-.darkmode .incomplete .date,
-.darkmode .incomplete h6,
-.darkmode .incomplete .overflow-auto,
-.darkmode .incomplete div:not(.activityiconcontainer){
-    background-color: #57422a ;
-    color: white;
-}
-.darkmode .incomplete .title{
-    color: rgb(250, 223, 187) !important;
-}
-
-.warning {
-    background-color: #ffb681;
-}
-
-.darkmode .warning,
-.darkmode .warning .type,
-.darkmode .warning .title,
-.darkmode .warning .info,
-.darkmode .warning .date,
-.darkmode .warning h6,
-.darkmode .warning .overflow-auto,
-.darkmode .warning div:not(.activityiconcontainer){
-    background-color: #7c3316;
-    color: white;
-}
-
-.warning .title {
-    color: red;
-
-}
-
-.expired {
-    background-color: #ff9090;
-}
-
-
-.darkmode .expired,
-.darkmode .expired .type,
-.darkmode .expired .info,
-.darkmode .expired .date,
-.darkmode .expired h6,
-.darkmode .expired .overflow-auto,
-.darkmode .expired div:not(.activityiconcontainer){
-    background-color: #821f1f;
-    color: white;
-}
-.expired .title {
-    background-color: rgb(181, 2, 2) !important;
-    color: white;
-}
-.stuck {
-    background-color: rgb(255, 255, 255);
-}
-.darkmode .stuck,
-.darkmode .stuck .type,
-.darkmode .stuck .info,
-.darkmode .stuck .date,
-.darkmode .stuck h6,
-.darkmode .stuck .overflow-auto,
-.darkmode .stuck div:not(.activityiconcontainer){
-    background-color: rgb(0, 0, 0);
-    color: white;
-}
-
-.unknown {
-    background-color: #c8c8c8;
-}
-.darkmode .unknown,
-.darkmode .unknown .type,
-.darkmode .unknown .title,
-.darkmode .unknown .info,
-.darkmode .unknown .date,
-.darkmode .unknown h6,
-.darkmode .unknown .overflow-auto,
-.darkmode .unknown div:not(.activityiconcontainer){
-    background-color: #454545;
-    color: white;
+#display > .assign a:not(.dropdown-item), #display > .quiz a:not(.dropdown-item),
+body .event.duedle-task-status a,
+body.darkmode .event.duedle-task-status a {
+    color: var(--duedle-status-link, #0056b3);
+    text-decoration: underline;
+    text-underline-offset: .12em;
 }
 
 .taskbox {
@@ -214,12 +112,14 @@
     white-space: nowrap;
 }
 
-.info {
+#display .info {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: 16px;
     margin-bottom: 5px;
 }
 
-.type {
+#display .type {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 5px;

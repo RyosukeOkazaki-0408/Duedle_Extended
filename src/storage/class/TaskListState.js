@@ -1,6 +1,8 @@
 // UI state is derived from saved outcomes, never from a new network request.
 class TaskListState {
     static describe({ total = 0, visible = 0, history = {}, coordinator = {}, now = Date.now() } = {}) {
+        history ||= {};
+        coordinator ||= {};
         const lease = coordinator.lease;
         const p = lease?.progress;
         const deadline = Math.min(lease?.expiresAt ?? 0, (p?.at ?? lease?.startedAt ?? now) + (p ? 90000 : 30000));
@@ -17,6 +19,7 @@ class TaskListState {
             } else status = "更新の準備中…";
         } else if (lease || attempt.reason === "timeout") status = "更新の応答が途絶えました。再度お試しください。";
         else if (attempt.outcome === "cancelled") status = "更新が中断されました。再度お試しください。";
+        else if (failed && attempt.reason === "auth") status = "ログイン状態を確認できません。Moodleに再ログインして課題情報を更新してください。";
         else if (failed) status = "課題情報の更新に失敗しました。再度お試しください。";
 
         let empty = "";

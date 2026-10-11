@@ -110,6 +110,12 @@
                 random: () => 0.5, tokenFactory: () => "background-" + (++nextTimer) }); }
         }
         production("src/storage/service_worker.js", [], {
+            // Account boundaries have their own integration/regression suite.
+            AccountSession: class {
+                serial(fn) { return fn(); }
+                run(message, from, fn) { return fn(); }
+                forget() { return Promise.resolve(); }
+            },
             ext, StorageUtil, RefreshCoordinator: ClockCoordinator, importScripts() {},
             URL: typeof URL === "function" ? URL : TestURL,
             setTimeout(fn) { const id = ++nextTimer; timers.set(id, fn); return id; },

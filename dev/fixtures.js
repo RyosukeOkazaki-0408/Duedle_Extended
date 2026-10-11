@@ -20,8 +20,8 @@ function fixtureHTML(url) {
     const task = tasks.find(t => t.id === Number(new URL(url).searchParams.get('id')));
     if (!task) return '<h1>デバッグコース</h1><div class="errorcode">missing</div>';
     let detail = `<body class="course-1"><h1>デバッグコース</h1><h2>${task.name}</h2><div class="description-inner"><div>開始: ${dateText(debugClock.base - 86400000)}</div><div>期限: ${dateText(task.due)}</div></div>`;
-    if (debugClock.scenario === 'submitted') detail += '<div class="submissionstatustable"><div class="fileuploadsubmission"><a>answer.pdf</a></div></div>';
-    if (task.type === 'quiz') detail += `<div id="feedback"><h3>評点: ${debugClock.scenario === 'grade' ? 9 : 3} / 10</h3></div><p class="text-left">合格点: 5 / 10</p><table><tr><th>挑戦</th></tr><tr><td>1</td></tr></table>`;
+    if (task.type === 'assign') detail += `<div class="submissionstatustable"><span class="submissionstatus${debugClock.scenario === 'submitted' ? 'submitted' : 'new'}"></span>${debugClock.scenario === 'submitted' ? '<div class="fileuploadsubmission"><a>answer.pdf</a></div>' : ''}</div>`;
+    if (task.type === 'quiz') detail += `<div id="feedback"><h3>評点: ${debugClock.scenario === 'grade' ? 9 : 3} / 10</h3></div><p class="text-left">合格点: 5 / 10</p><table class="quizattemptsummary"><tbody><tr><th>挑戦</th></tr><tr><td>1</td></tr></tbody></table>`;
     return detail + '</body>';
 }
 globalThis.fetch = async (input, options = {}) => {

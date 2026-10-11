@@ -29,16 +29,16 @@ Moodle右上の **「Duedle設定」→「使い方」** から、操作ガイ�
 
 ## 導入
 
-以下はソースから導入するための手順です。
-
 ### Google Chrome
 
-1. このリポジトリをクローンするか、ダウンロードして展開します。
-2. Chromeで `chrome://extensions/` を開き、「デベロッパーモード」を有効にします。
-3. 「パッケージ化されていない拡張機能を読み込む」で、このリポジトリの `src/` を選択します。
-4. Moodleへログインします。すでに開いていたMoodleのページは再読み込みしてください。
+Windows・MacのChromeでは、Chromeウェブストアからインストールできます。
 
-ソースの変更を反映する際は、拡張機能管理画面でDuedleを再読み込みし、その後Moodleのページも再読み込みします。
+1. パソコンのChromeで、[DuedleのChromeウェブストアページ](https://chromewebstore.google.com/detail/duedle/bbepilmbnkgbjnpecphajobphmgopmjm?hl=ja)を開きます。
+2. 「Chromeに追加」を押し、確認画面で「拡張機能を追加」を押します。
+3. [名工大Moodle](https://cms7.ict.nitech.ac.jp/moodle40a/)へログインします。すでに開いていたMoodleのページは再読み込みしてください。
+4. 左上に「Duedle: Extended」が表示されていれば、導入は完了です。
+
+詳しい手順や追加できない場合の対処は、[導入ガイド](src/common/install.html)を参照してください。
 
 ### Safari（Mac・iPhone・iPad）
 

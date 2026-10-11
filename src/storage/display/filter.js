@@ -117,11 +117,17 @@ showFilter.applyDefault("normal");
 
 async function updateCooldownButton() {
     clearTimeout(cooldownTimer);
+    if (globalThis.duedleAccountActive === false) {
+        scrapebutton.disabled = true;
+        scrapebutton.textContent = "課題を更新";
+        return;
+    }
     if (collectionRunning) return;
     const [{ scrapeCooldown }, refresh] = await Promise.all([
         ext.storage.local.get("scrapeCooldown"),
         ext.runtime.sendMessage({ type: "REFRESH_STATUS" })
     ]);
+    if (globalThis.duedleAccountActive === false) return updateCooldownButton();
     if (collectionRunning) return;
     const next = new Date(new Date(scrapeCooldown).getTime() + COOLDOWN_MS);
     const coolingDown = next.getTime() > Date.now();
@@ -134,6 +140,7 @@ async function updateCooldownButton() {
 }
 
 scrapebutton.addEventListener("click", async () => {
+    if (globalThis.duedleAccountActive === false) return;
     if (collectionRunning) return;
     collectionRunning = true;
     collectionErrorReason = null;
@@ -227,6 +234,7 @@ scrapebutton.addEventListener("click", async () => {
         manualAbort = null;
         collectionRunning = false;
         updateCooldownButton().catch(console.error);
+        if (globalThis.duedleAccountActive === false) collectionstatus.textContent = "アカウントが変わりました。このページを再読み込みしてください。";
     }
 });
 updateCooldownButton().catch(console.error);
@@ -432,7 +440,24 @@ async function renderList() {
     const updated = document.querySelector("#listupdated");
     updated.textContent = TaskListState.timestamp(stored.refreshHistory);
     updated.title = "締切一覧確認は対象期間の一覧確認です。各課題の詳細情報は順次更新します。";
+    if (globalThis.duedleAccountActive === false) {
+        display.replaceChildren();
+        updated.textContent = "";
+        collectionstatus.textContent = "Moodleのユーザー情報を確認できません。このページを再読み込みしてください。";
+    }
 }
+
+document.addEventListener("duedle:account-changed", () => {
+    manualAbort?.abort();
+    setTaskSelection(false);
+    display.replaceChildren();
+    document.querySelector("#listupdated").textContent = "";
+    scrapebutton.disabled = true;
+    collectionstatus.textContent = "アカウントが変わりました。このページを再読み込みしてください。";
+});
+
+// Deadline state also changes without a storage mutation or a network fetch.
+setInterval(() => { if (!document.hidden) queueRerender(); }, 60000);
 
 // Refresh open lists when another page or an automatic batch saves task details.
 let renderTimer;
@@ -480,26 +505,39 @@ document.addEventListener("visibilitychange", () => {
 
 //色適用
 const applyColor = (type, toColor) => {
-    if (document.querySelector(".darkmode")) {
-        const q = Array.from(document.querySelectorAll(
-            ".darkmode ." + type + ", .darkmode ." + type + ".type, .darkmode ." + type + " .title, .darkmode ." + type + " .info, .darkmode ."
-            + type + " .date, .darkmode ." + type + " h6, .darkmode ." + type + " .overflow-auto, .darkmode ." + type + " div:not(.activityiconcontainer)"
-        ));
-        q.map((item) => {
-            item.style.background = toColor;
-        })
-    } else {
-        const q = Array.from(document.querySelectorAll(
-            "." + type + ", ." + type + ".type, ." + type + " .title, ." + type + " .info, ."
-            + type + " .date, ." + type + " h6, ." + type + " .overflow-auto, ." + type + " div:not(.activityiconcontainer)"
-
-        ));
-        q.map((item) => {
-            item.style.background = toColor;
-        })
+    if (!colorTypesValue.includes(type) || !/^#[\da-f]{6}$/i.test(toColor)) return;
+    // Color only our task cards; course activities use a status border.
+    // CSS variables leave author styles and mode switching untouched.
+    const channels = toColor.match(/[\da-f]{2}/gi).map(value => parseInt(value, 16) / 255);
+    const light = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    const luminance = light.reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+    const text = (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? "#000000" : "#ffffff";
+    const linkBase = text === "#000000" ? [0, 86, 179] : [139, 197, 232];
+    let link = linkBase;
+    for (let mix = 0; mix <= 1; mix += 0.05) {
+        link = linkBase.map(value => text === "#000000" ? value * (1 - mix) : value + (255 - value) * mix);
+        const brightness = link.reduce((sum, value, index) => {
+            const channel = value / 255;
+            return sum + (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][index];
+        }, 0);
+        if ((Math.max(luminance, brightness) + 0.05) / (Math.min(luminance, brightness) + 0.05) >= 4.5) break;
     }
+    const dark = document.body.classList.contains("darkmode");
+    const base = dark ? 0.034 : 1;
+    let border = channels;
+    for (let mix = 0; mix <= 1; mix += 0.05) {
+        border = channels.map(value => dark ? value + (1 - value) * mix : value * (1 - mix));
+        const brightness = border.reduce((sum, value, index) => sum +
+            (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][index], 0);
+        if ((Math.max(base, brightness) + 0.05) / (Math.min(base, brightness) + 0.05) >= 3) break;
+    }
+    document.querySelectorAll(`#display > .${type}, .duedle-task-status.${type}`).forEach(item => {
+        item.style.setProperty("--duedle-status-color", toColor);
+        item.style.setProperty("--duedle-status-text", text);
+        item.style.setProperty("--duedle-status-link", `rgb(${link.map(Math.round).join(", ")})`);
+        item.style.setProperty("--duedle-status-border", `rgb(${border.map(value => Math.round(value * 255)).join(", ")})`);
+    });
 };
-
 
 const colorDefault_light = ["#90ee90", "#add8e6", "#ffffe0", "#ffffff", "#ffb681", "#ff9090", "#c8c8c8", "#eac1ff"];
 const colorDefault_dark = ["#063906", "#12515e", "#57422a", "#000000", "#7c3316", "#821f1f", "#454545", "#4a1745"];

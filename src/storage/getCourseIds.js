@@ -2,6 +2,7 @@
 let timeout;
 async function scanCourses() {
     try {
+        if (globalThis.duedleAccountActive === false) return;
         const coursefilter = document.querySelector("span[data-active-item-text]")?.textContent.trim();
         if(coursefilter?.includes("削除済み")){
             return;
@@ -17,6 +18,7 @@ async function scanCourses() {
         );
 
         const stored = (await ext.storage.local.get("courseIds")).courseIds || [];
+        if (globalThis.duedleAccountActive === false) return;
         await ext.storage.local.set({ courseIds: [...new Set([...stored, ...ids])]
             .filter(id => Number.isInteger(id) && id > 0) });
     } catch (error) {

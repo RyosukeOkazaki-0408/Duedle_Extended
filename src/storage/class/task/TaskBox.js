@@ -1,6 +1,6 @@
 class TaskBox { //親クラス
     constructor(data) {
-        this.data = data;
+        this.data = { ...data, status: Scrape.statusAt(data.status, data.due) };
     }
     async getElement() {
         const element = document.createElement("div");
@@ -9,7 +9,7 @@ class TaskBox { //親クラス
             <div class="type">${this.data.group === "assign_list" ? "提出課題" : "小テスト"}
             <div class="col-md-1 p-0 d-flex menu">
             <div class="ml-auto dropdown">
-            <button class="btn btn-link btn-icon icon-size-3 coursemenubtn" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <button class="btn btn-link btn-icon icon-size-3 coursemenubtn" type="button" data-toggle="dropdown" aria-label="課題の操作" aria-haspopup="true" aria-expanded="false">
                 <i class="icon fa fa-ellipsis-v fa-fw m-0" aria-hidden="true"></i>
             </button>
             <div class="dropdown-menu dropdown-menu-right" style="will-change: transform;">
@@ -88,12 +88,8 @@ class TaskBox { //親クラス
     }
     setremain() {
         const due = this.data.due ? new Date(this.data.due) : null;
-        const remain = due ? Math.ceil((due - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-        if (this.data.status !== "complete" && remain !== null && remain < 0) {
-            this.data.status = "expired";
-        }
         const remainoutput = formatRemainingTime(due);
-        const remainstr = (remain !== null) ? remainoutput : "残り時間: 不明";
+        const remainstr = due ? remainoutput : "残り時間: 不明";
         return remainstr;
     }
 }

@@ -38,7 +38,8 @@ class ScrapeQuiz extends Scrape {
         if (maxp === null) maxp = requiredMatch ? parseFloat(requiredMatch[2]) : null;
 
         //count
-        const count = (doc.getElementsByTagName("tr").length - 1) === -1 ? 0 : doc.getElementsByTagName("tr").length - 1; // ヘッダー行を除くために-1
+        const count = [...doc.querySelectorAll("table.quizattemptsummary tbody tr")]
+            .filter(row => row.querySelector("td")).length;
 
         //maxcount
         const maxcountraw = [...doc.querySelectorAll("p.text-left")]
@@ -72,17 +73,8 @@ class ScrapeQuiz extends Scrape {
             a_status = "stuck";
         }
 
-        //warningやexpiredにおきかえ
-
-        if (a_status === "incomplete") {
-            if (this.calldue(doc) && Math.ceil((this.calldue(doc) - Date.now()) / (1000 * 60 * 60 * 24)) < 3) {
-                a_status = "warning";
-            }
-            //締め切りを過ぎている場合はexpiredにする
-            if (this.calldue(doc) && Math.ceil((this.calldue(doc) - Date.now()) / (1000 * 60 * 60 * 24)) < 0) {
-                a_status = "expired";
-            }
-        }
+        const due = this.calldue(doc);
+        a_status = this.statusAt(a_status, due);
 
 
         const data = {
@@ -92,7 +84,7 @@ class ScrapeQuiz extends Scrape {
             courseName: courseName,
             quizName: quizName,
             start: this.callstart(doc)?.toISOString() ?? null,
-            due: this.calldue(doc)?.toISOString() ?? null,
+            due: due?.toISOString() ?? null,
             point: point,
             required: required,
             maxp: maxp,

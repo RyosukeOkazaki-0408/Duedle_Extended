@@ -40,7 +40,7 @@ const path = require('node:path');
             await page.locator('#manual-now').click(); await waitFinish(before);
             await page.waitForTimeout(900);
         };
-        await page.waitForFunction(() => document.querySelector('#display')?.textContent.includes('まだ課題'));
+        await page.waitForFunction(() => document.querySelector('#display')?.textContent.includes('課題情報が取得されていません'));
         assert(await page.locator('#display').isVisible());
         await manual();
         assert.equal(await page.locator('#display > div').count(), 3);
@@ -73,15 +73,15 @@ const path = require('node:path');
         // Successful zero remains distinguishable from never fetched.
         await control('reset'); await page.reload(); await page.waitForTimeout(500);
         await control('scenario','empty'); await manual();
-        await page.waitForFunction(() => document.querySelector('#display').textContent.includes('表示できる課題はありません'));
-        assert.match(await page.locator('#display').innerText(), /表示できる課題はありません/);
+        await page.waitForFunction(() => document.querySelector('#display').textContent.includes('条件に一致する課題はありません'));
+        assert.match(await page.locator('#display').innerText(), /条件に一致する課題はありません/);
         // Real scheduler claim/collector path with the wait alone bypassed.
         await control('reset'); await page.reload(); await page.waitForTimeout(500);
         await page.locator('#auto-now').click(); await waitFinish(0);
         await page.waitForTimeout(900);
         assert((await saved()).refreshHistory.calendarAt > 0);
         assert.equal(await page.locator('#display > div').count(),3);
-        assert.match(await page.locator('#listupdated').innerText(),/締切一覧確認/);
+        assert.match(await page.locator('#listupdated').innerText(),/最終更新：/);
         assert.equal(requests.length,0,'No HTTP request may escape the developer extension');
         assert.deepEqual(errors,[]);
         if (process.env.SCREENSHOT_PATH) await page.screenshot({path:process.env.SCREENSHOT_PATH,fullPage:true});

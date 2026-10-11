@@ -1,20 +1,13 @@
-
-
 body.honobono:not(.darkmode) {
-background-color: #f2f5f6 !important;
-    .navbar-bootswatch {
-        background-color: #f9ffca;
-    }
-    #filter {
+    background-color: #f2f5f6 !important;
+}
+body.honobono:not(.darkmode) .navbar-bootswatch {
+    background-color: #f9ffca;
+}
+body.honobono:not(.darkmode) #filter {
     background-color: #fff6e1;
 }
-
-
-
-
-     .card, .block {
-        background-color: #dbeff7;
-    }
-
-
+body.honobono:not(.darkmode) .card:not(.duedle-authored-content, .duedle-authored-content *),
+body.honobono:not(.darkmode) .block:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: #dbeff7;
 }

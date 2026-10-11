@@ -61,6 +61,7 @@ class CourseCollector {
                 error.code = "AUTH_REQUIRED";
                 throw error;
             }
+            globalThis.duedleAssertAccountDocument?.(doc, finalURL.href || url);
             await this.assertContinue();
             return doc;
         } catch (error) {

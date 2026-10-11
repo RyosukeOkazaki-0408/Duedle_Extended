@@ -12,7 +12,7 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
     const cdp = await context.browser().newBrowserCDPSession();
     const extension = await cdp.send('Extensions.loadUnpacked', { path: path.resolve('src') });
     await context.route('https://cms7.ict.nitech.ac.jp/**', route => route.fulfill({ contentType: 'text/html', body:
-      '<!doctype html><html><head><title>Moodle fixture</title></head><body><header></header><main id="region-main"></main></body></html>' }));
+      '<!doctype html><html><head><title>Moodle fixture</title></head><body><script>var M={}; M.cfg={"sesskey":"abc123test"};</script><div id="nav-notification-popover-container" data-userid="1"></div><header></header><main id="region-main"></main></body></html>' }));
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));

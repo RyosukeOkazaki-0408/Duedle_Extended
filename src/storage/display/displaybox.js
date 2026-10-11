@@ -1,17 +1,20 @@
 const displaybox = async (data) => {
+    if (globalThis.duedleAccountActive === false) return 0;
     const display = document.querySelector("#display");
     let rendered = 0;
     const settings = await ext.storage.sync.get(["selectedType", "selectedStatus", "selectedDue", "selectedShow"]);
     if (data) {
-        for (const item of data) {
+        for (const savedItem of data) {
+            const item = { ...savedItem, status: Scrape.statusAt(savedItem.status, savedItem.due) };
             //condition
             const savedType = settings.selectedType ?? "all";
             const savedStatus = settings.selectedStatus ?? "all";
             const savedDue = settings.selectedDue ?? "all";
             const savedShow = settings.selectedShow ?? "normal";
-            if (location.href.includes("https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php?id=")) {
+            const currentURL = new URL(location.href);
+            if (currentURL.pathname === "/moodle40a/course/view.php") {
                 const courseName = document.querySelector("h1")?.textContent.trim();
-                if (courseName !== item.courseName) {
+                if (item.courseId ? Number(currentURL.searchParams.get("id")) !== Number(item.courseId) : courseName !== item.courseName) {
                     continue;
                 }
                 changeActivityColor(item);
@@ -19,7 +22,7 @@ const displaybox = async (data) => {
 
             if (item.start) { item.start = new Date(item.start); }
             if (item.due) { item.due = new Date(item.due); }
-            changeAct(item);
+            changeAct(item, data);
 
             //表示状態確認
             if (savedShow === "normal" && !item.show) {
@@ -32,7 +35,9 @@ const displaybox = async (data) => {
             if (savedType !== "all" && item.group !== savedType) {
                 continue; // タイプが一致しない場合はスキップ
             }
-            if (savedStatus !== "all" && savedStatus !== "ex-complete" && item.status !== savedStatus) {
+            const statusMatches = savedStatus === "incomplete"
+                ? ["incomplete", "warning"].includes(item.status) : item.status === savedStatus;
+            if (savedStatus !== "all" && savedStatus !== "ex-complete" && !statusMatches) {
                 continue; // 状態が一致しない場合はスキップ
             }
             if (savedStatus === "ex-complete" && item.status === "complete") {
@@ -66,12 +71,14 @@ const displaybox = async (data) => {
             if (item.group === "assign_list") {
                 const assignbox = new AssignBox(item);
                 const assign = await assignbox.getElement();
+                if (globalThis.duedleAccountActive === false) return 0;
                 if (typeof installTaskSelection === "function") installTaskSelection(assign, item);
                 display.appendChild(assign);
                 rendered++;
             } else if (item.group === "quiz_list") {
                 const quizbox = new QuizBox(item);
                 const quiz = await quizbox.getElement();
+                if (globalThis.duedleAccountActive === false) return 0;
                 if (typeof installTaskSelection === "function") installTaskSelection(quiz, item);
                 display.appendChild(quiz);
                 rendered++;
@@ -86,39 +93,74 @@ const displaybox = async (data) => {
 const setActivityStatus = (element, status) => {
     const statuses = ["complete", "qualify", "incomplete", "stuck", "warning", "expired", "unknown", "unvisited"];
     element.classList.remove(...statuses);
-    if (statuses.includes(status)) element.classList.add(status);
+    if (statuses.includes(status)) element.classList.add(status, "duedle-task-status");
 };
 
 const changeActivityColor = (item) => {
+    const type = item.group === "assign_list" ? "assign" : "quiz";
+    const id = item.group === "assign_list" ? item.assignId : item.quizId;
+    // Prefer stable activity URLs. Legacy markup without a link can only be
+    // matched by a unique exact name, never by a partial title.
+    const linked = [...document.querySelectorAll(`.${type} [data-activityname]`)]
+        .filter(el => [...(el.querySelectorAll?.("a[href]") || [])].some(link => taskLinkMatches(link, type, id)));
+    if (linked.length) {
+        linked.forEach(el => setActivityStatus(el, item.status));
+        return;
+    }
     if (item.group === "assign_list") {
         const actbox = [...document.querySelectorAll(".assign [data-activityname]")]
             .filter(el => el.dataset.activityname === item.assignName);
-        if (actbox[0]) {
+        if (actbox.length === 1 && !(actbox[0].querySelectorAll?.("a[href]") || []).length) {
             setActivityStatus(actbox[0], item.status);
         }
 
     } else if (item.group === "quiz_list") {
         const actbox = [...document.querySelectorAll(".quiz [data-activityname]")]
             .filter(el => el.dataset.activityname === item.quizName);
-        if (actbox[0]) {
+        if (actbox.length === 1 && !(actbox[0].querySelectorAll?.("a[href]") || []).length) {
             setActivityStatus(actbox[0], item.status);
         }
     }
 }
 
-const changeAct = (item) => {
+const taskLinkMatches = (link, type, id) => {
+    try {
+        const url = new URL(link.getAttribute("href"), location.href);
+        return url.origin === "https://cms7.ict.nitech.ac.jp"
+            && url.pathname === `/moodle40a/mod/${type}/view.php`
+            && Number(url.searchParams.get("id")) === Number(id);
+    } catch { return false; }
+};
+
+// Moodle's upcoming block links to calendar events rather than activity URLs.
+// Only use the Japanese event label when exactly one saved task matches it.
+const calendarEventMatches = (element, item, tasks) => {
+    const link = element.querySelector('a[data-type="event"][data-action="view-event"]');
+    if (!link) return false;
+    try {
+        const url = new URL(link.getAttribute("href"), location.href);
+        if (url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/calendar/view.php") return false;
+    } catch { return false; }
+    const normalize = value => String(value || "").replace(/\s+/g, " ").trim();
+    const text = normalize(link.textContent);
+    const assign = /^「([\s\S]+)」\s*の提出期限$/.exec(text);
+    const quiz = /^([\s\S]+?)\s*の受験可能期間の(?:開始|終了)$/.exec(text);
+    const group = assign ? "assign_list" : quiz ? "quiz_list" : null;
+    if (!group) return false;
+    const name = normalize((assign || quiz)[1]);
+    const matches = tasks.filter(task => task.group === group && normalize(group === "assign_list" ? task.assignName : task.quizName) === name);
+    const keys = new Set(matches.map(task => group === "assign_list" ? task.assignId : task.quizId));
+    return item.group === group && keys.size === 1 && keys.has(group === "assign_list" ? item.assignId : item.quizId);
+};
+
+const changeAct = (item, tasks = []) => {
     const actbox = Array.from(document.querySelectorAll(`.event`));
     actbox.map((i) => {
-        if ((item.group === "assign_list" && i.textContent.includes(item.assignName)) || (item.group === "quiz_list" && i.textContent.includes(item.quizName))) {
+        const type = item.group === "assign_list" ? "assign" : "quiz";
+        const id = item.group === "assign_list" ? item.assignId : item.quizId;
+        const link = i.querySelector(`a[href*="/mod/${type}/view.php"]`);
+        if (link ? taskLinkMatches(link, type, id) : calendarEventMatches(i, item, tasks)) {
             setActivityStatus(i, item.status);
-            const link = i.querySelector("a");
-            if (!link) return;
-            link.removeAttribute("data-action");
-            if (item.group === "quiz_list") {
-                link.setAttribute("href", `https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/view.php?id=${item.quizId}`);
-            } else if (item.group === "assign_list") {
-                link.setAttribute("href", `https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=${item.assignId}`);
-            }
         }
         const dateElement = i.querySelector(".date");
         const i_datetxt = dateElement?.textContent || "";
@@ -138,12 +180,12 @@ const checkUnvisited = () => {
     unvisitedboxes.map((item) => {
         if (!item.querySelector(".content") &&
             (item.textContent.includes(" 課題") || item.textContent.includes(" 小テスト"))) {
-            item.classList.add("unvisited");
+            item.classList.add("unvisited", "duedle-task-status");
         }
     });
     const unvisitedboxes_ = Array.from(document.querySelectorAll(`.event:not(.complete,.incomplete,.unknown,.expired,.stuck,.qualify,.warning)`));
     unvisitedboxes_.map((i) => {
-        i.classList.add("unvisited");
+        i.classList.add("unvisited", "duedle-task-status");
         const dateElement = i.querySelector(".date");
         const i_datetxt = dateElement?.textContent || "";
         const due = transDue(i_datetxt);
@@ -160,13 +202,17 @@ const checkUnvisited = () => {
     });
 }
 
+let colorReloadVersion = 0;
 const colorReload = () => {
+    const version = ++colorReloadVersion;
     colorTypesValue.map(async (value, index) => {
         const query = document.querySelector("#colorSelect_" + value);
         if (!query) return;
         const dark = Boolean(document.querySelector(".darkmode"));
         const key = `colorSelect_${dark ? "dark" : "light"}_${value}`;
-        query.value = (await ext.storage.sync.get(key))[key] || (dark ? colorDefault_dark[index] : colorDefault_light[index]);
+        const saved = await ext.storage.sync.get(key);
+        if (version !== colorReloadVersion) return;
+        query.value = saved[key] || (dark ? colorDefault_dark[index] : colorDefault_light[index]);
         applyColor(value, query.value);
     });
 };

@@ -16,6 +16,8 @@ debugNative.runtime.onMessage.addListener((message, realSender, respond) => {
         case 'REFRESH_CLAIM': return coordinator.claim(message, sender);
         case 'REFRESH_HEARTBEAT': return coordinator.heartbeat(message.token, sender);
         case 'REFRESH_FINISH': return coordinator.finish(message, sender);
+        case 'REFRESH_PROGRESS': return coordinator.progress(message, sender);
+        case 'REFRESH_PAGE_READY': return coordinator.pageReady(message.pageId, sender);
         case 'DEBUG_CONTROL': {
             const status = await coordinator.status(sender);
             if (status.busy) throw new Error('更新中です。完了・中断してから操作してください。');

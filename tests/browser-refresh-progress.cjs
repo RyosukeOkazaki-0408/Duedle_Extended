@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const root='https://cms7.ict.nitech.ac.jp/moodle40a/';
-const fixture='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><nav id="usernavigation"></nav><main id="region-main"><h1>Fixture</h1></main></body></html>';
+const fixture='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><script>var M={}; M.cfg={"sesskey":"abc123test"};</script><div id="nav-notification-popover-container" data-userid="1"></div><nav id="usernavigation"></nav><main id="region-main"><h1>Fixture</h1></main></body></html>';
 (async()=>{
  const context=await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(),'duedle-progress-')),{
   headless:true,ignoreDefaultArgs:['--disable-extensions'],executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',args:['--enable-unsafe-extension-debugging']});

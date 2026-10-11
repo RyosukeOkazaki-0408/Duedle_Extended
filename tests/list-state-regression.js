@@ -6,6 +6,7 @@
     const now = 1800000000000;
     const pending = State.describe({ now });
     assert(pending.empty.includes('課題情報が取得されていません'), 'Unfetched is explicit');
+    assert(State.describe({ history: null, coordinator: null, now }).empty === pending.empty, 'Cleared account state renders safely');
     const empty = State.describe({ history: { fullSweepAt: now - 1 }, now });
     assert(empty.empty.includes('条件に一致する課題はありません'), 'Successful zero does not imply unfetched');
     const filtered = State.describe({ total: 3, visible: 0, now });
@@ -25,7 +26,7 @@
         const state = State.describe({ history: { attempt: { outcome } }, now });
         assert(state.status && !state.empty, 'Failed attempts do not claim no tasks: ' + outcome);
     }
-    assert(State.describe({ history: { attempt: { outcome: 'error', reason: 'auth' } }, now }).status.includes('失敗'), 'Authentication failures give next action');
+    assert(State.describe({ history: { attempt: { outcome: 'error', reason: 'auth' } }, now }).status.includes('再ログイン'), 'Authentication failures give next action');
     assert(!State.describe({ total: 3, visible: 1, now }).empty, 'Existing results remain available');
     assert(!State.describe({ coordinator: { lease: { expiresAt: now - 1 } }, now }).running, 'Expired lease is not permanently loading');
     assert(State.timestamp({ calendarAt: now }).startsWith('最終更新：'), 'Calendar coverage is accurately labelled');
@@ -34,5 +35,5 @@
     assert(!manifest.permissions.includes('notifications') && !manifest.permissions.includes('alarms'), 'Production does not request notification or alarm permissions');
     assert(!/notifications\.|alarms\./.test(read('src/storage/service_worker.js')), 'No delivery or alarm API remains');
     assert(!JSON.stringify(manifest).includes('dev/'), 'Production does not include developer entry');
-    log('16 list state, coverage and packaging checks passed');
+    log('17 list state, coverage and packaging checks passed');
 })();

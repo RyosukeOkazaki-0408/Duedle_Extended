@@ -7,12 +7,10 @@
 /* } */
 body.darkmode {
   background-color: #1d2831;
-  * {
-    color: #dddddf !important;
-  }
-  a {
-    color: #f0f0f2 !important;
-  }
+  color: #dddddf;
+}
+body.darkmode a {
+  color: #f0f0f2;
 }
 
 /* Use CSS so system appearance changes restore the original syllabus colors. */

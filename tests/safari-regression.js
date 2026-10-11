@@ -571,6 +571,11 @@
         const background = production("src/storage/service_worker.js", [
             "navigateTab", "runTabScraping", "initializeInstallation"
         ], {
+            AccountSession: class {
+                serial(fn) { return fn(); }
+                run(message, from, fn) { return fn(); }
+                forget() { return Promise.resolve(); }
+            },
             ext: env.ext, StorageUtil: env.StorageUtil, RefreshCoordinator, importScripts() {}, URL: URLClass,
             setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
             console: { warn() {}, error() {} }
@@ -715,6 +720,7 @@
             async getElement() { return this.data; }
         }
         const ui = production("src/storage/display/displaybox.js", ["displaybox", "changeActivityColor", "transDue"], {
+            Scrape: scrapeBindings().Scrape, URL: URLClass,
             document, display, rerender: async () => {}, location: { href: moodle + "my/" },
             ext: { storage: { sync: { async get() { return settings || {}; } } } },
             StorageUtil: { async getAllData() { return []; } }, AssignBox: Box, QuizBox: Box,

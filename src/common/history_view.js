@@ -2,6 +2,7 @@
     const column = document.querySelector(".columnleft");
     if (!(column instanceof HTMLElement) || document.getElementById("mybox001")) return;
     const stored = (await ext.storage.local.get("history")).history;
+    if (globalThis.duedleAccountActive === false) return;
     const history = Array.isArray(stored) ? stored : [];
     const section = document.createElement("section");
     section.id = "mybox001";
@@ -33,6 +34,7 @@
     });
     details.appendChild(list);
     section.appendChild(details);
+    if (globalThis.duedleAccountActive === false) return;
     column.prepend(section);
     const compact = window.matchMedia("(max-width: 767px)");
     const setLayout = () => { details.open = !compact.matches; };

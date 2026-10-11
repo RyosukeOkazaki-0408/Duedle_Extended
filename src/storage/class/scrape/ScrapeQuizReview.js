@@ -48,15 +48,7 @@ class ScrapeQuizReview extends Scrape {
         }
         //warningやexpiredにおきかえ
 
-        if (a_status === "incomplete") {
-            if (oldData.due && new Date(oldData.due) - Date.now() < 3 * 24 * 60 * 60 * 1000) {
-                a_status = "warning";
-            }
-            //締め切りを過ぎている場合はexpiredにする
-            if (oldData.due && new Date(oldData.due) - Date.now() < 0) {
-                a_status = "expired";
-            }
-        }
+        a_status = this.statusAt(a_status, oldData.due);
 
         const newData = {
             group: oldData.group,

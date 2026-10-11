@@ -2,6 +2,7 @@ console.log("update");
 const MAX_HISTORY_LENGTH = 10;
 (async () => {
   let history = (await ext.storage.local.get("history")).history || [];
+  if (globalThis.duedleAccountActive === false) return;
   let title = document.title;
   let url = location.href;
   if (!title || !url) {
@@ -17,5 +18,5 @@ const MAX_HISTORY_LENGTH = 10;
   if (history.length > MAX_HISTORY_LENGTH) {
     history.shift();
   }
-  ext.storage.local.set({ history });
-})();
+  await ext.storage.local.set({ history });
+})().catch(console.error);
