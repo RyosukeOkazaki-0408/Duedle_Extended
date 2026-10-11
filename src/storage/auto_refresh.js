@@ -131,7 +131,8 @@ class AutoRefreshController {
 
     async claim(attempt) {
         try {
-            const response = await this.extension.runtime.sendMessage({ type: "REFRESH_CLAIM", mode: "auto" });
+            await globalThis.duedlePageReady;
+            const response = await this.extension.runtime.sendMessage({ type: "REFRESH_CLAIM", mode: "auto", pageId: globalThis.duedlePageId });
             if (!response?.ok) throw new Error("Refresh coordinator unavailable");
             this.failures = 0;
             if (!response.granted) {
@@ -158,6 +159,10 @@ class AutoRefreshController {
                     document: this.document, pageURL: this.location.href,
                     signal: job.controller.signal,
                     shouldContinue: () => this.shouldContinue(job),
+                    onProgress: async progress => {
+                        const reply = await this.extension.runtime.sendMessage({ type: "REFRESH_PROGRESS", token: job.token, progress });
+                        if (!reply?.ok || !reply.owned) throw Object.assign(new Error("更新が中断されました"), { reason: "cancelled" });
+                    },
                 });
                 job.collector = collector;
                 job.result = await collector.run({ state: response.state,

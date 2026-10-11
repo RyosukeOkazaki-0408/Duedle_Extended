@@ -1,0 +1,57 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 20px; }
+body { margin: 0; background: #f5f5f7; color: #1d1d1f; font: 16px/1.75 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+main { max-width: 800px; margin: auto; padding: 32px 20px 64px; overflow-wrap: anywhere; }
+.brand, .muted { color: #636366; }
+.brand { margin: 0; }
+h1 { font-size: 2rem; margin: 0 0 12px; }
+h2 { font-size: 1.3rem; margin: 0 0 16px; line-height: 1.5; }
+h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+p { margin: 0 0 12px; }
+nav, section { background: #fff; border: 1px solid #d2d2d7; border-radius: 12px; padding: 24px; margin-top: 24px; }
+ul, ol { margin: 0 0 16px; padding-left: 24px; }
+li { padding-left: 4px; }
+ol > li + li { margin-top: 10px; }
+.steps > li + li { margin-top: 20px; }
+.steps p { margin: 6px 0 0; }
+nav ul { list-style: none; padding: 0; margin: 0; }
+nav li { padding: 0; }
+a { color: #0068c9; text-underline-offset: 3px; }
+nav a, #contact-link, footer > a { display: inline-flex; align-items: center; min-height: 44px; }
+dt { font-weight: 600; margin-top: 14px; }
+dd { margin: 4px 0 0; }
+dl { margin: 0 0 16px; }
+.note { border-left: 3px solid #8e8e93; padding: 4px 0 4px 14px; margin: 20px 0; }
+details { border-top: 1px solid #d2d2d7; margin-top: 16px; }
+summary { padding: 12px 0; min-height: 44px; cursor: pointer; font-weight: 600; }
+details > :last-child { margin-bottom: 16px; }
+footer { margin-top: 24px; }
+#contact-link { font-weight: 600; }
+[hidden] { display: none !important; }
+a:focus-visible, summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (max-width: 420px) {
+  main { padding: 24px 12px 40px; }
+  nav, section { padding: 20px 16px; }
+}
+@media (prefers-color-scheme: dark) {
+  body { background: #1c1c1e; color: #f5f5f7; }
+  nav, section { background: #2c2c2e; border-color: #636366; }
+  details { border-color: #636366; }
+  .brand, .muted { color: #aeaeb2; }
+  a { color: #70b7ff; }
+}
+@media (forced-colors: active) {
+  body, nav, section { background: Canvas; color: CanvasText; }
+  nav, section, details, .note { border-color: CanvasText; }
+  a { color: LinkText; }
+}
+
+.guide-example { margin: 20px 0; }
+.guide-example figcaption p { margin: 4px 0 10px; }
+.guide-example > a { display: block; }
+.guide-example img { display: block; width: 100%; height: auto; border: 1px solid #8e8e93; border-radius: 6px; }
+
+.guide-example video { display: block; width: 100%; height: auto; border: 1px solid #8e8e93; border-radius: 6px; background: #000; }
+
+.guide-phone-example { max-width: 420px; margin-inline: auto; }

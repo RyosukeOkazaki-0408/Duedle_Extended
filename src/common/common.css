@@ -223,7 +223,8 @@ ul.navbar-nav.d-none.d-md-flex {
   }
   #duedle-course-settings > summary {
     width: fit-content;
-    padding: 7px 10px;
+    padding: 12px 10px;
+    line-height: 18px;
     min-height: 44px;
     box-sizing: border-box;
     border: 1px solid #89939b;
@@ -254,17 +255,24 @@ ul.navbar-nav.d-none.d-md-flex {
 }
 
 #duedle-theme-control {
-  display: contents;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-inline-start: 8px;
 }
-.duedle-theme-icon {
-  display: none;
+#thememode_selection {
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.25;
+  vertical-align: middle;
 }
 @media (max-width: 599px) {
   #duedle-theme-control {
-    display: contents;
-  }
-  .duedle-theme-icon {
-    display: none;
+    margin-inline-start: 0;
   }
   #duedle-theme-control #thememode_selection {
     position: static;
@@ -280,7 +288,8 @@ ul.navbar-nav.d-none.d-md-flex {
   }
   #duedle-course-settings > summary {
     width: fit-content;
-    padding: 7px 10px;
+    padding: 12px 10px;
+    line-height: 18px;
     min-height: 44px;
     box-sizing: border-box;
     border: 1px solid #89939b;
@@ -318,3 +327,143 @@ ul.navbar-nav.d-none.d-md-flex {
     background-color: #334654;
   }
 }
+
+#thememode_selection {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#thememode_selection::after {
+  content: "";
+  flex: 0 0 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  margin: -3px 3px 0;
+}
+#duedle-theme-menu {
+  --theme-menu-surface: #fff;
+  --theme-menu-text: #1c1c1e;
+  --theme-menu-secondary: #636366;
+  --theme-menu-separator: #d1d1d6;
+  --theme-menu-hover: #f2f2f7;
+  --theme-menu-accent: #0068d9;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(270px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid var(--theme-menu-separator);
+  border-radius: 12px;
+  background: var(--theme-menu-surface);
+  color: var(--theme-menu-text);
+  box-shadow: 0 6px 24px #0002;
+  z-index: 1050;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  line-height: 1.25;
+}
+#duedle-theme-menu[hidden] { display: none; }
+.darkmode #duedle-theme-menu {
+  --theme-menu-surface: #1c1c1e;
+  --theme-menu-text: #f2f2f7;
+  --theme-menu-secondary: #aeaeb2;
+  --theme-menu-separator: #48484a;
+  --theme-menu-hover: #2c2c2e;
+  --theme-menu-accent: #64adff;
+}
+.duedle-theme-menu-heading {
+  padding: 6px 10px;
+  color: var(--theme-menu-secondary);
+  font-size: 12px;
+}
+.duedle-theme-menu-appearance {
+  border-top: 1px solid var(--theme-menu-separator);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+.duedle-theme-menu-item {
+  display: grid;
+  grid-template-columns: 24px 1fr 30px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.duedle-theme-menu-item:hover,
+.duedle-theme-menu-item:focus-visible {
+  background: var(--theme-menu-hover);
+  outline: 2px solid var(--theme-menu-accent);
+  outline-offset: -2px;
+}
+.duedle-theme-menu-mark {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--theme-menu-secondary);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+[role="menuitemradio"][aria-checked="true"] .duedle-theme-menu-mark::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--theme-menu-accent);
+}
+[role="menuitemcheckbox"] .duedle-theme-menu-mark { border-radius: 4px; }
+[role="menuitemcheckbox"][aria-checked="true"] .duedle-theme-menu-mark {
+  background: var(--theme-menu-accent);
+  border-color: var(--theme-menu-accent);
+}
+[role="menuitemcheckbox"][aria-checked="true"] .duedle-theme-menu-mark::after {
+  content: "✓";
+  color: #fff;
+  font-size: 14px;
+}
+.duedle-theme-menu-state {
+  color: var(--theme-menu-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+@media (forced-colors: active) {
+  #duedle-theme-menu {
+    --theme-menu-surface: Canvas;
+    --theme-menu-text: CanvasText;
+    --theme-menu-secondary: CanvasText;
+    --theme-menu-separator: CanvasText;
+    --theme-menu-hover: Canvas;
+    --theme-menu-accent: Highlight;
+  }
+  [role="menuitemcheckbox"][aria-checked="true"] .duedle-theme-menu-mark::after { color: HighlightText; }
+}
+
+/* Keep course search legible beside sorting controls on narrow blocks. */
+.block-myoverview [data-region="filter"] > .row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.block-myoverview [data-region="filter"] > .row > .flex-grow-1 {
+  flex-basis: 8em;
+  flex-shrink: 0;
+  min-width: min(100%, 8em);
+  max-width: 100%;
+}
+
+/* Help shares label alignment with the appearance controls. */
+.duedle-theme-menu-link { text-decoration: none; }
+.duedle-theme-menu-link .duedle-theme-menu-label { grid-column: 2; }

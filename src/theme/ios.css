@@ -1,0 +1,180 @@
+/* iOS geometry is shared; honobono keeps its original Moodle palette. */
+body.iosmode {
+    --ios-background: #f2f2f7;
+    --ios-surface: #ffffff;
+    --ios-control: #e9e9ef;
+    --ios-text: #1c1c1e;
+    --ios-secondary: #636366;
+    --ios-separator: #c6c6c8;
+    --ios-accent: #0068d9;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+body.iosmode.darkmode {
+    --ios-background: #000000;
+    --ios-surface: #1c1c1e;
+    --ios-control: #2c2c2e;
+    --ios-text: #f2f2f7;
+    --ios-secondary: #aeaeb2;
+    --ios-separator: #48484a;
+    --ios-accent: #64adff;
+}
+body.iosmode :is(.card, .block):not(.assign):not(.quiz),
+body.iosmode :is(#filter, #duedle-settings-content) {
+    border-radius: 16px;
+    box-shadow: none;
+}
+body.iosmode #duedle-settings-content {
+    padding: 8px;
+    margin-top: 8px;
+}
+body.iosmode :is(#duedle-course-settings > summary, #thememode_selection,
+    #fieldfilter select, #taskselectionbar .btn, .duedle-dashboard-actions .btn) {
+    border-radius: 12px;
+    box-shadow: none;
+}
+body.iosmode #duedle-course-settings > summary {
+    font-weight: 600;
+}
+body.iosmode .duedle-dashboard-actions #scrapebutton {
+    font-weight: 600;
+}
+body.iosmode .duedle-dashboard-actions .btn:disabled {
+    opacity: 0.55;
+}
+body.iosmode :is(.duedle-dashboard-actions .btn, #taskselectionbar .btn):active:not(:disabled) {
+    filter: brightness(0.9);
+}
+body.iosmode #display {
+    border-radius: 18px;
+}
+body.iosmode #display > :is(.assign, .quiz) {
+    border-radius: 16px;
+}
+body.iosmode #display :is(.title, .taskbox) {
+    letter-spacing: -0.02em;
+}
+body.iosmode :is(button, select, input, summary, a):focus-visible {
+    outline: 2px solid var(--ios-accent);
+    outline-offset: 2px;
+}
+body.iosmode :is(#fieldfilter, #fieldcolor) {
+    border: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+}
+body.iosmode #fieldcolor input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid #78838c;
+    box-shadow: none;
+    border-radius: 50%;
+}
+body.iosmode #fieldcolor input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+body.iosmode #fieldcolor input[type="color"]::-webkit-color-swatch {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 50%;
+}
+body.iosmode #fieldcolor input[type="color"]::-moz-color-swatch {
+    border: 0;
+    border-radius: 50%;
+}
+/* The neutral iOS palette applies to light/dark/system themes only. */
+body.iosmode:not(.honobono) {
+    color-scheme: light;
+    background-color: var(--ios-background) !important;
+    color: var(--ios-text);
+}
+body.iosmode.darkmode {
+    color-scheme: dark;
+}
+body.iosmode:not(.honobono) :is(#page, #page-content, #region-main-box, #region-main, #ext_dashboard, #duedle-theme-toolbar) {
+    background-color: transparent !important;
+    border: 0;
+    color: var(--ios-text);
+}
+body.iosmode:not(.honobono) :is(.navbar.fixed-top, .navbar-bootswatch) {
+    background-color: var(--ios-surface) !important;
+    border-bottom: 1px solid var(--ios-separator);
+}
+body.iosmode:not(.honobono) :is(.navbar-brand, .navbar .nav-link, #region-main h1, #region-main h2) {
+    color: var(--ios-text) !important;
+}
+body.iosmode:not(.honobono) :is(.card, .block):not(.assign):not(.quiz) {
+    background-color: var(--ios-surface) !important;
+    border: 1px solid var(--ios-separator);
+}
+body.iosmode:not(.honobono) :is(#filter, #duedle-settings-content) {
+    background-color: var(--ios-surface) !important;
+    color: var(--ios-text);
+    border-color: var(--ios-separator) !important;
+}
+body.iosmode:not(.honobono) :is(#duedle-course-settings > summary, #thememode_selection) {
+    background-color: var(--ios-surface) !important;
+    color: var(--ios-text) !important;
+    border: 1px solid var(--ios-separator);
+}
+body.iosmode:not(.honobono) :is(#fieldfilter select, #taskselectionbar .btn, .duedle-dashboard-actions .btn) {
+    background-color: var(--ios-control);
+    color: var(--ios-text);
+    border: 1px solid var(--ios-separator);
+}
+body.iosmode:not(.honobono) .duedle-dashboard-actions #scrapebutton {
+    background-color: #0068d9;
+    border-color: #0068d9;
+    color: #ffffff;
+}
+body.iosmode:not(.honobono) :is(#fieldfilter label, #fieldcolor label, #taskselectioncount) {
+    color: var(--ios-text) !important;
+}
+body.iosmode:not(.honobono) :is(#listupdated, #collectionstatus) {
+    color: var(--ios-secondary) !important;
+}
+body.iosmode:not(.honobono) #display {
+    background-color: var(--ios-surface) !important;
+    border: 1px solid var(--ios-separator);
+}
+body.iosmode:not(.honobono) #display > :is(.assign, .quiz) {
+    border-color: var(--ios-separator);
+}
+body.iosmode:not(.honobono) #display .taskbox a,
+body.iosmode:not(.honobono) .notionnavlink {
+    color: var(--ios-accent);
+}
+body.iosmode:not(.honobono) input[type="checkbox"] {
+    accent-color: var(--ios-accent);
+}
+body.iosmode:not(.honobono) #region-main .course-section {
+    border-color: var(--ios-separator);
+}
+body.iosmode:not(.honobono) #fieldcolor input[type="color"] {
+    border: 1px solid var(--ios-separator);
+    background-color: var(--ios-surface);
+}
+@media (prefers-contrast: more) {
+    body.iosmode {
+        --ios-separator: #636366;
+    }
+    body.iosmode.darkmode {
+        --ios-separator: #aeaeb2;
+    }
+}
+@media (forced-colors: active) {
+    body.iosmode, body.iosmode.darkmode {
+        --ios-background: Canvas;
+        --ios-surface: Canvas;
+        --ios-control: ButtonFace;
+        --ios-text: CanvasText;
+        --ios-secondary: CanvasText;
+        --ios-separator: ButtonText;
+        --ios-accent: LinkText;
+    }
+    body.iosmode:not(.honobono) .duedle-dashboard-actions #scrapebutton {
+        background-color: ButtonFace;
+        border-color: ButtonText;
+        color: ButtonText;
+    }
+}

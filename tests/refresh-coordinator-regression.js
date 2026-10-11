@@ -122,6 +122,63 @@
         return { ...env, ext, message, created, removed, navigated, timers };
     }
 
+    test("progress survives background restart and rejects other tabs and invalid counters", async () => {
+        const env = environment(dueState());
+        const claim = await env.coordinator.claim({ mode: "manual", pageId: "document-a" }, sender(1));
+        const message = { token: claim.token, progress: { phase: "courses", completed: 3, total: 14, saved: 8 } };
+        equal((await env.coordinator.progress(message, sender(2))).owned, false);
+        equal((await env.coordinator.progress({ ...message, token: "wrong" }, sender(1))).owned, false);
+        await rejects(() => env.coordinator.progress({ ...message, progress: { ...message.progress, completed: 15 } }, sender(1)));
+        equal((await env.coordinator.progress(message, sender(1))).owned, true);
+        equal((await env.create().load()).state.lease.progress, { ...message.progress, at: baseTime });
+        await env.coordinator.pageReady("document-b", sender(2));
+        await env.coordinator.pageReady("document-a", sender(1));
+        assert((await env.coordinator.status(sender(2))).busy, "Other tabs and same document preserve owner");
+        env.state.assign_list = [{ assignId: 42 }];
+        await env.coordinator.pageReady("document-b", sender(1));
+        equal(env.state.refreshCoordinator.lease, null);
+        equal(env.state.refreshHistory.attempt.reason, "navigation");
+        equal(env.state.assign_list, [{ assignId: 42 }]);
+        assert(!env.state.scrapeCooldown, "Interruption is not success");
+        assert((await env.coordinator.claim({ mode: "manual" }, sender(2))).granted, "Manual retry is immediate");
+    });
+
+    test("heartbeats cannot keep stalled preparation or progress alive", async () => {
+        for (const progressed of [false, true]) {
+            const env = environment(dueState());
+            const claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
+            if (progressed) await env.coordinator.progress({ token: claim.token,
+                progress: { phase: "courses", completed: 0, total: 14, saved: 0 } }, sender(1));
+            const timeout = progressed ? RefreshCoordinator.progressMs : RefreshCoordinator.preparationMs;
+            for (let elapsed = 10000; elapsed < timeout; elapsed += 10000) {
+                env.clock.now = baseTime + elapsed;
+                assert((await env.coordinator.heartbeat(claim.token, sender(1))).owned);
+            }
+            env.clock.now = baseTime + timeout;
+            equal((await env.create().status(sender(2))).busy, false);
+            equal(env.state.refreshHistory.attempt.reason, "timeout");
+            equal((await env.coordinator.finish({ token: claim.token, outcome: "success", fullSweep: true }, sender(1))).owned, false);
+            assert(!env.state.scrapeCooldown);
+            assert((await env.coordinator.claim({ mode: "manual" }, sender(2))).granted);
+        }
+    });
+
+    test("owner navigation and close events release the shared lease", async () => {
+        for (const close of [false, true]) {
+            const env = background(dueState());
+            await env.message({ type: "REFRESH_PAGE_READY", pageId: "a" });
+            const claim = await env.message({ type: "REFRESH_CLAIM", mode: "manual", pageId: "a" });
+            await env.message({ type: "REFRESH_PROGRESS", token: claim.token,
+                progress: { phase: "courses", completed: 2, total: 14, saved: 4 } });
+            env.ext.tabs.onUpdated.emit(2, { status: "loading" });
+            assert((await env.message({ type: "REFRESH_STATUS" })).busy);
+            if (close) env.ext.tabs.onRemoved.emit(1);
+            else env.ext.tabs.onUpdated.emit(1, { status: "loading" });
+            equal((await env.message({ type: "REFRESH_STATUS" }, sender(2))).busy, false);
+            equal(env.state.refreshHistory.attempt.reason, "navigation");
+        }
+    });
+
     test("initial random phase persists across reloads and tabs", async () => {
         const env = environment();
         const initial = await env.coordinator.status(sender(1));
@@ -195,7 +252,7 @@
     test("heartbeat and finish require the same token and owner tab", async () => {
         const env = environment(dueState());
         const claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
-        env.clock.now += 30 * 1000;
+        env.clock.now += 20 * 1000;
         equal((await env.coordinator.heartbeat(claim.token, sender(2))).owned, false);
         equal((await env.coordinator.heartbeat("other", sender(1))).owned, false);
         equal((await env.coordinator.finish({ token: claim.token, outcome: "success" }, sender(2))).owned, false);

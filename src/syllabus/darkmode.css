@@ -14,3 +14,10 @@ body.darkmode {
     color: #f0f0f2 !important;
   }
 }
+
+/* Use CSS so system appearance changes restore the original syllabus colors. */
+body.darkmode td[bgcolor="lightsteelblue"],
+body.darkmode tr > td > div[style*="lightsteelblue"] {
+  background-color: black !important;
+  color: white !important;
+}

@@ -1,42 +1,109 @@
 # Duedle
-Due + Moodle = Duedle
-## Duedleって何？
-名工大のMoodleページをより快適に利用できるようにパワーアップする拡張機能です。
-## Duedleのメイン機能
-- ダークモード
-- わかりやすい課題一覧をトップに表示
-- Moodleを表示中に課題情報を自動更新（[更新間隔・負荷対策](docs/auto-refresh.md)）
-- コース表示順のカスタマイズ
-- コースページで折りたたんだ項目の表示/非表示
-- 冗長な情報の削減
-- ページの閲覧履歴を左に表示
-- ファイルをブラウザ上で閲覧
 
-[詳細はこちら](guideline.md)
+**Due + Moodle = Duedle**
 
-新規導入時はライト表示・課題メニューONで開始します。更新時は既存設定を維持します。課題一覧の空状態と最終更新時刻で取得状況を確認できます。
+名古屋工業大学のMoodleで、課題の確認やコースの閲覧をしやすくするブラウザ拡張機能です。Google ChromeとSafariに対応し、Mac・iPhone・iPad向けのSafari版も共通ソースからビルドします。
 
-[開発用ダミー環境](docs/debug.md) / [今回の変更と実機確認項目](docs/development-status.md)
+## 主な機能
 
-## Safari版（iPhone・iPad・Mac）
+- **課題・小テスト一覧** — 横スクロールする一覧で、各課題の期限や提出状況を確認。種類・状態・期限での絞り込み、状態色の変更、選択した課題の非表示・復帰に対応。
+- **課題情報の更新** — 手動更新と、ログイン済みMoodleの表示中に行う自動更新。
+- **画面の見た目** — ブラウザと同期・ダーク・ライト・ほのぼのの4つのカラーモード。独立してON/OFFできるiOS風モード。
+- **コースの閲覧補助** — コースの表示順変更、折りたたんだセクションの表示切り替え、セクション一覧、最近開いたページへのアクセス。
+- **提出ファイルのプレビュー** — 対応するPDF・画像・テキストをブラウザ上で表示。
 
-Safari Web Extension用のXcodeプロジェクトを追加しました。iOS / iPadOS 16以降、macOS 13以降を対象としています。
+## 対象環境
+
+| ブラウザ | 対象 |
+| --- | --- |
+| Google Chrome | PC |
+| Safari | macOS 13以降、iOS / iPadOS 16以降 |
+
+対象サイトは `https://cms7.ict.nitech.ac.jp/moodle40a/` です。SafariのOS下限はビルド設定に基づくもので、すべてのOSバージョン・端末での実機確認を意味するものではありません。
+
+## 使い方
+
+Moodle右上の **「Duedle設定」→「使い方」** から、操作ガイドを開けます。課題の更新、非表示にした課題の戻し方、表示設定、困ったときの対処を説明しています。
+
+ガイドは拡張機能に同梱しています。[HTMLソース](src/common/help.html)はブラウザで直接開いても閲覧できます。GitHub上のリンク先ではソースが表示されます。
+
+## 導入
+
+以下はソースから導入するための手順です。
+
+### Google Chrome
+
+1. このリポジトリをクローンするか、ダウンロードして展開します。
+2. Chromeで `chrome://extensions/` を開き、「デベロッパーモード」を有効にします。
+3. 「パッケージ化されていない拡張機能を読み込む」で、このリポジトリの `src/` を選択します。
+4. Moodleへログインします。すでに開いていたMoodleのページは再読み込みしてください。
+
+ソースの変更を反映する際は、拡張機能管理画面でDuedleを再読み込みし、その後Moodleのページも再読み込みします。
+
+### Safari（Mac・iPhone・iPad）
+
+XcodeとPython 3が利用できるMacで、リポジトリのルートから実行します。
 
 ```sh
 python3 scripts/prepare_safari.py
 ```
 
-`safari/Duedle/Duedle.xcodeproj` を開いてビルドします。実機で使用するには署名設定と、Safariでの拡張機能の有効化・Moodleへのアクセス許可が必要です。
+生成・更新された `safari/Duedle/Duedle.xcodeproj` をXcodeで開き、対象の端末向けにビルドします。実機へのインストールには署名設定が必要です。インストール後はSafariでDuedleを有効にし、Moodleへのアクセスを許可してください。
 
-[セットアップ・対応機能・検証手順](docs/safari.md)を参照してください。OS締切通知はChrome・Safariとも提供しません。ログイン済みMoodleでの実機動作はまだ確認していません。
+署名、端末別の手順、リソース更新については[Safari版のセットアップ](docs/safari.md)を参照してください。
 
-## DuedleのChromeへの導入方法(Chrome拡張機能)
-[こちらを参照](https://support.google.com/chrome_webstore/answer/2664769?hl=ja)
+## 更新とデータ保存
 
-## Q&A
+手動更新中は、更新を始めたページを開いたままにしてください。再読み込みやページ移動で中断した場合も、取得済みの情報は保持します。全件の取得に成功した後は、次の手動更新まで3時間のクールダウンがあります。
 
-## 困ったこと・改善案
-[こちらのページ](https://github.com/mtugb/duedle/issues/new)でタイトルおよび内容を入力して投稿してください。
+自動更新は、ログイン済みのMoodleを表示している間に動作します。取得間隔、分割取得、失敗時の再試行については[自動更新の仕様](docs/auto-refresh.md)を参照してください。ブラウザを閉じている間の常時取得やOSの締切通知は提供していません。
 
-## 免責事項
+課題情報・テーマ・履歴などは拡張機能のストレージに保存します。フィルターと色設定は `storage.sync`、閉じたセクションの表示設定はMoodleの `localStorage` を使用します。Duedle独自の端末間同期・ブラウザ間のデータ移行機能はありません。
+
+一覧は取得時点の情報です。期限・提出状況・成績の最終確認は、Moodle本体の課題・小テストのページで行ってください。
+
+## 開発
+
+| 場所 | 内容 |
+| --- | --- |
+| `src/` | Chrome・Safari共通の拡張機能ソース |
+| `src/common/help.html` | 利用者向けの操作ガイド |
+| `scripts/` | 検証、Safariリソース配置、デバッグ版生成 |
+| `tests/` | 回帰テスト・ブラウザテスト |
+| `dev/` | 外部通信を行わないダミー環境 |
+| `safari/` | Safari用のホストアプリとXcodeプロジェクト |
+| `docs/` | 開発・検証用ドキュメント |
+
+共通ソースを編集し、Safariの生成リソース `safari/build/extension/` は直接編集しないでください。
+
+```sh
+# manifest参照・JavaScript構文・回帰テスト
+python3 scripts/check_extension.py
+
+# Safari用リソースを更新（この後Xcodeで再ビルド）
+python3 scripts/prepare_safari.py --resources-only
+
+# オフラインのデバッグ版を生成
+python3 scripts/prepare_debug.py
+```
+
+構文・回帰テストにはmacOSのJavaScriptCore、またはNode.jsが必要です。ブラウザテストにはPlaywrightとChromeを使用します。
+
+- [オフラインの開発用環境](docs/debug.md)
+- [Safari版のビルド・検証](docs/safari.md)
+- [モバイルUIの確認項目](docs/mobile-ui.md)
+- [自動更新の仕様](docs/auto-refresh.md)
+
+## お問い合わせ
+
+不具合報告、改善のご要望、使い方の質問は[Googleフォーム](https://forms.gle/DkUKfGv2Eqx12jhC6)からお送りください。Moodleの「Duedle設定」→「お問い合わせ」からも開けます。
+
+Duedleの窓口と、大学の「サイトサポートに連絡する」は別の窓口です。
+
+開発時に問い合わせ先を変更する場合は、`src/common/support-config.js` の `contactFormUrl` を更新してください。設定メニューと操作ガイドに共通で反映されます。このREADMEのリンクも併せて更新してください。
+
+## ライセンス・免責事項
+
+[MIT License](LICENSE)。
+
 この拡張機能の使用により生じたいかなる損害についても、開発者は一切の責任を負いません。

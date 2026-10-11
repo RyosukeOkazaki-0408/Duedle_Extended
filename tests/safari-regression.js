@@ -578,8 +578,8 @@
         return { ...env, ...background, timers, removed, created };
     }
     function assertNavigationCleaned(env) {
-        equal(env.ext.tabs.onUpdated.count(), 0, "Tab update listener is removed");
-        equal(env.ext.tabs.onRemoved.count(), 0, "Tab removal listener is removed");
+        equal(env.ext.tabs.onUpdated.count(), 1, "Only the permanent owner-navigation listener remains");
+        equal(env.ext.tabs.onRemoved.count(), 1, "Only the permanent owner-close listener remains");
         equal(env.timers.count(), 0, "Load timeout is removed");
     }
 
@@ -597,7 +597,7 @@
 
     test("fresh installs use light while upgrades and explicit themes are preserved", async () => {
         for (const reason of ["install", "update"]) {
-            for (const mode of [undefined, 0, 1, 2, 3]) {
+            for (const mode of [undefined, 0, 1, 2, 3, 4]) {
                 const env = backgroundEnvironment(mode === undefined ? {} : { thememode: mode });
                 await env.initializeInstallation({ reason });
                 equal(env.state.themeDefault, reason === "install" ? 2 : 0);

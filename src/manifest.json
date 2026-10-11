@@ -46,6 +46,7 @@
         "./common/title.js",
         "./common/delete_underLink.js",
         "./common/navigation.js",
+        "./common/support-config.js",
         "./theme/main.js"
       ],
       "css": [
@@ -91,9 +92,11 @@
         "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*"
       ],
       "css": [
-        "./document_start/pre.css"
+        "./document_start/pre.css",
+        "./theme/ios.css"
       ],
       "js": [
+        "./theme/state.js",
         "./document_start/pre.js"
       ],
       "run_at": "document_start"
@@ -112,10 +115,12 @@
         "https://cms7.ict.nitech.ac.jp/moodle40a/blocks/syllabus/*"
       ],
       "js": [
+        "./theme/state.js",
         "./syllabus/darkmode.js"
       ],
       "css": [
-        "./syllabus/darkmode.css"
+        "./syllabus/darkmode.css",
+        "./theme/ios.css"
       ]
     },
     {
@@ -203,6 +208,19 @@
       ],
       "css": [
         "./notionnav/style.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "common/help.html",
+        "common/help.css",
+        "common/help.js",
+        "common/support-config.js"
+      ],
+      "matches": [
+        "https://cms7.ict.nitech.ac.jp/*"
       ]
     }
   ]

@@ -28,10 +28,15 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
             document.body.prepend(navigation);
         });
         await page.waitForSelector('#thememode_selection');
-        assert.equal(await page.locator('#thememode_selection').inputValue(),'2');
+        const chooseTheme = async value => {
+            if((await page.locator('#thememode_selection').getAttribute('aria-expanded'))!=='true') await page.locator('#thememode_selection').click();
+            await page.locator('#duedle-theme-menu button[data-mode="'+value+'"]').click();
+            if(value==='ios-toggle') await page.keyboard.press('Escape');
+        };
+        assert.equal(await page.locator('#thememode_selection').getAttribute('value'),'2');
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('darkmode')),false);
         assert(await page.locator('#display').isVisible());
-        await page.selectOption('#thememode_selection','1');
+        await chooseTheme('1');
         await page.evaluate(()=>{
             const navigation=document.createElement('nav');
             navigation.id='usernavigation';
@@ -48,7 +53,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
             document.body.prepend(navigation);
         });
         await page.waitForSelector('#thememode_selection');
-        assert.equal(await page.locator('#thememode_selection').inputValue(),'1');
+        assert.equal(await page.locator('#thememode_selection').getAttribute('value'),'1');
         await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
         assert.equal(await page.locator('#display').isVisible(),false);
         const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id));

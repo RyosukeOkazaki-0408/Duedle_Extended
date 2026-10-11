@@ -15,10 +15,10 @@
     const settingsLink = document.querySelector("#inst67416 > div > div > div > p > span > a");
     if (settingsLink) settingsLink.style.fontWeight = "bold";
     const orderOption = document.querySelector('.dropdown-item[data-value="ul.displayorder asc"]');
-    if (orderOption) orderOption.textContent = "設定した表示順で並べ替える";
+    if (orderOption) orderOption.textContent = "設定した表示順";
     const sortingDropdown = document.querySelector("#sortingdropdown");
     if (sortingDropdown && orderOption?.getAttribute("aria-current") === "true") {
-        sortingDropdown.textContent = "設定した表示順で並べ替える";
+        sortingDropdown.textContent = "設定した表示順";
     }
 
     const courseContainer = document.querySelector("#region-main > div > form > center > table > tbody");

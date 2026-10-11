@@ -10,7 +10,7 @@ let tabCollection = null;
 
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !["SAVE_TASK", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
-    "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS"].includes(msg.type)) return false;
+    "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS", "REFRESH_PROGRESS", "REFRESH_PAGE_READY"].includes(msg.type)) return false;
   const operation = async () => {
     switch (msg.type) {
       case "SAVE_TASK":
@@ -21,13 +21,17 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return { ok: true };
       case "GET_SETTINGS":
         await installationReady;
-        return { ok: true, ...(await ext.storage.local.get(["thememode", "themeDefault"])) };
+        return { ok: true, ...(await ext.storage.local.get(["thememode", "themeDefault", "iosAppearance"])) };
       case "REFRESH_CLAIM":
         return refreshCoordinator.claim(msg, sender);
       case "REFRESH_HEARTBEAT":
         return refreshCoordinator.heartbeat(msg.token, sender);
       case "REFRESH_FINISH":
         return refreshCoordinator.finish(msg, sender);
+      case "REFRESH_PROGRESS":
+        return refreshCoordinator.progress(msg, sender);
+      case "REFRESH_PAGE_READY":
+        return refreshCoordinator.pageReady(msg.pageId, sender);
       case "REFRESH_STATUS":
         return refreshCoordinator.status(sender);
       case "TAB_COURSE":
@@ -91,9 +95,16 @@ async function runTabScraping(refreshToken, sender) {
   if (!ids.length) throw new Error("マイコースを表示してから課題情報を更新してください");
   const tab = await ext.tabs.create({ url: "about:blank", active: false });
   const result = { courses: 0, saved: 0, failed: 0, errors: [] };
+  const publish = async () => {
+    if (!refreshToken) return;
+    const reply = await refreshCoordinator.progress({ token: refreshToken,
+      progress: { phase: "courses", completed: result.courses, total: ids.length, saved: result.saved } }, sender);
+    if (!reply.owned) throw Object.assign(new Error("更新が中断されました"), { name: "RefreshLeaseLost" });
+  };
   const seen = new Set();
   try {
     if (refreshToken) await refreshCoordinator.setTemporaryTab(refreshToken, sender, tab.id);
+    await publish();
     for (const courseId of ids) {
       if (refreshToken) await requireTabLease(refreshToken, sender);
       const url = `${MOODLE_ROOT}course/view.php?id=${courseId}`;
@@ -121,6 +132,7 @@ async function runTabScraping(refreshToken, sender) {
             result.failed++;
             result.errors.push({ url: taskURL, message: error.message });
           }
+          await publish();
         }
         result.courses++;
       } catch (error) {
@@ -128,6 +140,7 @@ async function runTabScraping(refreshToken, sender) {
         result.failed++;
         result.errors.push({ url, message: error.message });
       }
+      await publish();
     }
     return result;
   } finally {
@@ -187,7 +200,7 @@ function navigateTab(tabId, url, timeout = 20000) {
 // An absent theme in an older installation means browser sync, not a new install.
 let installationReady = Promise.resolve();
 async function initializeInstallation(details) {
-  const settings = await ext.storage.local.get(["thememode", "themeDefault"]);
+  const settings = await ext.storage.local.get(["thememode", "themeDefault", "iosAppearance"]);
   if (settings.themeDefault === undefined) {
     await ext.storage.local.set({ themeDefault: details.reason === "install" ? 2 : 0 });
   }
@@ -196,3 +209,8 @@ ext.runtime.onInstalled.addListener(details => {
   installationReady = initializeInstallation(details);
   installationReady.catch(console.error);
 });
+
+ext.tabs.onUpdated.addListener((tabId, change) => {
+  if (change.status === "loading") refreshCoordinator.tabGone(tabId).catch(console.error);
+});
+ext.tabs.onRemoved.addListener(tabId => refreshCoordinator.tabGone(tabId).catch(console.error));

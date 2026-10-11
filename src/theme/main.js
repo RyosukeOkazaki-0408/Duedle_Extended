@@ -1,28 +1,6 @@
 const syncDarkmode = async () => {
-  //0:sync
-  //1:darkmode, 2:light, 3:honobono
-  let thememode = await duedleThemeValue();
-  let shouldBeDarkmode =
-    (thememode == 0 && isBrowserDarkMode()) || thememode == 1;
-  if (shouldBeDarkmode) {
-    console.log("darkmode power on");
-    document.body.classList.add("darkmode");
-    document.body.classList.remove("honobono");
-  } else if (thememode == 3) {
-    try {
-      document.body.classList.remove("darkmode");
-      document.body.classList.add("honobono");
-    } catch (_) {
-      //エラー無視
-    }
-  } else {
-    try {
-      document.body.classList.remove("darkmode");
-      document.body.classList.remove("honobono");
-    } catch (_) {
-      //エラー無視
-    }
-  }
+  const { mode, iosAppearance } = await duedleThemeSettingsValue();
+  globalThis.duedleApplyTheme(mode, iosAppearance);
   try { colorReload(); } catch (_) {
     //ignore
   }
@@ -30,6 +8,7 @@ const syncDarkmode = async () => {
 };
 // Keep one control when Moodle replaces navigation or changes its responsive layout.
 let currentThemeMode = 0;
+let currentIosAppearance = false;
 let themeSelectorReady = false;
 let themeSelectorFrame = 0;
 const compactSettingsControls = new Map();
@@ -98,7 +77,6 @@ function installThemeSelector() {
     if (settings.hidden !== hideSettings) settings.hidden = hideSettings;
     const settingsContent = settings.querySelector(".duedle-course-settings-content");
     const controls = [
-      document.getElementById("toggle_visible_form"),
       document.getElementById("notion"),
       document.getElementById("filter"),
     ];
@@ -110,43 +88,255 @@ function installThemeSelector() {
       settingsContent.appendChild(node);
     }
   }
-  let select = document.getElementById("thememode_selection");
-  if (!select) {
-    select = document.createElement("select");
-    select.id = "thememode_selection";
-    select.className = "btn btn-outline-secondary dropdown-toggle icon-no-margin";
-    select.title = "テーマの設定";
-    select.setAttribute("aria-label", "テーマの設定");
-    ["🔄ブラウザと同期", "🌙ダークモード", "☀ライトモード", "ほのぼのモード"].forEach((text, value) => {
-      const option = document.createElement("option");
-      option.value = String(value);
-      option.textContent = text;
-      select.appendChild(option);
+  let trigger = document.getElementById("thememode_selection");
+  if (!trigger) {
+    trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.id = "thememode_selection";
+    trigger.className = "btn btn-outline-secondary";
+    trigger.title = "Duedle設定";
+    trigger.setAttribute("aria-label", "Duedle設定");
+    trigger.setAttribute("aria-haspopup", "menu");
+    trigger.setAttribute("aria-controls", "duedle-theme-menu");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.addEventListener("click", () => {
+      if (themeMenuOpen()) closeThemeMenu();
+      else openThemeMenu(trigger);
     });
-    select.value = String(currentThemeMode);
-    select.addEventListener("change", async (event) => {
-      currentThemeMode = Number(event.target.value);
-      await ext.storage.local.set({ thememode: currentThemeMode });
-      await syncDarkmode();
-      scheduleThemeSelector();
+    trigger.addEventListener("keydown", event => {
+      if (["ArrowDown", "ArrowUp"].includes(event.key)) {
+        event.preventDefault();
+        openThemeMenu(trigger, event.key === "ArrowUp");
+      }
     });
   }
+  installThemeMenu();
+  updateThemeMenu(trigger);
   let control = document.getElementById("duedle-theme-control");
   if (!control) {
     control = document.createElement("span");
     control.id = "duedle-theme-control";
-    const icon = document.createElement("span");
-    icon.className = "duedle-theme-icon";
-    icon.setAttribute("aria-hidden", "true");
-    control.appendChild(icon);
   }
-  if (select.parentElement !== control) control.appendChild(select);
-  if (control.parentElement !== host) host.appendChild(control);
-  const themeIcon = control.querySelector(".duedle-theme-icon");
-  const iconText = ["🔄", "🌙", "☀️", "🌿"][currentThemeMode] || "🔄";
-  if (themeIcon.textContent !== iconText) themeIcon.textContent = iconText;
+  if (trigger.parentElement !== control) control.appendChild(trigger);
+  if (control.parentElement !== host) {
+    closeThemeMenu();
+    host.appendChild(control);
+  }
   if (!phoneSettings && settings) settings.remove();
   if (useNavigation && toolbar) toolbar.remove();
+}
+
+const themeModeNames = ["ブラウザと同期", "ダークモード", "ライトモード", "ほのぼのモード"];
+
+function installThemeMenu() {
+  if (document.getElementById("duedle-theme-menu")) return;
+  const menu = document.createElement("div");
+  menu.id = "duedle-theme-menu";
+  menu.setAttribute("role", "menu");
+  menu.setAttribute("aria-label", "Duedle設定");
+  menu.hidden = true;
+  if (typeof menu.showPopover === "function") menu.setAttribute("popover", "auto");
+  const modes = document.createElement("div");
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", "カラーモード");
+  const heading = document.createElement("div");
+  heading.className = "duedle-theme-menu-heading";
+  heading.textContent = "カラーモード";
+  modes.appendChild(heading);
+  const createItem = (value, label, role) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "duedle-theme-menu-item";
+    button.dataset.mode = value;
+    button.setAttribute("role", role);
+    button.tabIndex = -1;
+    const mark = document.createElement("span");
+    mark.className = "duedle-theme-menu-mark";
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.className = "duedle-theme-menu-label";
+    text.textContent = label;
+    button.append(mark, text);
+    button.addEventListener("click", async () => {
+      if (value === "closed-tabs") {
+        const control = globalThis.duedleClosedTabs;
+        if (control) control.setVisible(!control.getVisible());
+        updateThemeMenu(document.getElementById("thememode_selection"));
+        return;
+      }
+      if (value === "ios-toggle") currentIosAppearance = !currentIosAppearance;
+      else currentThemeMode = Number(value);
+      updateThemeMenu(document.getElementById("thememode_selection"));
+      if (value !== "ios-toggle") closeThemeMenu(true);
+      try {
+        await ext.storage.local.set({ thememode: currentThemeMode, iosAppearance: currentIosAppearance });
+        await syncDarkmode();
+      } catch (error) {
+        await reloadThemeSettings();
+        console.error(error);
+      }
+      scheduleThemeSelector();
+    });
+    return button;
+  };
+  themeModeNames.forEach((name, mode) => modes.appendChild(createItem(String(mode), name, "menuitemradio")));
+  const appearance = document.createElement("div");
+  appearance.className = "duedle-theme-menu-appearance";
+  appearance.setAttribute("role", "group");
+  appearance.setAttribute("aria-label", "表示スタイル");
+  const caption = document.createElement("div");
+  caption.className = "duedle-theme-menu-heading";
+  caption.textContent = "表示スタイル";
+  const toggle = createItem("ios-toggle", "iOS風モード", "menuitemcheckbox");
+  const state = document.createElement("span");
+  state.className = "duedle-theme-menu-state";
+  state.setAttribute("aria-hidden", "true");
+  toggle.appendChild(state);
+  appearance.append(caption, toggle);
+  const help = document.createElement("div");
+  help.className = "duedle-theme-menu-appearance";
+  help.setAttribute("role", "group");
+  help.setAttribute("aria-label", "ヘルプ");
+  const helpHeading = document.createElement("div");
+  helpHeading.className = "duedle-theme-menu-heading";
+  helpHeading.textContent = "ヘルプ";
+  help.appendChild(helpHeading);
+  const helpUrl = ext.runtime.getURL("common/help.html");
+  const createLink = (label, url, newTab = false) => {
+    const link = document.createElement("a");
+    link.className = "duedle-theme-menu-item duedle-theme-menu-link";
+    link.setAttribute("role", "menuitem");
+    link.tabIndex = -1;
+    link.href = url;
+    if (newTab) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+    const text = document.createElement("span");
+    text.className = "duedle-theme-menu-label";
+    text.textContent = label;
+    link.appendChild(text);
+    link.addEventListener("click", () => closeThemeMenu(true));
+    link.addEventListener("keydown", event => {
+      if (event.key === " ") {
+        event.preventDefault();
+        link.click();
+      }
+    });
+    return link;
+  };
+  for (const [label, url] of [
+    ["使い方", helpUrl],
+    ["お問い合わせ", globalThis.DuedleSupport.contactFormUrl || `${helpUrl}#contact`]
+  ]) help.appendChild(createLink(label, url, true));
+  menu.append(modes, appearance);
+  {
+    const course = document.createElement("div");
+    course.className = "duedle-theme-menu-appearance";
+    course.setAttribute("role", "group");
+    course.setAttribute("aria-label", "コース");
+    const heading = document.createElement("div");
+    heading.className = "duedle-theme-menu-heading";
+    heading.textContent = "コース";
+    course.append(heading, createLink("コースの並び替え", new URL("/moodle40a/course/mycourse_config/reorder.php", location.origin).href));
+    if (location.pathname.endsWith("/course/view.php")) {
+      const closedTabs = createItem("closed-tabs", "閉じたタブの表示", "menuitemcheckbox");
+      const state = document.createElement("span");
+      state.className = "duedle-theme-menu-state";
+      state.setAttribute("aria-hidden", "true");
+      closedTabs.appendChild(state);
+      course.appendChild(closedTabs);
+    }
+    menu.appendChild(course);
+  }
+  menu.appendChild(help);
+  document.body.appendChild(menu);
+  menu.addEventListener("toggle", event => {
+    if (event.newState === "closed" && !menu.matches(":popover-open")) {
+      menu.hidden = true;
+      document.getElementById("thememode_selection")?.setAttribute("aria-expanded", "false");
+    }
+  });
+  menu.addEventListener("keydown", event => {
+    const items = [...menu.querySelectorAll('button, a[role="menuitem"]')];
+    let index = items.indexOf(document.activeElement);
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeThemeMenu(true);
+    } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      if (event.key === "Home") index = 0;
+      else if (event.key === "End") index = items.length - 1;
+      else index = (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      items[index].focus();
+    } else if (event.key === "Tab") closeThemeMenu(true);
+  });
+  document.addEventListener("pointerdown", event => {
+    if (themeMenuOpen() && !menu.contains(event.target)
+      && !document.getElementById("thememode_selection")?.contains(event.target)) closeThemeMenu();
+  });
+  window.addEventListener("resize", () => closeThemeMenu());
+  window.addEventListener("scroll", () => {
+    const trigger = document.getElementById("thememode_selection");
+    if (themeMenuOpen() && trigger && Math.abs(trigger.getBoundingClientRect().top - Number(menu.dataset.anchorTop)) > 1) closeThemeMenu();
+  }, { passive: true });
+  window.visualViewport?.addEventListener("resize", () => closeThemeMenu());
+}
+
+function themeMenuOpen() {
+  const menu = document.getElementById("duedle-theme-menu");
+  return Boolean(menu && !menu.hidden);
+}
+
+function closeThemeMenu(restoreFocus = false) {
+  const menu = document.getElementById("duedle-theme-menu");
+  if (!menu || menu.hidden) return;
+  if (menu.hasAttribute("popover") && menu.matches(":popover-open")) menu.hidePopover();
+  menu.hidden = true;
+  const trigger = document.getElementById("thememode_selection");
+  trigger?.setAttribute("aria-expanded", "false");
+  if (restoreFocus) trigger?.focus({ preventScroll: true });
+}
+
+function openThemeMenu(trigger, last = false) {
+  const menu = document.getElementById("duedle-theme-menu");
+  menu.hidden = false;
+  if (menu.hasAttribute("popover")) menu.showPopover();
+  const rect = trigger.getBoundingClientRect();
+  menu.dataset.anchorTop = String(rect.top);
+  const viewport = window.visualViewport;
+  const left = viewport?.offsetLeft || 0, top = viewport?.offsetTop || 0;
+  const right = left + (viewport?.width || innerWidth), bottom = top + (viewport?.height || innerHeight);
+  menu.style.maxWidth = `${Math.max(0, right - left - 16)}px`;
+  menu.style.maxHeight = `${Math.max(0, bottom - top - 16)}px`;
+  const bounds = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(left + 8, Math.min(rect.right - bounds.width, right - bounds.width - 8))}px`;
+  const below = rect.bottom + 6;
+  menu.style.top = `${Math.max(top + 8, Math.min(below + bounds.height <= bottom - 8 ? below : rect.top - bounds.height - 6, bottom - bounds.height - 8))}px`;
+  trigger.setAttribute("aria-expanded", "true");
+  const items = menu.querySelectorAll('button, a[role="menuitem"]');
+  (last ? items[items.length - 1] : menu.querySelector('[role="menuitemradio"][aria-checked="true"]') || items[0]).focus({ preventScroll: true });
+}
+
+function updateThemeMenu(trigger) {
+  if (!trigger) return;
+  const label = "Duedle設定";
+  if (trigger.textContent !== label) trigger.textContent = label;
+  trigger.value = String(currentThemeMode);
+  const appearance = String(currentIosAppearance);
+  if (trigger.dataset.iosAppearance !== appearance) trigger.dataset.iosAppearance = appearance;
+  document.querySelectorAll("#duedle-theme-menu button").forEach(item => {
+    const closedTabs = item.dataset.mode === "closed-tabs";
+    if (closedTabs) item.disabled = !globalThis.duedleClosedTabs;
+    const checked = closedTabs ? globalThis.duedleClosedTabs?.getVisible() === true
+      : item.dataset.mode === "ios-toggle" ? currentIosAppearance : Number(item.dataset.mode) === currentThemeMode;
+    if (item.getAttribute("aria-checked") !== String(checked)) item.setAttribute("aria-checked", String(checked));
+    const state = item.querySelector(".duedle-theme-menu-state");
+    if (state) {
+      const text = checked ? "ON" : "OFF";
+      if (state.textContent !== text) state.textContent = text;
+    }
+  });
 }
 
 function scheduleThemeSelector() {
@@ -157,11 +347,20 @@ function scheduleThemeSelector() {
   });
 }
 
+async function reloadThemeSettings() {
+  const { mode, iosAppearance } = await duedleThemeSettingsValue();
+  currentThemeMode = Number(mode);
+  currentIosAppearance = iosAppearance === true;
+  const select = document.getElementById("thememode_selection");
+  if (select) updateThemeMenu(select);
+  await syncDarkmode();
+}
+
 (async () => {
   if (document.readyState === "loading") {
     await new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }));
   }
-  currentThemeMode = Number(await duedleThemeValue());
+  await reloadThemeSettings();
   themeSelectorReady = true;
   await syncDarkmode();
   const observer = new MutationObserver(scheduleThemeSelector);
@@ -173,14 +372,8 @@ function scheduleThemeSelector() {
   window.addEventListener("resize", scheduleThemeSelector);
   window.addEventListener("pageshow", scheduleThemeSelector);
   ext.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || (!changes.thememode && !changes.themeDefault)) return;
-    duedleThemeValue().then(async (mode) => {
-      currentThemeMode = Number(mode);
-      const select = document.getElementById("thememode_selection");
-      if (select) select.value = String(currentThemeMode);
-      await syncDarkmode();
-      scheduleThemeSelector();
-    }).catch(console.error);
+    if (area !== "local" || (!changes.thememode && !changes.themeDefault && !changes.iosAppearance)) return;
+    reloadThemeSettings().then(scheduleThemeSelector).catch(console.error);
   });
 })().catch(console.error);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncDarkmode);

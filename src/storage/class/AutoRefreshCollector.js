@@ -309,6 +309,7 @@ class AutoRefreshCollector {
                     const seconds = Math.floor(this.now() / 1000);
                     state.cursor = { from: seconds - 14 * 86400, to: seconds + 90 * 86400, after: 0, startedAt: this.now() };
                 }
+                await this.onProgress({ phase: "list", completed: 0, total: 1, saved: result.saved });
                 const seenCursors = new Set([state.cursor.after]);
                 for (let page = 0; page < 2 && state.cursor; page++) {
                     const data = await this.calendarPage(state.cursor, sesskey);
@@ -340,10 +341,14 @@ class AutoRefreshCollector {
                 }
             }
 
+            if (listDue || result.listComplete || state.cursor) {
+                await this.onProgress({ phase: "list", completed: 1, total: 1, saved: result.saved });
+            }
             const discovery = Object.entries(state.courses).filter(([, course]) =>
                 this.now() - course.discoveredAt >= AutoRefreshCollector.DAY && course.retryAt <= this.now())
                 .sort((a, b) => a[1].discoveredAt - b[1].discoveredAt || b[1].seenAt - a[1].seenAt)[0];
             if (discovery) {
+                await this.onProgress({ phase: "courses", completed: 0, total: 1, saved: result.saved });
                 const [courseId, course] = discovery;
                 const url = AutoRefreshCollector.baseURL + "course/view.php?id=" + courseId;
                 try {
@@ -363,7 +368,11 @@ class AutoRefreshCollector {
                 }
             }
 
-            for (const [key, item] of this.selectDetails(state, local)) {
+            if (discovery) await this.onProgress({ phase: "courses", completed: 1, total: 1, saved: result.saved });
+            const details = this.selectDetails(state, local);
+            let completed = 0;
+            if (details.length) await this.onProgress({ phase: "details", completed, total: details.length, saved: result.saved });
+            for (const [key, item] of details) {
                 const url = AutoRefreshCollector.baseURL + "mod/" + item.type + "/view.php?id=" + item.id;
                 try {
                     const doc = await this.fetchDocument(url);
@@ -384,7 +393,7 @@ class AutoRefreshCollector {
                     if (stop(error)) throw error;
                     report(url, error);
                 }
-                this.onProgress({ saved: result.saved, failed: result.failed });
+                await this.onProgress({ phase: "details", completed: ++completed, total: details.length, saved: result.saved });
             }
         } catch (error) {
             result.stopReason = error.reason || "temporary";

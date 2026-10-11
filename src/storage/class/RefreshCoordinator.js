@@ -3,6 +3,62 @@
 class RefreshCoordinator {
     static storageKey = "refreshCoordinator";
     static leaseMs = 90 * 1000;
+    static preparationMs = 30 * 1000;
+    static progressMs = 90 * 1000;
+
+    static deadline(lease) {
+        if (!lease) return 0;
+        const activity = lease.progress?.at ?? lease.startedAt;
+        const limit = lease.progress ? this.progressMs : this.preparationMs;
+        return Math.min(lease.expiresAt, Number.isFinite(activity) ? activity + limit : lease.expiresAt);
+    }
+
+    async interrupt(state, reason) {
+        const history = (await this.storage.get("refreshHistory")).refreshHistory || {};
+        const mode = state.lease.mode;
+        state.lease = null;
+        state.pendingWork = true;
+        state.nextWorkAt = this.now() + this.interval(1, 5);
+        await this.save(state, { refreshHistory: { ...history,
+            attempt: { at: this.now(), mode, outcome: "cancelled", reason } } });
+    }
+
+    progress(message, sender) {
+        const tabId = this.senderTab(sender);
+        const p = message.progress;
+        if (!p || !["courses", "list", "details"].includes(p.phase)
+            || ![p.completed, p.total, p.saved].every(n => Number.isSafeInteger(n) && n >= 0 && n <= 1000000)
+            || p.total < 1 || p.completed > p.total) throw new Error("更新の進捗が不正です");
+        return this.serial(async () => {
+            const { state } = await this.load();
+            const owned = this.owns(state, message.token, tabId);
+            if (owned) {
+                state.lease.progress = { phase: p.phase, completed: p.completed, total: p.total, saved: p.saved, at: this.now() };
+                state.lease.expiresAt = this.now() + RefreshCoordinator.leaseMs;
+                await this.save(state);
+            }
+            return { ok: true, owned };
+        });
+    }
+
+    pageReady(pageId, sender) {
+        const tabId = this.senderTab(sender);
+        if (typeof pageId !== "string" || !pageId || pageId.length > 160) throw new Error("ページの識別子が不正です");
+        return this.serial(async () => {
+            const { state } = await this.load();
+            if (state.lease?.tabId === tabId && state.lease.pageId && state.lease.pageId !== pageId) {
+                await this.interrupt(state, "navigation");
+            }
+            return { ok: true };
+        });
+    }
+
+    tabGone(tabId) {
+        return this.serial(async () => {
+            const { state } = await this.load();
+            if (state.lease?.tabId === tabId) await this.interrupt(state, "navigation");
+        });
+    }
     static manualCooldownMs = 3 * 60 * 60 * 1000;
     static moodleRoot = "https://cms7.ict.nitech.ac.jp/moodle40a/";
 
@@ -108,7 +164,11 @@ class RefreshCoordinator {
             try { state.collectorState = RefreshCoordinator.copyPayload(state.collectorState ?? null); }
             catch (_) { state.collectorState = null; changed = true; }
             const lease = state.lease;
-            if (lease && (typeof lease.token !== "string" || !lease.token || lease.token.length > 160
+            if (lease && Number.isFinite(lease.expiresAt) && RefreshCoordinator.deadline(lease) <= now) {
+                await this.interrupt(state, "timeout");
+                changed = true;
+            }
+            if (state.lease && (typeof lease.token !== "string" || !lease.token || lease.token.length > 160
                 || !Number.isInteger(lease.tabId) || lease.tabId < 0
                 || !["auto", "manual"].includes(lease.mode)
                 || !Number.isFinite(lease.expiresAt) || lease.expiresAt <= now
@@ -134,7 +194,7 @@ class RefreshCoordinator {
     }
 
     nextAt(state) {
-        if (state.lease) return state.lease.expiresAt;
+        if (state.lease) return RefreshCoordinator.deadline(state.lease);
         return state.failures || state.pendingWork ? state.nextWorkAt
             : Math.min(state.nextListAt, state.nextWorkAt);
     }
@@ -165,7 +225,7 @@ class RefreshCoordinator {
             if (message.mode === "auto" && state.temporaryTabId === tabId) {
                 return denied("temporary", state.lease?.expiresAt || now + RefreshCoordinator.leaseMs);
             }
-            if (state.lease) return denied("busy", state.lease.expiresAt);
+            if (state.lease) return denied("busy", this.nextAt(state));
             if (message.mode === "manual" && now < cooldownUntil) return denied("cooldown", cooldownUntil);
             // Persist a new phase after a long absence. Students reopening Moodle
             // together should not all immediately issue their overdue requests.
@@ -178,11 +238,13 @@ class RefreshCoordinator {
             if (message.mode === "auto" && now < this.nextAt(state)) return denied("scheduled", this.nextAt(state));
             const token = this.tokenFactory();
             if (typeof token !== "string" || !token || token.length > 160) throw new Error("更新の識別子を作成できませんでした");
-            state.lease = { token, tabId, mode: message.mode, expiresAt: now + RefreshCoordinator.leaseMs };
+            state.lease = { token, tabId, mode: message.mode, startedAt: now, progress: null,
+                pageId: typeof message.pageId === "string" ? message.pageId.slice(0, 160) : null,
+                expiresAt: now + RefreshCoordinator.leaseMs };
             await this.save(state);
             return { ok: true, granted: true, token, state: state.collectorState,
                 listDue: message.mode === "manual" || now >= state.nextListAt,
-                nextListAt: state.nextListAt, nextWorkAt: state.nextWorkAt, nextAt: state.lease.expiresAt };
+                nextListAt: state.nextListAt, nextWorkAt: state.nextWorkAt, nextAt: this.nextAt(state) };
         });
     }
 

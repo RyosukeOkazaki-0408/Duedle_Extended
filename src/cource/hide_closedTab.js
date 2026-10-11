@@ -14,50 +14,21 @@ function hide_tabs() {
   });
 }
 
-function create_button() {
-  //html
-  const mybtn_card = `
-    <section
-      id="toggle_visible_form"
-      class=" block_html block  card mb-3"
-      role="complementary"
-    >
-      <div 
-    class="card-body p-3"
-    style="display:flex;justify-content:space-between;align-items:center;"
-        >
-        閉じたタブの表示
-        <label class="switch" style="--size:18px;margin:0">
-          <input type="checkbox" id="toggle_visible" checked hidden />
-        </label>
-      </div>
-    </section>
-  `;
-
-  const cards = document.querySelector(".columnright") || document.querySelector(".columnleft");
-
-  if (cards) {
-    cards.insertAdjacentHTML("afterbegin", mybtn_card);
-  }
-
-  const toggle = document.getElementById("toggle_visible");
-  if (toggle) {
-    toggle.checked = show_closed_tabs;
-
-    toggle.addEventListener("change", (e) => {
-      show_closed_tabs = e.currentTarget.checked;
-      save();
-      hide_tabs();
-    });
-  }
-}
-
 function save() {
   localStorage.setItem("hide", show_closed_tabs);
 }
 
 let show_closed_tabs = localStorage.getItem("hide") !== "false";
-create_button();
+globalThis.duedleClosedTabs = Object.freeze({
+  getVisible: () => show_closed_tabs,
+  setVisible(value) {
+    show_closed_tabs = value === true;
+    save();
+    hide_tabs();
+    if (typeof scheduleThemeSelector === "function") scheduleThemeSelector();
+  }
+});
+if (typeof scheduleThemeSelector === "function") scheduleThemeSelector();
 hide_tabs();
 
 const tabs = document.querySelectorAll(

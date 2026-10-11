@@ -11,7 +11,14 @@
     const filtered = State.describe({ total: 3, visible: 0, now });
     assert(filtered.empty.includes('条件に一致'), 'Filtered zero explains filters');
     const running = State.describe({ coordinator: { lease: { expiresAt: now + 1 } }, now });
-    assert(running.status.includes('取得しています') && !running.empty, 'Running is not an empty-list success');
+    assert(running.status.includes('準備中') && !running.empty, 'Running is not an empty-list success');
+    const progress = { phase: 'courses', completed: 3, total: 14, saved: 8, at: now };
+    const active = { expiresAt: now + 90000, startedAt: now - 60000, progress };
+    assert(State.describe({ coordinator: { lease: active }, now }).status.includes('3/14コース'), 'Restored tabs retain actual counters');
+    const stalled = State.describe({ coordinator: { lease: { ...active, expiresAt: now + 180000 } }, now: now + 90001 });
+    assert(!stalled.running && stalled.status.includes('応答が途絶え'), 'Stalled counters cannot remain updating');
+    const prep = State.describe({ coordinator: { lease: { expiresAt: now + 90000, startedAt: now - 30000 } }, now });
+    assert(!prep.running && prep.status.includes('応答が途絶え'), 'Preparation expires even with a live heartbeat');
     const completed = State.describe({ history: { attempt: { outcome: 'success', mode: 'manual' } }, now });
     assert(completed.status === '', 'A completed message is not restored from saved history after reload');
     for (const outcome of ['error', 'partial', 'cancelled']) {

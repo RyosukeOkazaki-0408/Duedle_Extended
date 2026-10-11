@@ -82,6 +82,7 @@ class CourseCollector {
             .filter(id => Number.isInteger(id) && id > 0);
         if (!ids.length) throw new Error("マイコースを表示してから課題情報を更新してください");
         const result = { courses: 0, saved: 0, failed: 0, errors: [] };
+        await this.onProgress({ ...result, totalCourses: ids.length });
         const seen = new Set();
         for (const courseId of ids) {
             const url = `${CourseCollector.baseURL}course/view.php?id=${courseId}`;
@@ -108,7 +109,7 @@ class CourseCollector {
                         result.failed++;
                         result.errors.push({ url: taskURL, message: error.message });
                     }
-                    this.onProgress({ ...result, totalCourses: ids.length });
+                    await this.onProgress({ ...result, totalCourses: ids.length });
                 }
                 result.courses++;
             } catch (error) {
@@ -116,7 +117,7 @@ class CourseCollector {
                 result.failed++;
                 result.errors.push({ url, message: error.message });
             }
-            this.onProgress({ ...result, totalCourses: ids.length });
+            await this.onProgress({ ...result, totalCourses: ids.length });
         }
         return result;
     }
