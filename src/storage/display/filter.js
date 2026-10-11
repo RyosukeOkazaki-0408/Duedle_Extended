@@ -7,9 +7,17 @@ ext_dashboard.classList.add("card-body");
 //inside div - innerHTML
 const extInner =
     `
-    <button class="btn btn-primary" id="scrapebutton">課題情報を更新する</button>
-    <button class="btn btn-secondary" id="displaybutton">課題メニュー表示を切り替える</button>
-    <button class="btn btn-secondary" id="deletebutton"></button>
+    <div class="duedle-dashboard-actions">
+    <button class="btn btn-primary" id="scrapebutton">課題を更新</button>
+    <button class="btn btn-secondary" id="displaybutton">一覧を隠す</button>
+    <button class="btn btn-secondary" id="selecttasksbutton" aria-pressed="false">課題を選択</button>
+    </div>
+    <div hidden id="taskselectionbar" role="group" aria-label="選択した課題の操作">
+      <span id="taskselectioncount" role="status" aria-live="polite"></span>
+      <button type="button" class="btn btn-secondary" id="hideselectedtasks">選択した課題を隠す</button>
+      <button type="button" class="btn btn-secondary" id="restoreselectedtasks">選択した課題を戻す</button>
+      <button type="button" class="btn btn-outline-secondary" id="canceltaskselection">キャンセル</button>
+    </div>
     <p id="collectionstatus" role="status" aria-live="polite" class="my-2"></p>
     <p id="listupdated" class="my-2 small text-muted"></p>
     <div hidden id="filter" class="filter-group my-2 p-2 border-radius border">
@@ -87,7 +95,7 @@ dueFilter.applyDefault("all");
 
 //show filter
 const showValues = ["all", "normal", "deleted"];
-const showOptionsText = ["すべて", "通常", "表示削除済み"];
+const showOptionsText = ["すべて", "通常", "非表示"];
 const showFilter = new FilterSelect("showSelect", "表示", showValues, showOptionsText, "selectedShow");
 showFilter.applyDefault("normal");
 (async () => {
@@ -112,7 +120,7 @@ async function updateCooldownButton() {
     const busy = refresh?.busy === true;
     scrapebutton.disabled = coolingDown || busy;
     scrapebutton.textContent = busy ? "更新中…"
-        : coolingDown ? "クールダウン: " + formatRemainingTime(next) : "課題情報を更新する";
+        : coolingDown ? "クールダウン: " + formatRemainingTime(next) : "課題を更新";
     if (coolingDown || busy) cooldownTimer = setTimeout(() => updateCooldownButton().catch(console.error), 30000);
 }
 
@@ -204,51 +212,109 @@ updateCooldownButton().catch(console.error);
 //display show button
 const displaybutton = document.querySelector("#displaybutton");
 displaybutton.addEventListener("click", () => {
-    if (!display.hasAttribute("hidden")) {
-        display.setAttribute("hidden", "");
-        filter.setAttribute("hidden", "");
-    } else {
-        display.removeAttribute("hidden");
-        filter.removeAttribute("hidden");
-    }
-    ext.storage.sync.set({ displayShow: !display.hasAttribute("hidden") });
+    const visible = display.hidden;
+    applyMenuVisibility(visible);
+    ext.storage.sync.set({ displayShow: visible });
 });
 
-//deletebutton
-let deletebutton_count = 5;
-const deletebutton = document.querySelector("#deletebutton");
-deletebutton.textContent = `一括表示切り替え(${deletebutton_count}クリック)`;
-deletebutton.addEventListener("click", async () => {
-    if (deletebutton_count !== 1) {
-        deletebutton_count--;
-    } else {
-        const tasklink = Array.from(document.querySelectorAll("#display a"));
-        for (const item of tasklink) {
-            const link = item.getAttribute("href");
-            const id = parseInt(link.match(/\d+$/)?.[0], 10);
-            const ss = await ext.storage.sync.get("selectedShow");
-            const showsetting = ss.selectedShow;
-            if (link.includes("assign")) {
-                if (showsetting === "normal") {
-                    await StorageUtil.editData('assign_list', "assignId", id, "show", false);
-                } else if (showsetting === "deleted") {
-                    await StorageUtil.editData('assign_list', "assignId", id, "show", true);
-                }
-            } else if (link.includes("quiz")) {
-                if (showsetting === "normal") {
-                    await StorageUtil.editData('quiz_list', "quizId", id, "show", false);
-                } else if (showsetting === "deleted") {
-                    await StorageUtil.editData('quiz_list', "quizId", id, "show", true);
-                }
-            }
+// Explicitly selected cards only; task IDs never come from link text or URLs.
+const selectedTasks = new Map();
+let taskSelectionActive = false;
+let taskSelectionSaving = false;
+const selectTasksButton = document.querySelector("#selecttasksbutton");
+const selectionBar = document.querySelector("#taskselectionbar");
+const hideSelectedButton = document.querySelector("#hideselectedtasks");
+const restoreSelectedButton = document.querySelector("#restoreselectedtasks");
+
+function updateTaskSelection() {
+    selectionBar.hidden = !taskSelectionActive || display.hidden;
+    selectTasksButton.disabled = display.hidden || taskSelectionSaving;
+    selectTasksButton.setAttribute("aria-pressed", String(taskSelectionActive));
+    selectTasksButton.textContent = taskSelectionActive ? "選択を終了" : "課題を選択";
+    document.querySelector("#taskselectioncount").textContent = taskSelectionSaving
+        ? "反映中…" : `${selectedTasks.size}件を選択`;
+    hideSelectedButton.disabled = taskSelectionSaving || ![...selectedTasks.values()].some(task => task.show);
+    restoreSelectedButton.disabled = taskSelectionSaving || ![...selectedTasks.values()].some(task => !task.show);
+    document.querySelector("#canceltaskselection").disabled = taskSelectionSaving;
+    display.querySelectorAll(".duedle-task-selection").forEach(label => {
+        label.hidden = !taskSelectionActive;
+        const input = label.querySelector("input");
+        input.disabled = taskSelectionSaving;
+        input.checked = selectedTasks.has(label.dataset.taskKey);
+    });
+}
+function setTaskSelection(active) {
+    if (taskSelectionSaving) return;
+    taskSelectionActive = active;
+    if (!active) selectedTasks.clear();
+    updateTaskSelection();
+}
+function installTaskSelection(card, task) {
+    const idProperty = task.group === "assign_list" ? "assignId" : "quizId";
+    const id = Number(task[idProperty]);
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+    const key = `${task.group}:${id}`;
+    card.dataset.duedleTaskKey = key;
+    const selection = { group: task.group, idProperty, id, show: Boolean(task.show) };
+    if (selectedTasks.has(key)) selectedTasks.set(key, selection);
+    const label = document.createElement("label");
+    label.className = "duedle-task-selection";
+    label.dataset.taskKey = key;
+    label.hidden = !taskSelectionActive;
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = selectedTasks.has(key);
+    input.disabled = taskSelectionSaving;
+    input.setAttribute("aria-label", `${task.assignName || task.quizName || "課題"}を選択`);
+    input.addEventListener("change", () => {
+        if (taskSelectionSaving) return;
+        if (input.checked) selectedTasks.set(key, selection);
+        else selectedTasks.delete(key);
+        updateTaskSelection();
+    });
+    const text = document.createElement("span");
+    text.textContent = "この課題を選択";
+    label.append(input, text);
+    card.prepend(label);
+}
+function reconcileTaskSelection() {
+    const keys = new Set([...display.querySelectorAll("[data-duedle-task-key]")].map(card => card.dataset.duedleTaskKey));
+    for (const key of selectedTasks.keys()) if (!keys.has(key)) selectedTasks.delete(key);
+    updateTaskSelection();
+}
+async function saveSelectedVisibility(show) {
+    if (taskSelectionSaving) return;
+    taskSelectionSaving = true;
+    updateTaskSelection();
+    let saved = 0;
+    try {
+        // A render temporarily removes cards; reconcile only after it has finished.
+        await renderChain;
+        reconcileTaskSelection();
+        const targets = [...selectedTasks.values()].filter(task => task.show !== show);
+        if (!targets.length) return;
+        for (const task of targets) {
+            await StorageUtil.editData(task.group, task.idProperty, task.id, "show", show);
+            selectedTasks.delete(`${task.group}:${task.id}`);
+            saved++;
         }
-        rerender();
-        deletebutton_count = 5;
+        completionError = "";
+        taskSelectionActive = false;
+        selectedTasks.clear();
+        await rerender();
+        collectionstatus.textContent = `${saved}件の課題を${show ? "一覧に戻しました" : "非表示にしました"}。`;
+    } catch (error) {
+        completionError = `${saved}件を反映しました。残りの変更に失敗しました。${error.message || "再試行してください"}`;
+        collectionstatus.textContent = completionError;
+    } finally {
+        taskSelectionSaving = false;
+        updateTaskSelection();
     }
-deletebutton.textContent = `一括表示切り替え(${deletebutton_count}クリック)`;
-});
-
-
+}
+selectTasksButton.addEventListener("click", () => setTaskSelection(!taskSelectionActive));
+document.querySelector("#canceltaskselection").addEventListener("click", () => setTaskSelection(false));
+hideSelectedButton.addEventListener("click", () => saveSelectedVisibility(false).catch(console.error));
+restoreSelectedButton.addEventListener("click", () => saveSelectedVisibility(true).catch(console.error));
 
 //setting color
 const colorTypesValue = ["complete", "qualify", "incomplete", "stuck", "warning", "expired", "unknown", "unvisited"];
@@ -291,9 +357,17 @@ colorTypesValue.map((value, index) => {
 
 // Missing preferences show the menu. A saved false is never overwritten.
 function applyMenuVisibility(value) {
-    display.hidden = value === false;
-    filter.hidden = value === false;
-    displaybutton.setAttribute("aria-expanded", String(value !== false));
+    const visible = value !== false;
+    display.hidden = !visible;
+    filter.hidden = !visible;
+    const updated = document.querySelector("#listupdated");
+    if (updated) updated.hidden = !visible;
+    const settings = document.querySelector("#duedle-course-settings");
+    if (settings?.dataset.taskSettings === "true") settings.hidden = !visible;
+    displaybutton.textContent = visible ? "一覧を隠す" : "一覧を表示";
+    displaybutton.setAttribute("aria-expanded", String(visible));
+    if (!visible) setTaskSelection(false);
+    updateTaskSelection();
 }
 const menuReady = ext.storage.sync.get("displayShow").then(saved => applyMenuVisibility(saved.displayShow));
 let renderChain = Promise.resolve();
@@ -305,8 +379,11 @@ async function renderList() {
     const [alldata, stored] = await Promise.all([
         StorageUtil.getAllData(), ext.storage.local.get(["refreshHistory", "refreshCoordinator"]), menuReady
     ]);
+    const scrollPosition = display.scrollLeft;
     display.textContent = "";
     const visible = await displaybox(alldata);
+    display.scrollLeft = scrollPosition;
+    reconcileTaskSelection();
     const state = TaskListState.describe({ total: alldata.length, visible,
         history: stored.refreshHistory, coordinator: stored.refreshCoordinator });
     if (!visible) display.textContent = state.empty;

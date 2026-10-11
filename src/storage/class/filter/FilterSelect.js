@@ -29,8 +29,17 @@ class FilterSelect {
             return option;
         });
         options.forEach(option => elementselect.appendChild(option));
+        const applyValue = value => {
+            elementselect.value = this.values.includes(value) ? value : (this.defaultValue || this.values[0]);
+        };
+        let preferenceChanged = false;
+        ext.storage.onChanged?.addListener((changes, area) => {
+            if (area !== "sync" || !Object.prototype.hasOwnProperty.call(changes, this.propertyName)) return;
+            preferenceChanged = true;
+            applyValue(changes[this.propertyName].newValue);
+        });
         const saved = (await ext.storage.sync.get(this.propertyName))[this.propertyName];
-        elementselect.value = this.values.includes(saved) ? saved : (this.defaultValue || this.values[0]);
+        if (!preferenceChanged) applyValue(saved);
 
         return [elementlabel, elementselect];
     }

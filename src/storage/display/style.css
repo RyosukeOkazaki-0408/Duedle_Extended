@@ -3,7 +3,13 @@
     gap: 20px;
     align-items: flex-start;
     justify-content: start;
-    overflow: scroll;
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior-x: contain;
     border-color: rgb(67, 121, 138);
     border-width: 2px;
     border-style: solid;
@@ -33,7 +39,7 @@
     min-width: 250px;
     max-width: 300px;
     padding: 10px;
-    max-height: 450px;
+    flex-shrink: 0;
     border-radius: 5px;
 }
 
@@ -252,39 +258,40 @@ h6.d-flex {
         min-width: 0;
     }
 
-    #ext_dashboard > button {
-        display: block;
-        width: 100%;
+    .duedle-dashboard-actions > button {
+        flex: 0 1 auto;
+        width: auto;
+        font-size: 14px;
+        line-height: 1.35;
+        padding: 6px 10px;
         min-height: 44px;
-        margin: 0 0 8px;
+        margin: 0;
         white-space: normal;
         touch-action: manipulation;
     }
 
-    #ext_dashboard #fieldfilter,
-    #ext_dashboard #fieldcolor {
+    :is(#ext_dashboard, #duedle-course-settings) #fieldfilter,
+    :is(#ext_dashboard, #duedle-course-settings) #fieldcolor {
         min-width: 0;
     }
 
-    #ext_dashboard select {
+    :is(#ext_dashboard, #duedle-course-settings) select {
         max-width: 100%;
         min-height: 44px;
         font-size: 16px;
     }
 
     #display:not([hidden]) {
-        flex-direction: column;
+        flex-direction: row;
         gap: 12px;
         padding: 8px;
-        overflow-x: hidden;
-        overflow-y: auto;
     }
 
     #display .assign:not(.activity),
     #display .quiz:not(.activity) {
+        flex: 0 0 min(300px, 85%);
         min-width: 0;
-        max-width: none;
-        width: 100%;
+        max-width: 300px;
         box-sizing: border-box;
         margin: 0;
     }
@@ -300,4 +307,153 @@ h6.d-flex {
         gap: 8px;
         flex-wrap: wrap;
     }
+}
+
+/* Keep native desktop controls; normalize color wells for touch input. */
+@media (pointer: coarse) {
+    #fieldcolor input[type="color"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 28px;
+        height: 28px;
+        padding: 3px;
+        box-sizing: border-box;
+        border: 1px solid #78838c;
+        border-radius: 50%;
+        background: transparent;
+        background-image: none;
+        vertical-align: middle;
+        cursor: pointer;
+    }
+    #fieldcolor input[type="color"]::-webkit-color-swatch-wrapper {
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 0;
+    }
+    #fieldcolor input[type="color"]::-webkit-color-swatch {
+        -webkit-appearance: none;
+        appearance: none;
+        border: 0;
+        border-radius: 50%;
+    }
+    #fieldcolor input[type="color"]::-moz-color-swatch {
+        border: 0;
+        border-radius: 50%;
+    }
+}
+#fieldcolor input[type="color"]:focus-visible {
+    outline: 2px solid #447ea7;
+    outline-offset: 2px;
+}
+@media (pointer: coarse) {
+    #fieldcolor input[type="color"] {
+        width: 44px;
+        height: 44px;
+        padding: 8px;
+    }
+    #display .coursemenubtn,
+    #display .manualComplete {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    #display .taskbox a {
+        display: block;
+        min-height: 44px;
+    }
+}
+
+.duedle-dashboard-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+    min-width: 0;
+    margin-bottom: 8px;
+}
+.duedle-dashboard-actions > button {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.duedle-dashboard-actions > #displaybutton {
+    margin-left: 0;
+}
+
+/* Phone-sized viewports: compact controls without changing tablet/desktop UI. */
+@media (max-width: 599px) {
+    #ext_dashboard {
+        padding: 8px;
+    }
+    .duedle-dashboard-actions {
+        gap: 6px;
+    }
+    .duedle-dashboard-actions > button {
+        min-height: 44px;
+        font-size: 13px;
+        padding: 4px 6px;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) #filter {
+        padding: 8px !important;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) #fieldfilter,
+    :is(#ext_dashboard, #duedle-course-settings) #fieldcolor {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+        gap: 4px 6px;
+        align-items: center;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) #fieldcolor {
+        grid-template-columns: auto 44px auto 44px;
+        margin-top: 8px;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) .filterlabel {
+        margin: 0;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) #fieldfilter select {
+        width: 100% !important;
+        min-width: 0;
+        min-height: 44px;
+        height: auto;
+        margin: 0;
+        padding: 4px 20px 4px 6px;
+        font-size: 16px;
+        line-height: 1.25;
+        background-position: right 5px center;
+    }
+    :is(#ext_dashboard, #duedle-course-settings) #fieldcolor input[type="color"] {
+        width: 44px;
+        height: 44px;
+        padding: 12px;
+        margin: 0;
+    }
+}
+
+#taskselectionbar:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+}
+#taskselectionbar > button {
+    font-size: 14px;
+    min-height: 44px;
+    padding: 4px 8px;
+}
+#display .duedle-task-selection:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+#display .duedle-task-selection input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    flex-shrink: 0;
 }

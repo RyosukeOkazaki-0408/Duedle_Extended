@@ -380,3 +380,8 @@ body.darkmode {
 
 
 }
+/* Preserve Moodle's original row attributes when returning to light mode. */
+body.darkmode tr[bgcolor="lightblue"] {
+    background-color: #363f45;
+    color: white;
+}

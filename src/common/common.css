@@ -176,3 +176,145 @@ ul.navbar-nav.d-none.d-md-flex {
   }
 
 }
+
+/* Keep the desktop navigation placement; use document flow on compact pages. */
+#thememode_selection {
+  max-width: 100%;
+  min-width: 0;
+}
+#duedle-theme-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 8px;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  #thememode_selection {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 599px) {
+  #duedle-theme-toolbar {
+    padding: 4px 8px;
+  }
+  #thememode_selection {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 3px 8px;
+    line-height: 1.25;
+  }
+  #toggle_visible_form {
+    margin-bottom: 8px !important;
+  }
+  #toggle_visible_form > .card-body {
+    padding: 6px 10px !important;
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 599px) {
+  #duedle-theme-toolbar:has(#duedle-course-settings) {
+    display: block;
+    padding: 4px 8px;
+  }
+  #duedle-course-settings > summary {
+    width: fit-content;
+    padding: 7px 10px;
+    min-height: 44px;
+    box-sizing: border-box;
+    border: 1px solid #89939b;
+    border-radius: 6px;
+    background-color: #f0f3f5;
+    font-size: 13px;
+    font-weight: 500;
+    color: #34414c;
+    cursor: pointer;
+  }
+  .darkmode #duedle-course-settings > summary {
+    color: #c5cbd1;
+  }
+  .duedle-course-settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0 8px;
+  }
+  #duedle-course-settings #toggle_visible_form,
+  #duedle-course-settings #notion {
+    width: 100%;
+    margin: 0 !important;
+  }
+  #duedle-course-settings #thememode_selection {
+    align-self: flex-start;
+  }
+}
+
+#duedle-theme-control {
+  display: contents;
+}
+.duedle-theme-icon {
+  display: none;
+}
+@media (max-width: 599px) {
+  #duedle-theme-control {
+    display: contents;
+  }
+  .duedle-theme-icon {
+    display: none;
+  }
+  #duedle-theme-control #thememode_selection {
+    position: static;
+    width: 160px;
+    max-width: 100%;
+    min-height: 44px;
+    height: auto;
+    opacity: 1;
+    margin: 0;
+    padding: 3px 8px;
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  #duedle-course-settings > summary {
+    width: fit-content;
+    padding: 7px 10px;
+    min-height: 44px;
+    box-sizing: border-box;
+    border: 1px solid #89939b;
+    border-radius: 6px;
+    background-color: #f0f3f5;
+    font-size: 13px;
+    font-weight: 500;
+    color: #34414c;
+    cursor: pointer;
+  }
+  .darkmode #duedle-course-settings > summary {
+    color: #c5cbd1;
+  }
+}
+
+#duedle-course-settings[hidden] {
+  display: none;
+}
+@media (max-width: 599px) {
+  #duedle-course-settings {
+    margin-bottom: 12px;
+  }
+  #duedle-course-settings > summary:hover {
+    background-color: #e2e8ed;
+  }
+  #duedle-course-settings > summary:focus-visible {
+    outline: 2px solid #447ea7;
+    outline-offset: 2px;
+  }
+  .darkmode #duedle-course-settings > summary {
+    background-color: #263541;
+    border-color: #788a99;
+  }
+  .darkmode #duedle-course-settings > summary:hover {
+    background-color: #334654;
+  }
+}

@@ -66,11 +66,13 @@ const displaybox = async (data) => {
             if (item.group === "assign_list") {
                 const assignbox = new AssignBox(item);
                 const assign = await assignbox.getElement();
+                if (typeof installTaskSelection === "function") installTaskSelection(assign, item);
                 display.appendChild(assign);
                 rendered++;
             } else if (item.group === "quiz_list") {
                 const quizbox = new QuizBox(item);
                 const quiz = await quizbox.getElement();
+                if (typeof installTaskSelection === "function") installTaskSelection(quiz, item);
                 display.appendChild(quiz);
                 rendered++;
             }
