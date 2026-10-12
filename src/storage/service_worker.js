@@ -185,6 +185,7 @@ function navigateTab(tabId, url, timeout = 20000) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let timer;
+    let navigation;
     const cleanup = () => {
       clearTimeout(timer);
       ext.tabs.onUpdated.removeListener(onUpdated);
@@ -212,7 +213,16 @@ function navigateTab(tabId, url, timeout = 20000) {
       resolve();
     };
     const onUpdated = (id, info, tab) => {
-      if (id === tabId && info.status === "complete") finish(null, tab);
+      if (id !== tabId || info.status !== "complete") return;
+      if (tab?.url) return finish(null, tab);
+      // Without global tabs permission, outside-site URLs (and about:blank)
+      // are hidden. Recheck after navigation starts so a queued blank-page
+      // completion cannot be mistaken for an authentication redirect.
+      Promise.resolve().then(() => navigation).then(() => ext.tabs.get(tabId)).then(current => {
+        if (current.status !== "complete" || current.pendingUrl) return;
+        if (!current.url) return finish(tabCollectionError("Moodleにログインし直してから更新してください"));
+        finish(null, current);
+      }, error => finish(error));
     };
     const onRemoved = id => {
       if (id === tabId) finish(new Error("収集用のタブが閉じられました"));
@@ -221,7 +231,8 @@ function navigateTab(tabId, url, timeout = 20000) {
     ext.tabs.onUpdated.addListener(onUpdated);
     ext.tabs.onRemoved.addListener(onRemoved);
     timer = setTimeout(() => finish(new Error("ページの読み込みがタイムアウトしました")), timeout);
-    ext.tabs.update(tabId, { url }).then(tab => {
+    navigation = ext.tabs.update(tabId, { url });
+    navigation.then(tab => {
       if (tab.status === "complete" && tab.url === url) finish(null, tab);
     }, error => finish(error));
   });

@@ -36,7 +36,6 @@
 		77A4490A307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
 		77A4490B307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
 		77A4490C307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
-		77A4490D307A730A00E482F7 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* lib */; };
 		77A4490E307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
 		77A4490F307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
 		77A44910307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
@@ -47,7 +46,6 @@
 		77A44915307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
 		77A44916307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
 		77A44917307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
-		77A44918307A730A00E482F7 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* lib */; };
 		77A44919307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
 		77A4491A307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
 		77A4491B307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
@@ -120,7 +118,6 @@
 		77A448FF307A730A00E482F7 /* common */ = {isa = PBXFileReference; lastKnownFileType = folder; name = common; path = ../../build/extension/common; sourceTree = "<group>"; };
 		77A44900307A730A00E482F7 /* theme */ = {isa = PBXFileReference; lastKnownFileType = folder; name = theme; path = ../../build/extension/theme; sourceTree = "<group>"; };
 		77A44901307A730A00E482F7 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../build/extension/manifest.json; sourceTree = "<group>"; };
-		77A44902307A730A00E482F7 /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../build/extension/lib; sourceTree = "<group>"; };
 		77A44903307A730A00E482F7 /* document_start */ = {isa = PBXFileReference; lastKnownFileType = folder; name = document_start; path = ../../build/extension/document_start; sourceTree = "<group>"; };
 		77A44904307A730A00E482F7 /* qol */ = {isa = PBXFileReference; lastKnownFileType = folder; name = qol; path = ../../build/extension/qol; sourceTree = "<group>"; };
 		77A44905307A730A00E482F7 /* cource */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cource; path = ../../build/extension/cource; sourceTree = "<group>"; };
@@ -252,7 +249,6 @@
 				77A448FF307A730A00E482F7 /* common */,
 				77A44900307A730A00E482F7 /* theme */,
 				77A44901307A730A00E482F7 /* manifest.json */,
-				77A44902307A730A00E482F7 /* lib */,
 				77A44903307A730A00E482F7 /* document_start */,
 				77A44904307A730A00E482F7 /* qol */,
 				77A44905307A730A00E482F7 /* cource */,
@@ -407,7 +403,6 @@
 			files = (
 				77A44916307A730A00E482F7 /* theme in Resources */,
 				77A44917307A730A00E482F7 /* manifest.json in Resources */,
-				77A44918307A730A00E482F7 /* lib in Resources */,
 				77A44915307A730A00E482F7 /* common in Resources */,
 				77A44913307A730A00E482F7 /* storage in Resources */,
 				77A44912307A730A00E482F7 /* login_screen in Resources */,
@@ -423,7 +418,6 @@
 			files = (
 				77A4490B307A730A00E482F7 /* theme in Resources */,
 				77A4490C307A730A00E482F7 /* manifest.json in Resources */,
-				77A4490D307A730A00E482F7 /* lib in Resources */,
 				77A4490A307A730A00E482F7 /* common in Resources */,
 				77A44908307A730A00E482F7 /* storage in Resources */,
 				77A44907307A730A00E482F7 /* login_screen in Resources */,

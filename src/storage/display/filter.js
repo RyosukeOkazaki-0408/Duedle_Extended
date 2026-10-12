@@ -506,7 +506,7 @@ document.addEventListener("visibilitychange", () => {
 //色適用
 const applyColor = (type, toColor) => {
     if (!colorTypesValue.includes(type) || !/^#[\da-f]{6}$/i.test(toColor)) return;
-    // Color only our task cards; course activities use a status border.
+    // Share the status palette between the dashboard and course activity cards.
     // CSS variables leave author styles and mode switching untouched.
     const channels = toColor.match(/[\da-f]{2}/gi).map(value => parseInt(value, 16) / 255);
     const light = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);

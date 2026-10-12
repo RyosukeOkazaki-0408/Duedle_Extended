@@ -41,6 +41,7 @@
             'An unsuccessful refresh preserves the previous timestamp: ' + outcome);
     }
     const manifest = JSON.parse(read('src/manifest.json'));
+    assert(manifest.permissions.length === 1 && manifest.permissions[0] === 'storage', 'Production uses storage and site-scoped host access without global tabs permission');
     assert(!manifest.permissions.includes('notifications') && !manifest.permissions.includes('alarms'), 'Production does not request notification or alarm permissions');
     assert(!/notifications\.|alarms\./.test(read('src/storage/service_worker.js')), 'No delivery or alarm API remains');
     assert(!JSON.stringify(manifest).includes('dev/'), 'Production does not include developer entry');

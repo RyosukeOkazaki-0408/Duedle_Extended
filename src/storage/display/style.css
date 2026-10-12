@@ -84,6 +84,26 @@ body.darkmode #display > .assign li, body.darkmode #display > .quiz li {
 .duedle-task-status {
     border-left: 4px solid var(--duedle-status-border, var(--duedle-status-color, #788a99));
 }
+/* Color the activity card without repainting descriptions, badges or icons. */
+body .course-content .activity-item.duedle-task-status {
+    background-color: var(--duedle-status-color);
+    color: var(--duedle-status-text, #1d2125);
+}
+body.darkmode .course-content .activity-item.duedle-task-status {
+    color: var(--duedle-status-text, #dddddf);
+}
+body .course-content .activity-item.duedle-task-status > .description > .course-description-item {
+    color: #1d2125;
+}
+body.darkmode .course-content .activity-item.duedle-task-status > .description > .course-description-item {
+    color: #dddddf;
+}
+body .course-content .activity-item.duedle-task-status .activityname a,
+body.darkmode .course-content .activity-item.duedle-task-status .activityname a {
+    color: var(--duedle-status-link, #0056b3);
+    text-decoration: underline;
+    text-underline-offset: .12em;
+}
 /* Upcoming events are compact status cards; course descriptions stay separate. */
 body .event.duedle-task-status {
     background-color: var(--duedle-status-color);

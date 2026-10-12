@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import shutil
 import subprocess
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,7 @@ def main() -> None:
         "tests/auto-refresh-controller-regression.js",
     ):
         subprocess.run([runtime, suite], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "tests/packaging-regression.py"], cwd=ROOT, check=True)
     print(f"Verified {len(references)} manifest references and {len(javascript)} JavaScript files.")
 
 

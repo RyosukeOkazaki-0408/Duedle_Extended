@@ -99,27 +99,29 @@ const setActivityStatus = (element, status) => {
 const changeActivityColor = (item) => {
     const type = item.group === "assign_list" ? "assign" : "quiz";
     const id = item.group === "assign_list" ? item.assignId : item.quizId;
+    // Moodle 4 places the module type inside the activity-item. Match its own
+    // title link, not links to other tasks inside the teacher's description.
+    const activities = [...document.querySelectorAll(".course-content .activity-item")]
+        .filter(el => [...el.querySelectorAll(".activityname a[href]")]
+            .some(link => taskLinkMatches(link, type, id)));
+    if (activities.length) {
+        activities.forEach(el => setActivityStatus(el, item.status));
+        return;
+    }
     // Prefer stable activity URLs. Legacy markup without a link can only be
     // matched by a unique exact name, never by a partial title.
-    const linked = [...document.querySelectorAll(`.${type} [data-activityname]`)]
+    const legacy = [...document.querySelectorAll(`.${type} [data-activityname]`)]
+        .filter(el => !el.closest?.(".activity-item"));
+    const linked = legacy
         .filter(el => [...(el.querySelectorAll?.("a[href]") || [])].some(link => taskLinkMatches(link, type, id)));
     if (linked.length) {
         linked.forEach(el => setActivityStatus(el, item.status));
         return;
     }
-    if (item.group === "assign_list") {
-        const actbox = [...document.querySelectorAll(".assign [data-activityname]")]
-            .filter(el => el.dataset.activityname === item.assignName);
-        if (actbox.length === 1 && !(actbox[0].querySelectorAll?.("a[href]") || []).length) {
-            setActivityStatus(actbox[0], item.status);
-        }
-
-    } else if (item.group === "quiz_list") {
-        const actbox = [...document.querySelectorAll(".quiz [data-activityname]")]
-            .filter(el => el.dataset.activityname === item.quizName);
-        if (actbox.length === 1 && !(actbox[0].querySelectorAll?.("a[href]") || []).length) {
-            setActivityStatus(actbox[0], item.status);
-        }
+    const name = type === "assign" ? item.assignName : item.quizName;
+    const actbox = legacy.filter(el => el.dataset.activityname === name);
+    if (actbox.length === 1 && !(actbox[0].querySelectorAll?.("a[href]") || []).length) {
+        setActivityStatus(actbox[0], item.status);
     }
 }
 
@@ -176,6 +178,16 @@ const changeAct = (item, tasks = []) => {
 
 //unvisited
 const checkUnvisited = () => {
+    document.querySelectorAll(".course-content .activity-item:not(.duedle-task-status)").forEach(activity => {
+        const task = [...activity.querySelectorAll(".activityname a[href]")].some(link => {
+            try {
+                const id = new URL(link.getAttribute("href"), location.href).searchParams.get("id");
+                return Number.isSafeInteger(Number(id)) && Number(id) > 0
+                    && ["assign", "quiz"].some(type => taskLinkMatches(link, type, id));
+            } catch { return false; }
+        });
+        if (task) setActivityStatus(activity, "unvisited");
+    });
     const unvisitedboxes = Array.from(document.querySelectorAll(`[data-activityname]:not(.activity-information,.complete,.incomplete,.unknown,.expired,.stuck,.qualify,.warning,.unvisited)`));
     unvisitedboxes.map((item) => {
         if (!item.querySelector(".content") &&

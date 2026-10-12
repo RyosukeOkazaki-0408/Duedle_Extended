@@ -170,6 +170,10 @@ body.darkmode .content-item-container.unread {
     border-color: #788a99;
 }
 /* The activity header owns the padding around the intro and completion dates. */
+/* Moodle's multiply blend darkens both the completion badge and its text. */
+body.darkmode .automatic-completion-conditions .badge:not(.duedle-authored-content, .duedle-authored-content *) {
+    mix-blend-mode: normal;
+}
 body.darkmode .activity-header:not(.duedle-authored-content, .duedle-authored-content *) {
     background-color: #263541;
     color: #dddddf;

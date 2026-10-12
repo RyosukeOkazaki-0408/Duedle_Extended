@@ -559,6 +559,7 @@
                 env.ext.tabs.onUpdated.emit(id, { status: "complete" }, tab);
                 return tab;
             },
+            async get(id) { return options.get(id); },
             async sendMessage(id, message) {
                 if (options.sendMessage) return options.sendMessage(id, message);
                 return { ok: true, items: [] };
@@ -641,6 +642,49 @@
 
     test("navigation cleans up listeners when updating a tab fails", async () => {
         const env = backgroundEnvironment({}, { async update() { throw new Error("Tab unavailable"); } });
+        await rejects(() => env.navigateTab(77, moodle + "course/view.php?id=1"), /Tab unavailable/);
+        assertNavigationCleaned(env);
+    });
+
+    test("navigation without tabs permission ignores a hidden queued blank-page completion", async () => {
+        const requested = moodle + "course/view.php?id=1";
+        const env = backgroundEnvironment({}, {
+            async update(id, properties, tabs) {
+                tabs.onUpdated.emit(id, { status: "complete" }, { id, status: "complete" });
+                return { id, status: "loading", pendingUrl: properties.url };
+            },
+            async get(id) { return { id, status: "loading", pendingUrl: requested }; }
+        });
+        const pending = env.navigateTab(77, requested);
+        let completed = false;
+        pending.then(() => { completed = true; }, () => { completed = true; });
+        await flushPromises();
+        equal(completed, false, "Hidden about:blank must not complete or reject the new navigation");
+        env.ext.tabs.onUpdated.emit(77, { status: "complete" }, { id: 77, url: requested, status: "complete" });
+        await pending;
+        assertNavigationCleaned(env);
+    });
+
+    test("navigation without tabs permission rejects an inaccessible completed destination", async () => {
+        const env = backgroundEnvironment({}, {
+            async update(id, properties, tabs) {
+                tabs.onUpdated.emit(id, { status: "complete" }, { id, status: "complete" });
+                return { id, status: "loading" };
+            },
+            async get(id) { return { id, status: "complete" }; }
+        });
+        await rejects(() => env.navigateTab(77, moodle + "course/view.php?id=1"), /ログイン/);
+        assertNavigationCleaned(env);
+    });
+
+    test("navigation cleans up when a hidden completed tab disappears during recheck", async () => {
+        const env = backgroundEnvironment({}, {
+            async update(id, properties, tabs) {
+                tabs.onUpdated.emit(id, { status: "complete" }, { id, status: "complete" });
+                return { id, status: "loading" };
+            },
+            async get() { throw new Error("Tab unavailable"); }
+        });
         await rejects(() => env.navigateTab(77, moodle + "course/view.php?id=1"), /Tab unavailable/);
         assertNavigationCleaned(env);
     });
