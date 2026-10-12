@@ -10,3 +10,8 @@ xcuserdata/
 
 # Offline developer extension
 build/
+
+# macOS metadata
+.DS_Store
+._*
+__MACOSX/
