@@ -33,7 +33,8 @@ class TaskListState {
     }
 
     static timestamp(history = {}) {
-        const at = Math.max(history.calendarAt || 0, history.fullSweepAt || 0);
+        // Automatic list checks may leave task details pending.
+        const at = history.fullSweepAt || 0;
         if (!at) return "最終更新：記録なし";
         const text = new Date(at).toLocaleString("ja-JP", {
             year: "numeric",

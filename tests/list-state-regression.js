@@ -29,11 +29,20 @@
     assert(State.describe({ history: { attempt: { outcome: 'error', reason: 'auth' } }, now }).status.includes('再ログイン'), 'Authentication failures give next action');
     assert(!State.describe({ total: 3, visible: 1, now }).empty, 'Existing results remain available');
     assert(!State.describe({ coordinator: { lease: { expiresAt: now - 1 } }, now }).running, 'Expired lease is not permanently loading');
-    assert(State.timestamp({ calendarAt: now }).startsWith('最終更新：'), 'Calendar coverage is accurately labelled');
-    assert(State.timestamp({ fullSweepAt: now }).startsWith('最終更新：'), 'Full sweep coverage is accurately labelled');
+    assert(State.timestamp({ calendarAt: now }) === '最終更新：記録なし', 'Automatic list checks cannot claim a completed full refresh');
+    const fullSweepAt = now - 3600000;
+    const fullLabel = '最終更新：' + new Date(fullSweepAt).toLocaleString('ja-JP', {
+        year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    assert(State.timestamp({ fullSweepAt }) === fullLabel, 'Last updated shows the completed full refresh');
+    assert(State.timestamp({ fullSweepAt, calendarAt: now }) === fullLabel, 'A newer automatic check does not advance last updated');
+    for (const outcome of ['error', 'partial', 'cancelled']) {
+        assert(State.timestamp({ fullSweepAt, attempt: { at: now, outcome } }) === fullLabel,
+            'An unsuccessful refresh preserves the previous timestamp: ' + outcome);
+    }
     const manifest = JSON.parse(read('src/manifest.json'));
     assert(!manifest.permissions.includes('notifications') && !manifest.permissions.includes('alarms'), 'Production does not request notification or alarm permissions');
     assert(!/notifications\.|alarms\./.test(read('src/storage/service_worker.js')), 'No delivery or alarm API remains');
     assert(!JSON.stringify(manifest).includes('dev/'), 'Production does not include developer entry');
-    log('17 list state, coverage and packaging checks passed');
+    log('List state, full-refresh timestamp and packaging checks passed');
 })();

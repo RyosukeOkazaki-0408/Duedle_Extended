@@ -439,7 +439,7 @@ async function renderList() {
     if (state.status || !collectionRunning) collectionstatus.textContent = completionError || state.status;
     const updated = document.querySelector("#listupdated");
     updated.textContent = TaskListState.timestamp(stored.refreshHistory);
-    updated.title = "締切一覧確認は対象期間の一覧確認です。各課題の詳細情報は順次更新します。";
+    updated.title = "「課題を更新」による全体更新が最後に正常完了した時刻です。自動更新や途中終了では変わりません。";
     if (globalThis.duedleAccountActive === false) {
         display.replaceChildren();
         updated.textContent = "";
