@@ -27,7 +27,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
             await page.locator('#duedle-theme-menu button[data-mode="'+value+'"]').click();
             if(value==='ios-toggle') await page.keyboard.press('Escape');
         };
-  await page.waitForFunction(()=>document.querySelector('#statusSelect')?.value==='incomplete');
+  await page.waitForFunction(()=>document.querySelector('#statusSelect')?.value==='ex-complete');
   const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id)); assert(worker);
   await worker.evaluate(async () => {
    await chrome.storage.local.set({assign_list:Array.from({length:5},(_,i)=>({group:'assign_list',assignId:i+1,courseId:1,courseName:'回帰テストコース 2026',assignName:'課題 '+(i+1),status:'incomplete',show:true,start:Date.now()-3600000,due:Date.now()+4*86400000,filenum:1,file:i===0?'long_ascii_filename_'.repeat(20):'report.pdf'}))});
@@ -48,6 +48,11 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
     assert(await page.locator('#display > .assign').first().isVisible(),'Cards stay visible with settings collapsed');
    }
    await openSettings();
+   assert(await page.locator('.duedle-filter-control,.duedle-color-control').evaluateAll(groups=>groups.every(group=>{
+    const [label,control]=group.children;
+    const a=label.getBoundingClientRect(),b=control.getBoundingClientRect(),g=group.getBoundingClientRect();
+    return a.top<b.bottom&&b.top<a.bottom&&b.right<=g.right+1&&a.left>=g.left-1;
+   })),`Labels stay with their controls at ${width}px`);
    assert.equal(await page.locator('#thememode_selection').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;}),1,'Settings label stays on one line at '+width);
    const buttons=await page.locator('.duedle-dashboard-actions > button').evaluateAll(buttons=>buttons.map(button=>{const r=button.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right,width:r.width}}));
    assert.equal(buttons.length,3);
@@ -170,10 +175,10 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   await page.waitForFunction(()=>document.querySelector('#showSelect').value==='all' && document.querySelectorAll('#display > .assign').length===5);
   await page.locator('#selecttasksbutton').tap();
   await taskCheck(5).check();
-  await page.evaluate(()=>{const display=document.querySelector('#display');const observer=new MutationObserver(()=>{if(display.children.length>0 && display.children.length<5){observer.disconnect();document.querySelector('#hideselectedtasks').click();window.clickedDuringRender=true;}});observer.observe(display,{childList:true});});
+  await page.evaluate(()=>{const display=document.querySelector('#display');const observer=new MutationObserver(()=>{if(display.children.length===5){observer.disconnect();document.querySelector('#hideselectedtasks').click();window.clickedAfterRender=true;}});observer.observe(display,{childList:true});});
   await worker.evaluate(async()=>{const {assign_list}=await chrome.storage.local.get('assign_list');assign_list[0].file='Updated by background refresh';await chrome.storage.local.set({assign_list});});
-  await page.waitForFunction(()=>window.clickedDuringRender && document.querySelector('#taskselectionbar').hidden);
-  assert.equal(await worker.evaluate(async()=>(await chrome.storage.local.get('assign_list')).assign_list[4].show),false,'Hide during an asynchronous render preserves the selected task');
+  await page.waitForFunction(()=>window.clickedAfterRender && document.querySelector('#taskselectionbar').hidden);
+  assert.equal(await worker.evaluate(async()=>(await chrome.storage.local.get('assign_list')).assign_list[4].show),false,'Hide after an atomic asynchronous render preserves the selected task');
   await page.evaluate(()=>{const table=document.createElement('table');table.innerHTML='<tbody><tr bgcolor="lightblue" id="native-blue-row"><td>Course</td></tr></tbody>';document.body.append(table);});
   await chooseTheme('1');
   await page.waitForFunction(()=>getComputedStyle(document.querySelector('#native-blue-row')).backgroundColor==='rgb(54, 63, 69)');

@@ -50,9 +50,9 @@ class TaskBox { //親クラス
                 title.textContent = "✓ " + title.textContent;
                 break;
             case "qualify":
-                listatus.textContent = "状態: 合格";
+                listatus.textContent = "状態: 完了";
                 element.classList.add("qualify");
-                title.textContent = "〇 " + title.textContent;
+                title.textContent = "✓ " + title.textContent;
                 break;
             case "incomplete":
                 listatus.textContent = "状態: 未完了";

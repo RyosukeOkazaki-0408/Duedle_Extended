@@ -17,6 +17,12 @@ ol > li + li { margin-top: 10px; }
 .steps p { margin: 6px 0 0; }
 nav ul { list-style: none; padding: 0; margin: 0; }
 nav li { padding: 0; }
+.toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+.toc > li > a { font-weight: 600; }
+.toc ul { padding-left: 12px; border-left: 2px solid #8e8e93; }
+.toc ul a { font-size: .9rem; }
+:target { scroll-margin-top: 20px; }
+@media (max-width: 600px) { .toc { grid-template-columns: 1fr; } }
 a { color: #0068c9; text-underline-offset: 3px; }
 nav a, #contact-link, footer > a { display: inline-flex; align-items: center; min-height: 44px; }
 dt { font-weight: 600; margin-top: 14px; }
@@ -55,3 +61,53 @@ a:focus-visible, summary:focus-visible { outline: 2px solid currentColor; outlin
 .guide-example video { display: block; width: 100%; height: auto; border: 1px solid #8e8e93; border-radius: 6px; background: #000; }
 
 .guide-phone-example { max-width: 420px; margin-inline: auto; }
+
+/* Guide-specific layout; the installation page shares the base styles above. */
+.help-guide main { max-width: 920px; }
+.help-guide header { padding: 8px 4px; }
+.help-guide nav { margin-top: 16px; padding-block: 12px; }
+.help-guide .toc { list-style: none; padding: 0; margin: 0; gap: 0 24px; }
+.help-guide .toc > li { margin: 0; padding: 0; }
+.help-guide .toc a { font-weight: 500; }
+.help-guide section { padding: 28px; }
+.help-guide h2 { margin-bottom: 20px; }
+.help-guide h3 { margin-top: 32px; }
+.help-guide h2 + h3 { margin-top: 0; }
+.help-guide section > :last-child { margin-bottom: 0; }
+.definition-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 12px 20px; }
+.definition-list dt, .definition-list dd { margin: 0; }
+.media-request {
+  margin: 24px 0;
+  padding: 24px;
+  min-height: 164px;
+  border: 1.5px dashed #8e8e93;
+  border-radius: 10px;
+  background: #f5f5f7;
+}
+.media-request figcaption { margin-bottom: 10px; }
+.media-request figcaption strong { display: block; font-size: 1rem; }
+.media-kind { display: block; color: #636366; font-size: .8rem; margin-bottom: 6px; }
+.media-request p { font-size: .9rem; }
+.media-request .capture-device { color: #636366; margin: 0; font-size: .8rem; }
+.menu-guide { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 24px; }
+.menu-guide .menu-example { margin: 0; }
+.menu-guide h3:first-child { margin-top: 0; }
+.menu-example figcaption { margin-top: 8px; font-size: .8rem; color: #636366; }
+.help-guide #course-collapse .guide-example { margin-block: 16px; }
+@media (max-width: 640px) {
+  .help-guide section { padding: 22px 16px; }
+  .help-guide .toc { grid-template-columns: 1fr; }
+  .definition-list { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .definition-list dd + dt { margin-top: 12px; }
+  .media-request { padding: 18px; }
+  .menu-guide { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .menu-example { width: min(100%, 260px); justify-self: center; }
+}
+@media (prefers-color-scheme: dark) {
+  .media-request { background: #242426; border-color: #8e8e93; }
+  .media-kind, .media-request .capture-device, .menu-example figcaption { color: #aeaeb2; }
+}
+@media (forced-colors: active) {
+  .media-request { background: Canvas; border-color: CanvasText; }
+  .media-kind, .media-request .capture-device, .menu-example figcaption { color: CanvasText; }
+}

@@ -56,12 +56,12 @@
 /* Status colors belong to Duedle roots, never Moodle descendants. */
 #display > .complete, .duedle-task-status.complete { --duedle-status-color: #90ee90; }
 body.darkmode #display > .complete, body.darkmode .duedle-task-status.complete { --duedle-status-color: #063906; }
-#display > .qualify, .duedle-task-status.qualify { --duedle-status-color: #add8e6; }
-body.darkmode #display > .qualify, body.darkmode .duedle-task-status.qualify { --duedle-status-color: #12515e; }
+#display > .qualify, .duedle-task-status.qualify { --duedle-status-color: #90ee90; }
+body.darkmode #display > .qualify, body.darkmode .duedle-task-status.qualify { --duedle-status-color: #063906; }
 #display > .incomplete, .duedle-task-status.incomplete { --duedle-status-color: #ffffe0; }
 body.darkmode #display > .incomplete, body.darkmode .duedle-task-status.incomplete { --duedle-status-color: #57422a; }
-#display > .stuck, .duedle-task-status.stuck { --duedle-status-color: #ffffff; }
-body.darkmode #display > .stuck, body.darkmode .duedle-task-status.stuck { --duedle-status-color: #000000; }
+#display > .stuck, .duedle-task-status.stuck { --duedle-status-color: #ff9090; }
+body.darkmode #display > .stuck, body.darkmode .duedle-task-status.stuck { --duedle-status-color: #821f1f; }
 #display > .warning, .duedle-task-status.warning { --duedle-status-color: #ffb681; }
 body.darkmode #display > .warning, body.darkmode .duedle-task-status.warning { --duedle-status-color: #7c3316; }
 #display > .expired, .duedle-task-status.expired { --duedle-status-color: #ff9090; }
@@ -376,4 +376,37 @@ h6.d-flex {
     height: 20px;
     margin: 0;
     flex-shrink: 0;
+}
+
+/* Labels and their controls wrap as one unit at every viewport width. */
+:is(#ext_dashboard, #duedle-course-settings) :is(#fieldfilter, #fieldcolor) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-width: 0;
+}
+#fieldcolor { margin-top: 8px; }
+.duedle-filter-control, .duedle-color-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+}
+:is(.duedle-filter-control, .duedle-color-control) > .filterlabel {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin: 0 !important;
+}
+:is(#ext_dashboard, #duedle-course-settings) .duedle-filter-control > select {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    width: auto !important;
+    margin: 0 !important;
+}
+.duedle-color-control > input[type="color"] {
+    flex-shrink: 0;
+    margin: 0 !important;
 }

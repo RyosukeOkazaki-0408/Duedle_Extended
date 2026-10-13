@@ -1,6 +1,6 @@
-const displaybox = async (data) => {
+const displaybox = async (data, target = null) => {
     if (globalThis.duedleAccountActive === false) return 0;
-    const display = document.querySelector("#display");
+    const display = target || document.querySelector("#display");
     let rendered = 0;
     const settings = await ext.storage.sync.get(["selectedType", "selectedStatus", "selectedDue", "selectedShow"]);
     if (data) {
@@ -8,7 +8,8 @@ const displaybox = async (data) => {
             const item = { ...savedItem, status: Scrape.statusAt(savedItem.status, savedItem.due) };
             //condition
             const savedType = settings.selectedType ?? "all";
-            const savedStatus = settings.selectedStatus ?? "incomplete";
+            const savedStatus = ({ qualify: "complete", stuck: "expired" })[settings.selectedStatus]
+                ?? settings.selectedStatus ?? "ex-complete";
             const savedDue = settings.selectedDue ?? "all";
             const savedShow = settings.selectedShow ?? "normal";
             const currentURL = new URL(location.href);
@@ -22,7 +23,7 @@ const displaybox = async (data) => {
 
             if (item.start) { item.start = new Date(item.start); }
             if (item.due) { item.due = new Date(item.due); }
-            changeAct(item, data);
+
 
             //表示状態確認
             if (savedShow === "normal" && !item.show) {
@@ -35,12 +36,16 @@ const displaybox = async (data) => {
             if (savedType !== "all" && item.group !== savedType) {
                 continue; // タイプが一致しない場合はスキップ
             }
-            const statusMatches = savedStatus === "incomplete"
-                ? ["incomplete", "warning"].includes(item.status) : item.status === savedStatus;
+            const statusGroups = {
+                complete: ["complete", "qualify"],
+                incomplete: ["incomplete", "warning"],
+                expired: ["expired", "stuck"]
+            };
+            const statusMatches = (statusGroups[savedStatus] || [savedStatus]).includes(item.status);
             if (savedStatus !== "all" && savedStatus !== "ex-complete" && !statusMatches) {
                 continue; // 状態が一致しない場合はスキップ
             }
-            if (savedStatus === "ex-complete" && item.status === "complete") {
+            if (savedStatus === "ex-complete" && statusGroups.complete.includes(item.status)) {
                 continue;
             }
             const remainhours = item.due ? (item.due - Date.now()) / (1000 * 60 * 60) : NaN;
@@ -85,8 +90,11 @@ const displaybox = async (data) => {
             }
         }
     }
-    checkUnvisited();
-    colorReload();
+    if (!target) {
+        refreshUpcomingEventStatuses(data || []);
+        checkUnvisited();
+        colorReload();
+    }
     return rendered;
 };
 
@@ -134,9 +142,26 @@ const taskLinkMatches = (link, type, id) => {
     } catch { return false; }
 };
 
-// Moodle's upcoming block links to calendar events rather than activity URLs.
-// Only use the Japanese event label when exactly one saved task matches it.
+let upcomingEventRefs = new Map();
+const calendarEventId = element => {
+    const link = element.querySelector('a[data-type="event"][data-action="view-event"]');
+    if (!link) return null;
+    try {
+        const url = new URL(link.getAttribute("href"), location.href);
+        const id = Number(link.getAttribute("data-event-id"));
+        return url.origin === "https://cms7.ict.nitech.ac.jp" && url.pathname === "/moodle40a/calendar/view.php"
+            && Number.isSafeInteger(id) && id > 0 ? id : null;
+    } catch { return null; }
+};
+
+// Resolve modern events by identity. Name fallback is only for legacy markup without an event ID.
 const calendarEventMatches = (element, item, tasks) => {
+    const eventId = calendarEventId(element);
+    if (eventId) {
+        const ref = upcomingEventRefs.get(eventId);
+        return Boolean(ref && item.group === (ref.type === "assign" ? "assign_list" : "quiz_list")
+            && Number(item[ref.type === "assign" ? "assignId" : "quizId"]) === ref.id);
+    }
     const link = element.querySelector('a[data-type="event"][data-action="view-event"]');
     if (!link) return false;
     try {
@@ -188,6 +213,15 @@ const changeAct = (item, tasks = []) => {
     });
 };
 
+// Recompute from all stored tasks, regardless of the current course/list filters.
+const refreshUpcomingEventStatuses = tasks => {
+    document.querySelectorAll(".event.duedle-task-status").forEach(event => {
+        event.classList.remove("complete", "qualify", "incomplete", "stuck", "warning", "expired", "unknown", "unvisited", "duedle-task-status");
+        ["color", "text", "link", "border"].forEach(part => event.style?.removeProperty?.("--duedle-status-" + part));
+    });
+    tasks.forEach(task => changeAct({ ...task, status: Scrape.statusAt(task.status, task.due) }, tasks));
+};
+
 //unvisited
 const checkUnvisited = () => {
     // Also update events with no saved task and events whose status is already known.
@@ -211,7 +245,17 @@ const checkUnvisited = () => {
     });
     const unvisitedboxes_ = Array.from(document.querySelectorAll(`.event:not(.complete,.incomplete,.unknown,.expired,.stuck,.qualify,.warning)`));
     unvisitedboxes_.map((i) => {
-        i.classList.add("unvisited", "duedle-task-status");
+        const eventId = calendarEventId(i);
+        const directTask = ["assign", "quiz"].some(type => {
+            const link = i.querySelector(`a[href*="/mod/${type}/view.php"]`);
+            if (!link) return false;
+            try {
+                const id = Number(new URL(link.getAttribute("href"), location.href).searchParams.get("id"));
+                return Number.isSafeInteger(id) && id > 0 && taskLinkMatches(link, type, id);
+            } catch { return false; }
+        });
+        if (directTask || (eventId && upcomingEventRefs.get(eventId))) setActivityStatus(i, "unvisited");
+        else if (eventId && !upcomingEventRefs.has(eventId)) setActivityStatus(i, "unknown");
         const i_title = i.querySelector("a.text-truncate");
         if (i_title) i_title.setAttribute("title", i_title.textContent);
     });

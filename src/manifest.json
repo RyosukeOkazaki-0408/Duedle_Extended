@@ -164,6 +164,7 @@
       "js": [
         "./storage/cs_scrapeTaskList.js",
         "./storage/class/TaskListState.js",
+        "./storage/class/CalendarEventResolver.js",
         "./storage/display/filter.js",
         "./storage/display/displaybox.js"
       ],

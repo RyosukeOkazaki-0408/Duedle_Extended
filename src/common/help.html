@@ -9,28 +9,21 @@
   <script src="support-config.js" defer></script>
   <script src="help.js" defer></script>
 </head>
-<body>
+<body class="help-guide">
   <main id="top">
-    <header>
+    <header id="getting-started">
       <p class="brand">Duedle</p>
       <h1>使い方</h1>
+      <p class="muted">まだDuedleを入れていない方は、<a href="install.html">端末ごとの導入方法</a>をご覧ください。</p>
     </header>
-    <section id="getting-started" aria-labelledby="getting-started-title">
-      <h2 id="getting-started-title">はじめて使う方へ</h2>
-      <p>まだDuedleを入れていない方は、導入方法をご覧ください。</p>
-      <p><strong><a href="install.html">Duedleの導入方法を見る</a></strong></p>
-    </section>
     <nav aria-label="このページの目次">
-      <h2>目次</h2>
-      <ul>
+      <ol class="toc">
         <li><a href="#tasks">課題を確認する</a></li>
-        <li><a href="#visibility">課題を隠す・元に戻す</a></li>
-        <li><a href="#settings">課題を絞り込む・色を変える</a></li>
-        <li><a href="#appearance">画面の色・見た目を変える</a></li>
-        <li><a href="#courses">コースのページを使いやすくする</a></li>
+        <li><a href="#settings">課題を整理する</a></li>
+        <li><a href="#courses">コース内を移動する</a></li>
+        <li><a href="#appearance">Duedle設定</a></li>
         <li><a href="#trouble">困ったとき</a></li>
-        <li><a href="#contact">お問い合わせ</a></li>
-      </ul>
+      </ol>
     </nav>
 
     <section id="tasks" aria-labelledby="tasks-title">
@@ -39,108 +32,173 @@
         <li><strong>「課題を更新」を押す</strong><p>課題や小テストの情報を読み込みます。更新が終わるまで、元のページを開いたまま待ってください。</p></li>
         <li><strong>気になる課題を開く</strong><p>課題は横並びで表示されます。課題一覧は横にスクロールできます。</p><p>課題を押すと、それぞれのページへ進みます。</p></li>
       </ol>
-      <h3>一覧で分かること</h3>
-      <p>各課題の期限、提出状況、残り時間などを確認できます。小テストでは得点や受験回数も表示されます。取得できない情報は「?」や「不明」と表示されることがあります。</p>
+      <p>一覧はダッシュボードとコースページに表示されます。コースページでは、そのコースの課題だけを確認できます。課題は期限の近い順に並びます。</p>
+      <p id="task-overview">各課題の期限、提出状況、残り時間などを確認できます。小テストでは得点や受験回数も表示されます。取得できない情報は「?」や「不明」と表示されることがあります。</p>
+      <figure class="guide-example" id="media-overview">
+        <a href="help-task-overview-desktop.png" target="_blank" rel="noopener noreferrer" aria-label="パソコンの課題一覧を拡大する"><img src="help-task-overview-desktop.png" width="2922" height="1032" loading="lazy" alt="更新ボタン、6色の設定、提出課題と小テストのカードが並ぶパソコンの課題一覧。"></a>
+        <figcaption>パソコンの課題一覧。設定で表示する課題を絞り込めます。</figcaption>
+      </figure>
+      <details>
+        <summary>スマホでの表示例</summary>
+        <figure class="guide-example guide-phone-example">
+          <a href="help-task-overview-phone.png" target="_blank" rel="noopener noreferrer" aria-label="スマホの課題一覧を拡大する"><img src="help-task-overview-phone.png" width="938" height="1070" loading="lazy" alt="更新ボタンと閉じた課題の設定、横に並ぶ課題カードが見えるスマホ幅の画面。"></a>
+          <figcaption>課題一覧は横にスクロールできます。</figcaption>
+        </figure>
+      </details>
       <p class="note">一覧は、情報を取得した時点の状態です。提出できているか、最新の期限や成績がどうなっているかは、課題・小テストのページでも確認してください。</p>
-      <h3>更新の表示について</h3>
+      <details id="task-refresh">
+        <summary>更新の時刻・間隔と収集モード</summary>
+
       <dl>
         <dt>最終更新</dt><dd>「課題を更新」による全体更新が最後に正常完了した時刻です。自動更新や途中終了では変わりません。</dd>
         <dt>クールダウン</dt><dd>更新には3時間のクールタイムがあります。ボタンに残り時間が表示されます。</dd>
       </dl>
       <p>Moodleの表示中は、自動更新も行われます。自動更新は不定期に行われるので、課題確認の際には手動更新することを推奨します。</p>
-    </section>
-    
-    <section id="visibility" aria-labelledby="visibility-title">
-      <h2 id="visibility-title">課題を隠す・元に戻す</h2>
-      <figure class="guide-example">
-        <video controls playsinline preload="none" poster="help-task-visibility-poster.jpg" width="1280" height="600" aria-describedby="task-video-caption">
-          <source src="help-task-visibility.mp4" type="video/mp4">
-          <track kind="captions" src="help-task-visibility-ja.vtt" srclang="ja" label="日本語の操作説明" default>
-          <p>動画を再生できない場合は、<a href="help-task-visibility.mp4">操作動画を開いてください</a>。</p>
-        </video>
-      </figure>
-      <h3>一覧の表示・非表示</h3>
-      <p>「一覧を隠す」を押すと、課題一覧の表示が閉じます。「一覧を表示」を押すと戻ります。</p>
-      <h3>1件ずつ隠す・戻す</h3>
-      <p>各課題の右上にある、縦に並んだ3つの点を押し、「一覧から削除する」を選ぶと、その課題だけを隠せます。戻すときは「表示」を「非表示」にして、同じメニューの「一覧に戻す」を選びます。最後に「表示」を「通常」に戻してください。</p>
-      <h3>複数の課題をまとめて隠す</h3>
-      <ol>
-        <li>「課題を選択」を押します。</li>
-        <li>隠したい課題の「この課題を選択」すべてにチェックを入れます。</li>
-        <li>「選択した課題を隠す」を押します。</li>
-      </ol>
-      <h3>隠した課題を元に戻す</h3>
-      <ol>
-        <li>「表示」を「非表示」にします。</li>
-        <li>「課題を選択」を押して、戻したい課題すべてにチェックを入れます。</li>
-        <li>「選択した課題を戻す」を押します。</li>
-        <li>「表示」を「通常」に戻します。</li>
-      </ol>
-      <p>見つからない場合は、「種類」「状態」「期限」をそれぞれ「すべて」にしてみてください。</p>
-      <p class="note">課題を隠しても、Moodle上の課題や提出ファイルが削除されることはありません。</p>
+        <p id="collection-mode"><strong>収集モード：</strong>「通常」のまま使用してください。「CSE用（別タブ）」は、別タブを使って情報を取得する必要がある場合のモードです。更新中に一時的なタブが開くことがあります。</p>
+      </details>
+      <details id="file-preview">
+        <summary>提出ファイルを確認する</summary>
+        <p>提出ファイルのリンクを押すと、対応ファイルは<strong>ダウンロードせずに</strong>ブラウザ上で確認できます。</p>
+        <p>課題のページで、PDF・画像・テキストなどの提出ファイルを開けます。対応していない形式や表示できない場合は、元のファイルリンクへ進みます。表示やダウンロードの方法はブラウザによって異なります。</p>
+      </details>
     </section>
 
     <section id="settings" aria-labelledby="settings-title">
-      <h2 id="settings-title">課題を絞り込む・色を変える</h2>
-      <figure class="guide-example">
-        <a href="help-task-settings-desktop.png" target="_blank" rel="noopener noreferrer" aria-label="パソコンの課題設定画面を拡大する">
-          <img src="help-task-settings-desktop.png" width="1444" height="562" loading="lazy" alt="パソコンの課題設定画面。種類・状態・期限・表示の選択欄と、完了・未提出などの色の設定が並んでいる。">
-        </a>
-      </figure>
-      <dl>
+      <h2 id="settings-title">課題を整理する</h2>
+      <h3>絞り込みと色分け</h3>
+      <p>スマホでは「課題の設定」を開きます。パソコンでは、課題一覧の上に設定が並びます。</p>
+      <dl class="definition-list">
         <dt>種類</dt><dd>提出課題と小テストを切り替えます。</dd>
-        <dt>状態</dt><dd>「完了以外」「未提出」など、課題の状態で絞り込みます。初期設定は「未提出」です。</dd>
+        <dt>状態</dt><dd>「完了以外」「未提出」など、課題の状態で絞り込みます。初期設定は「完了以外」です。変更した選択は保存されます。</dd>
         <dt>期限</dt><dd>「24時間以内」「今週」など、期限で絞り込みます。</dd>
         <dt>表示</dt><dd>「通常」は隠していない課題、「非表示」は自分で隠した課題、「すべて」は両方を表示します。他の絞り込み条件も同時に適用されます。</dd>
       </dl>
-      <p>たとえば、まだ終えていない課題を探すなら「状態」を「完了以外」にします。絞り込みを解除するには「種類」「状態」「期限」を「すべて」に戻してください。</p>
-      <h3>各課題の色を変える</h3>
-      <p>各状態の右にある色のついた部分を押し、好きな色を選びます。</p>
-      <details>
-        <summary>状態の名前の意味</summary>
-        <dl>
-          <dt>完了</dt><dd>提出済み、または小テストで満点を取っている状態です。</dd>
-          <dt>合格</dt><dd>小テストで必要な点数に達しているものの、満点ではない状態です。</dd>
-          <dt>未提出</dt><dd>課題を提出していない、または小テストに回答していない状態です。</dd>
-          <dt>行き詰まり</dt><dd>小テストで受験回数の上限に達し、合格点に届いていない状態です。</dd>
-          <dt>期限近い</dt><dd>期限が3日以内で、まだ提出していない課題です。</dd>
-          <dt>期限切れ</dt><dd>期限を過ぎた状態です。</dd>
+      <p id="task-colors">各状態の右にある色のついた部分を押し、好きな色を選びます。色は明るい表示と暗い表示で別々に保存されます。</p>
+      <figure class="guide-example guide-phone-example" id="media-filters">
+        <a href="help-task-settings-phone.png" target="_blank" rel="noopener noreferrer" aria-label="スマホの課題設定を拡大する"><img src="help-task-settings-phone.png" width="944" height="738" loading="lazy" alt="スマホで開いた課題の設定。状態は完了以外で、種類・期限・表示の選択欄と6色の設定が並んでいる。"></a>
+        <figcaption>スマホでは「課題の設定」を開くと、絞り込みと色を変更できます。</figcaption>
+      </figure>
+      <details id="status-meaning">
+        <summary>色の意味と状態フィルター</summary>
+<dl class="definition-list">
+          <dt>完了</dt><dd>提出済み、または小テストで満点・合格点に達している状態です。合格点を取得できない小テストも、得点と受験履歴があれば完了として扱います。</dd>
+          <dt>未提出</dt><dd>課題を提出していない、または小テストが未受験・合格点未満の状態です。</dd>
+          <dt>行き詰まり・期限切れ</dt><dd>小テストで受験回数の上限に達して合格していない、または「未提出」の課題・小テストが期限を過ぎた状態です。</dd>
+          <dt>期限近い</dt><dd>「未提出」の課題・小テストのうち、期限が3日以内のものです。</dd>
           <dt>不明</dt><dd>小テストの点数が非公開などの理由で、結果を判定できない状態です。</dd>
-          <dt>未参照</dt><dd>まだ確認していない課題です。</dd>
-        </dl>
+          <dt>未参照</dt><dd>Duedleがまだ情報を取得できていない課題です。</dd>
+</dl>
+        <p>「完了以外」には、完了扱いの課題は表示されません。「未提出」には「期限近い」も含まれます。</p>
+        <p id="event-colors">コース内の課題や「直近イベント」にも、課題の状態に応じた色が付きます。</p>
+        <p>予定に対応する課題を確認できない場合は「不明」、課題の情報がまだない場合は「未参照」の色になります。</p>
       </details>
-      <details>
-        <summary>「収集モード」について</summary>
-        <p>「通常」のまま使用してください。「CSE用（別タブ）」は、別タブを使って情報を取得する必要がある場合のモードです。更新中に一時的なタブが開くことがあります。</p>
-      </details>
-    </section>
+      <details id="manual-complete">
+        <summary>不明な課題を「完了とする」</summary>
 
-    <section id="appearance" aria-labelledby="appearance-title">
-      <h2 id="appearance-title">画面の色・見た目を変える</h2>
-      <p>ページ右上の<strong>「Duedle設定」</strong>を押します。</p>
-      <h3>カラーモードを選ぶ</h3>
-      <dl>
-        <dt>ブラウザと同期</dt><dd>ブラウザが使っている明るい表示・暗い表示に合わせます。</dd>
-        <dt>ダークモード</dt><dd>暗い背景にします。</dd>
-        <dt>ライトモード</dt><dd>明るい背景にします。</dd>
-        <dt>ほのぼのモード</dt><dd>淡い黄色や水色を使った配色にします。</dd>
-      </dl>
-      <p>4つから1つを選びます。選択中の項目に印が付きます。</p>
-      <h3>iOS風モードを使う</h3>
-      <p>同じメニューの「iOS風モード」を押すたびに、ONとOFFが切り替わります。デザインがiOS風になります。iOS以外でも使用可能です。</p>
-      <p>カラーモードとは別の設定で、重複可能です。たとえば「ほのぼのモード」と「iOS風モード」を同時に使えます。</p>
-      <h3>課題や問題文の配色について</h3>
-      <p>ダークモードでは、問題文・課題説明も暗い配色にします。強調色は読める明るさに調整します。画像や図そのものの色は変更しません。</p>
+      <p>状態が「不明」の課題には「完了とする」が表示されます。Moodleで提出・受験結果を確認してから押すと、Duedle内で完了として扱えます。Moodle上の提出状況や成績は変わりません。</p>
+      </details>
+
+      <h3 id="visibility">課題を隠す・元に戻す</h3>
+      <p id="visibility-one">各課題の右上にある、縦に並んだ3つの点を押し、「一覧から削除する」を選ぶと、その課題だけを隠せます。戻すときは「表示」を「非表示」にして、同じメニューの「一覧に戻す」を選びます。最後に「表示」を「通常」に戻してください。</p>
+      <figure class="guide-example">
+        <figcaption id="help-task-visibility-caption">1件ずつ隠して、元に戻す（約18秒）</figcaption>
+        <video controls playsinline preload="none" poster="help-task-visibility-poster.jpg" width="1920" height="684" aria-describedby="help-task-visibility-caption">
+          <source src="help-task-visibility.mp4" type="video/mp4">
+          <track kind="captions" src="help-task-visibility-ja.vtt" srclang="ja" label="日本語の操作説明" default>
+          <p><a href="help-task-visibility.mp4">操作動画を開く</a></p>
+        </video>
+      </figure>
+      <details id="visibility-many">
+        <summary>複数の課題をまとめて隠す・戻す</summary>
+        <ol>
+          <li>「課題を選択」を押します。</li>
+          <li>隠したい課題の「この課題を選択」すべてにチェックを入れます。</li>
+          <li>「選択した課題を隠す」を押します。</li>
+        </ol>
+        <p>選択をやめるときは「キャンセル」を押します。課題の表示状態は変わりません。</p>
+        <p id="visibility-restore"><strong>元に戻すとき</strong></p>
+        <ol>
+          <li>「表示」を「非表示」にします。</li>
+          <li>「課題を選択」を押して、戻したい課題すべてにチェックを入れます。</li>
+          <li>「選択した課題を戻す」を押します。</li>
+          <li>「表示」を「通常」に戻します。</li>
+        </ol>
+      <figure class="guide-example">
+        <figcaption id="help-task-bulk-caption">複数の課題を選んで隠す（約17秒）</figcaption>
+        <video controls playsinline preload="none" poster="help-task-bulk-poster.jpg" width="1920" height="684" aria-describedby="help-task-bulk-caption">
+          <source src="help-task-bulk.mp4" type="video/mp4">
+          <track kind="captions" src="help-task-bulk-ja.vtt" srclang="ja" label="日本語の操作説明" default>
+          <p><a href="help-task-bulk.mp4">操作動画を開く</a></p>
+        </video>
+      </figure>
+        <p>見つからない場合は、「種類」「状態」「期限」をそれぞれ「すべて」にしてみてください。</p>
+      </details>
+      <p class="note">課題を隠しても、Moodle上の課題や提出ファイルが削除されることはありません。</p>
+      <p id="visibility-list">「一覧を隠す」を押すと、課題一覧の表示が閉じます。「一覧を表示」を押すと戻ります。</p>
     </section>
 
     <section id="courses" aria-labelledby="courses-title">
-      <h2 id="courses-title">コースのページを使いやすくする</h2>
+      <h2 id="courses-title">コース内を移動する</h2>
+      <p id="course-sections">「セクション一覧」を開き、見たい授業回や見出しを押すと、その場所へ移動します。「▲トップへ戻る」でページの先頭へ戻れます。</p>
       <p>スマホなどでは、「課題を更新」などのボタンの上にある「セクション一覧」を直接開けます。課題一覧を隠しても位置は変わりません。画面が広い場合は、ページの右側に表示されます。</p>
-      <h3>目的の授業回へ移動する</h3>
-      <p>「セクション一覧」を開き、見たい授業回や見出しを押すと、その場所へ移動します。「▲トップへ戻る」でページの先頭へ戻れます。</p>
-      <h3>閉じた項目を隠す</h3>
+      <figure class="guide-example guide-phone-example">
+        <figcaption id="help-section-navigation-caption">セクション一覧から授業回へ移動する（約10秒）</figcaption>
+        <video controls playsinline preload="none" poster="help-section-navigation-poster.jpg" width="996" height="1368" aria-describedby="help-section-navigation-caption">
+          <source src="help-section-navigation.mp4" type="video/mp4">
+          <track kind="captions" src="help-section-navigation-ja.vtt" srclang="ja" label="日本語の操作説明" default>
+          <p><a href="help-section-navigation.mp4">操作動画を開く</a></p>
+        </video>
+      </figure>
+      <p id="recent-pages">「最近開いたページ」から、記録されているページへ戻れます。</p>
+      <p>開いたコースページが最大10件記録されます。スマホでは、見出しを押すと一覧が開きます。履歴欄がある画面で利用できます。</p>
+    </section>
+
+    <section id="appearance" aria-labelledby="appearance-title">
+      <h2 id="appearance-title">Duedle設定</h2>
+      <p>ページ右上の<strong>「Duedle設定」</strong>を押します。</p>
+      <div class="menu-guide">
+        <figure class="guide-example menu-example">
+          <a href="help-settings-menu.png" target="_blank" rel="noopener noreferrer" aria-label="Duedle設定の画像を拡大する"><img src="help-settings-menu.png" width="548" height="1010" loading="lazy" alt="Duedle設定。カラーモード、iOS風モード、コースの並び替え、使い方、お問い合わせの順に並ぶ。"></a>
+          <figcaption>メニューの上から順に説明します。</figcaption>
+        </figure>
+        <div>
+          <h3 id="color-mode">カラーモード</h3>
+          <dl>
+            <dt>ブラウザと同期</dt><dd>ブラウザが使っている明るい表示・暗い表示に合わせます。</dd>
+            <dt>ダークモード</dt><dd>暗い背景にします。</dd>
+            <dt>ライトモード</dt><dd>明るい背景にします。</dd>
+            <dt>ほのぼのモード</dt><dd>淡い黄色や水色を使った配色にします。</dd>
+          </dl>
+          <p>4つから1つを選びます。選択中の項目に印が付きます。</p>
+          <h3 id="ios-mode">iOS風モード</h3>
+          <p>同じメニューの「iOS風モード」を押すたびに、ONとOFFが切り替わります。デザインがiOS風になります。iOS以外でも使用可能です。</p>
+          <p>カラーモードとは別の設定で、重複可能です。たとえば「ほのぼのモード」と「iOS風モード」を同時に使えます。</p>
+        </div>
+      </div>
+      <details id="content-colors">
+        <summary>画面に自動で反映されること</summary>
+        <p>ダークモードでは、問題文・課題説明も暗い配色にします。強調色は読める明るさに調整します。画像や図そのものの色は変更しません。</p>
+        <p>シラバスにも、選んだカラーモードとiOS風モードが反映されます。</p>
+        <p id="display-adjustments">画面の一部のユーザー名や重複する案内・リンクを隠し、ナビゲーションを整理します。パソコンの上部には時計も表示されます。これらは自動で適用されます。</p>
+      </details>
+      <h3>コース</h3>
+      <div id="course-order">
+        <p><strong>コースの並び替え</strong></p>
+
+        <ol>
+          <li>右上の「Duedle設定」→「コースの並び替え」を押すと、「コース概要の表示順設定」が開きます。</li>
+          <li>各コースの左側にある移動用のつまみを動かします。スマホでは長押ししてから上下へ、パソコンではドラッグして移動します。</li>
+          <li>ページの保存操作で変更を確定します。</li>
+          <li>ダッシュボードの「コース概要」で、並び順に「設定した表示順」を選びます。</li>
+        </ol>
+        <p>キーボードでも操作できます。移動用のつまみにフォーカスを合わせ、SpaceまたはEnterで選択し、上下矢印で移動して、再びSpaceまたはEnterで確定します。Escで取り消せます。</p>
+
+      </div>
+      <details id="course-collapse">
+        <summary>閉じたタブの表示</summary>
+
       <p>コースのページで、右上の「Duedle設定」を開きます。「コース」の中に「閉じたタブの表示」があります。</p>
-      <p>「閉じたタブの表示」をOFFにすると、コース内で折りたたんだ項目を隠せます。ここでいう「タブ」は、授業回などのまとまりのことです。ブラウザのタブではありません。</p>
+      <p>「閉じたタブの表示」をOFFにすると、コース内で折りたたんだ項目を隠せます。ここでいう「タブ」は、授業回などのまとまりのことです。</p>
       <p>隠れた項目も「セクション一覧」から選ぶと、その項目を開いて移動できます。閉じた項目をすべて表示する場合は、「閉じたタブの表示」をONに戻してください。</p>
       <figure class="guide-example">
         <figcaption><strong>ON：閉じた項目も表示</strong><p>「一般」「第1回」は折りたたまれていますが、見出しは一覧に残ります。</p></figcaption>
@@ -154,53 +212,45 @@
           <img src="help-course-sections-off.png" width="1484" height="306" loading="lazy" alt="折りたたまれた項目が隠れ、開いている「回帰問題のための線形モデリング」だけが表示された画面。">
         </a>
       </figure>
-      <details>
-        <summary>コースの表示順を変える</summary>
-        <ol>
-          <li>右上の「Duedle設定」→「コースの並び替え」を押すと、「コース概要の表示順設定」が開きます。</li>
-          <li>各コースの左側にある移動用のつまみを動かします。スマホでは長押ししてから上下へ、パソコンではドラッグして移動します。</li>
-          <li>ページの保存操作で変更を確定します。</li>
-          <li>ダッシュボードの「コース概要」で、並び順に「設定した表示順」を選びます。</li>
-        </ol>
-        <p>キーボードでも操作できます。移動用のつまみにフォーカスを合わせ、SpaceまたはEnterで選択し、上下矢印で移動して、再びSpaceまたはEnterで確定します。Escで取り消せます。</p>
       </details>
-      <details>
-        <summary>最近見たページや提出ファイルを開く</summary>
-        <p>「最近開いたページ」から、記録されているページへ戻れます。</p>
-        <p>提出ファイルのリンクを押すと、対応ファイルはダウンロードせずにブラウザ上で確認できます。</p>
-      </details>
-    </section>
+          </details>
+  </section>
+  <section id="trouble" aria-labelledby="trouble-title">
+    <h2 id="trouble-title">困ったとき</h2>
 
-    <section id="trouble" aria-labelledby="trouble-title">
-      <h2 id="trouble-title">困ったとき</h2>
-      <details>
-        <summary>課題が出てこない・一部の課題が見つからない</summary>
-        <ol>
-          <li>「一覧を表示」があれば押します。</li>
-          <li>「課題の設定」で「種類」「状態」「期限」「表示」をすべて「すべて」にします。</li>
-          <li>「最終更新」を確認します。まだ取得していない、または情報が古い場合は、更新できる時間になってから「課題を更新」を押します。</li>
-        </ol>
-        <p>それでも見つからない場合は、Moodleのコースページで課題が公開されているか確認してください。</p>
-      </details>
-      <details>
-        <summary>更新に失敗した・更新が中断された</summary>
-        <p>通信状態を確認し、画面の案内に従ってもう一度更新してください。更新中はページを閉じたり、再読み込みしたりせずに待ちます。</p>
-        <p>途中まで取得できた情報や、それまで保存されていた課題は残ります。</p>
-      </details>
-      <details>
-        <summary>別の端末にも設定や課題は引き継がれる？</summary>
-        <p>Duedleには、端末やブラウザをまたいで課題・設定をまとめて引き継ぐ機能はありません。別の端末では、その端末で拡張機能を有効にし、課題情報を取得してください。</p>
-      </details>
-    </section>
+    <details>
+      <summary>課題が出てこない・一部の課題が見つからない</summary>
+      <ol>
+        <li>「一覧を表示」があれば押します。</li>
+        <li>「課題の設定」で「種類」「状態」「期限」「表示」をすべて「すべて」にします。</li>
+        <li>「最終更新」を確認します。まだ取得していない、または情報が古い場合は、更新できる時間になってから「課題を更新」を押します。</li>
+      </ol>
+      <p>それでも見つからない場合は、Moodleのコースページで課題が公開されているか確認してください。</p>
+    </details>
+    <details>
+      <summary>更新に失敗した・更新が中断された</summary>
+      <p>通信状態を確認し、画面の案内に従ってもう一度更新してください。更新中はページを閉じたり、再読み込みしたりせずに待ちます。</p>
+      <p>途中まで取得できた情報や、それまで保存されていた課題は残ります。</p>
+    </details>
+    <details>
+      <summary>アカウント・端末を変えるとき</summary>
 
-    <section id="contact" aria-labelledby="contact-title">
-      <h2 id="contact-title">Duedleへのお問い合わせ</h2>
-      <p>不具合、改善のご要望、使い方の質問は、Googleフォームからお送りください。返信をご希望の場合は、フォームに返信先のメールアドレスを記入してください。</p>
-      <p id="contact-pending">お問い合わせフォームは準備中です。</p>
-      <a id="contact-link" hidden target="_blank" rel="noopener noreferrer">お問い合わせフォームを開く</a>
-      <p class="note">授業や課題の内容は担当教員へ、大学のシステムに関するお問い合わせはMoodleの「サイトサポートに連絡する」へお願いします。</p>
-    </section>
-    <footer><a href="#top">ページの先頭へ戻る</a></footer>
-  </main>
+      <p>課題や履歴は、確認できたMoodleのアカウントごとに切り替わります。再読み込みの案内が出たら、そのページを再読み込みしてください。ログアウトしても、保存した情報は端末に残ります。</p>
+
+      <p>Duedleには、端末やブラウザをまたいで課題・設定をまとめて引き継ぐ機能はありません。別の端末では、その端末で拡張機能を有効にし、課題情報を取得してください。</p>
+
+    </details>
+  </section>
+
+  <section id="contact" aria-labelledby="contact-title">
+    <h2 id="contact-title">ヘルプ</h2>
+    <p>不具合、改善のご要望、使い方の質問は、Googleフォームからお送りください。返信をご希望の場合は、フォームに返信先のメールアドレスを記入してください。</p>
+    <p id="contact-pending">お問い合わせフォームは準備中です。</p>
+    <a id="contact-link" hidden target="_blank" rel="noopener noreferrer">お問い合わせフォームを開く</a>
+    <p class="note">授業や課題の内容は担当教員へ、大学のシステムに関するお問い合わせはMoodleの「サイトサポートに連絡する」へお願いします。</p>
+  </section>
+
+  <footer><a href="#top">ページの先頭へ戻る</a></footer>
+</main>
 </body>
 </html>

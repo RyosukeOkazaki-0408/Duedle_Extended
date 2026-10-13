@@ -18,7 +18,7 @@ class FilterSelect {
 
         elementselect.addEventListener("change", async () => {
             await ext.storage.sync.set({ [this.propertyName]: elementselect.value }); // 選択した値をローカルストレージに保存
-            rerender();
+            // The storage-change listener owns rendering, including other tabs.
         });
 
 
@@ -30,6 +30,7 @@ class FilterSelect {
         });
         options.forEach(option => elementselect.appendChild(option));
         const applyValue = value => {
+            value = this.valueAliases?.[value] ?? value;
             elementselect.value = this.values.includes(value) ? value : (this.defaultValue || this.values[0]);
         };
         let preferenceChanged = false;
@@ -41,7 +42,10 @@ class FilterSelect {
         const saved = (await ext.storage.sync.get(this.propertyName))[this.propertyName];
         if (!preferenceChanged) applyValue(saved);
 
-        return [elementlabel, elementselect];
+        const group = document.createElement("div");
+        group.className = "duedle-filter-control";
+        group.append(elementlabel, elementselect);
+        return [group];
     }
     applyDefault(value) {
         this.defaultValue = value;

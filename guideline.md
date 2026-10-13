@@ -147,7 +147,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 | `storage.local` | `history` | 最近開いたコースページのタイトルとURL。最大10件 |
 | `storage.local` | `courseIds`、`refreshCoordinator`、`refreshHistory`、`scrapeCooldown` | 収集対象、更新予定・排他制御、成功時刻、手動更新制限 |
 | `storage.local` | `duedleAccount`、`duedleAccountTabs`、`duedleAccountData:*` | 現在のアカウント、ページ登録、退避データ |
-| `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み。状態の初期値は `incomplete`（未提出）、保存済みの選択は維持 |
+| `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み。状態の初期値は `ex-complete`（完了以外）、保存済みの選択は維持 |
 | `storage.sync` | `displayShow`、`scrapeMode`、`colorSelect_light_*`、`colorSelect_dark_*` | 課題メニューの表示、更新方式、状態色 |
 | Moodleの `localStorage` | `hide` | 折りたたんだセクションの表示設定 |
 

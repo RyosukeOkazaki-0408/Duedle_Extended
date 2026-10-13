@@ -78,10 +78,11 @@ typeFilter.applyDefault("all");
 })();
 
 //status filter
-const statusValues = ["all", "complete", "ex-complete", "qualify", "incomplete", "stuck", "expired", "unknown"];
-const statusOptionsText = ["すべて", "完了", "完了以外", "合格(小テストのみ)", "未提出", "行き詰まり(小テストのみ)", "期限切れ", "点数不明(小テストのみ)"];
+const statusValues = ["all", "complete", "ex-complete", "incomplete", "expired", "unknown"];
+const statusOptionsText = ["すべて", "完了", "完了以外", "未提出", "行き詰まり・期限切れ", "点数不明(小テストのみ)"];
 const statusFilter = new FilterSelect("statusSelect", "状態", statusValues, statusOptionsText, "selectedStatus");
-statusFilter.applyDefault("incomplete");
+statusFilter.valueAliases = { qualify: "complete", stuck: "expired" };
+statusFilter.applyDefault("ex-complete");
 (async () => {
     const statusFilterel = await statusFilter.getElement();
     statusFilterel.map((el) => {
@@ -366,15 +367,14 @@ hideSelectedButton.addEventListener("click", () => saveSelectedVisibility(false)
 restoreSelectedButton.addEventListener("click", () => saveSelectedVisibility(true).catch(console.error));
 
 //setting color
-const colorTypesValue = ["complete", "qualify", "incomplete", "stuck", "warning", "expired", "unknown", "unvisited"];
-const colorTypesLabel = ["完了", "合格", "未提出", "行き詰まり", "期限近い", "期限切れ", "不明", "未参照"];
+// Each color setting may cover multiple states; state/filter semantics stay separate.
+const colorTypesValue = ["complete", "incomplete", "expired", "warning", "unknown", "unvisited"];
+const colorTypesLabel = ["完了", "未提出", "行き詰まり・期限切れ", "期限近い", "不明", "未参照"];
 const colorTypesTitle = [
-    "提出が完了している / 満点をとっている",
-    "必要点数に達しているが満点ではない (小テストのみ)",
+    "提出が完了している / 小テストで満点または合格の状態",
     "提出していない / 小テストに答えていない",
-    "テスト回数上限に達したが合格していない (小テストのみ)",
+    "小テストの受験回数上限に達して合格していない / 未完了のまま期限を過ぎている",
     "期限が3日以内だが未提出",
-    "期限を過ぎている",
     "点数が非公開のため評価できない (小テストのみ)",
     "まだ確認していないタスク"
 ];
@@ -389,8 +389,10 @@ colorTypesValue.map((value, index) => {
     colorLabel.setAttribute("for", input.id);
     colorLabel.classList.add("filterlabel", "mr-md-2", "mb-md-0");
     colorLabel.title = colorTypesTitle[index];
-    fieldcolor.appendChild(colorLabel);
-    fieldcolor.appendChild(input);
+    const group = document.createElement("div");
+    group.className = "duedle-color-control";
+    group.append(colorLabel, input);
+    fieldcolor.appendChild(group);
 
     input.addEventListener("change", async () => {
         if (document.querySelector(".darkmode")) {
@@ -419,8 +421,24 @@ function applyMenuVisibility(value) {
     updateTaskSelection();
 }
 const menuReady = ext.storage.sync.get("displayShow").then(saved => applyMenuVisibility(saved.displayShow));
+const upcomingResolver = new CalendarEventResolver();
+let upcomingGeneration = 0;
+async function resolveUpcomingEvents(stored) {
+    const generation = ++upcomingGeneration;
+    const refs = await upcomingResolver.resolve(document, stored.refreshCoordinator?.collectorState?.events);
+    if (generation !== upcomingGeneration || globalThis.duedleAccountActive === false) return;
+    const tasks = await StorageUtil.getAllData();
+    if (generation !== upcomingGeneration || globalThis.duedleAccountActive === false) return;
+    upcomingEventRefs = refs;
+    refreshUpcomingEventStatuses(tasks);
+    checkUnvisited();
+    colorReload();
+}
+window.addEventListener("pagehide", () => { upcomingGeneration++; upcomingResolver.clear(); });
 let renderChain = Promise.resolve();
 function rerender() {
+    clearTimeout(renderTimer);
+    renderPending = false;
     renderChain = renderChain.catch(() => {}).then(renderList);
     return renderChain;
 }
@@ -429,13 +447,21 @@ async function renderList() {
         StorageUtil.getAllData(), ext.storage.local.get(["refreshHistory", "refreshCoordinator"]), menuReady
     ]);
     const scrollPosition = display.scrollLeft;
-    display.textContent = "";
-    const visible = await displaybox(alldata);
-    display.scrollLeft = scrollPosition;
-    reconcileTaskSelection();
+    // Keep the current cards visible while asynchronous card construction finishes.
+    const nextDisplay = document.createElement("div");
+    const visible = await displaybox(alldata, nextDisplay);
     const state = TaskListState.describe({ total: alldata.length, visible,
         history: stored.refreshHistory, coordinator: stored.refreshCoordinator });
-    if (!visible) display.textContent = state.empty;
+    if (!visible) nextDisplay.textContent = state.empty;
+    if (globalThis.duedleAccountActive !== false) {
+        display.replaceChildren(...nextDisplay.childNodes);
+        display.scrollLeft = scrollPosition;
+        reconcileTaskSelection();
+        refreshUpcomingEventStatuses(alldata);
+        checkUnvisited();
+        colorReload();
+        resolveUpcomingEvents(stored).catch(console.error);
+    }
     if (state.status || !collectionRunning) collectionstatus.textContent = completionError || state.status;
     const updated = document.querySelector("#listupdated");
     updated.textContent = TaskListState.timestamp(stored.refreshHistory);
@@ -448,6 +474,10 @@ async function renderList() {
 }
 
 document.addEventListener("duedle:account-changed", () => {
+    upcomingGeneration++;
+    upcomingResolver.clear();
+    upcomingEventRefs.clear();
+    refreshUpcomingEventStatuses([]);
     manualAbort?.abort();
     setTaskSelection(false);
     display.replaceChildren();
@@ -463,7 +493,7 @@ setInterval(() => { if (!document.hidden) queueRerender(); }, 60000);
 let renderTimer;
 let renderPending = false;
 let rendering = false;
-const queueRerender = () => {
+const queueRerender = (delay = 750) => {
     renderPending = true;
     clearTimeout(renderTimer);
     if (document.hidden || rendering) return;
@@ -477,11 +507,11 @@ const queueRerender = () => {
             rendering = false;
             if (renderPending) queueRerender();
         }
-    }, 750);
+    }, typeof delay === "number" ? delay : 750);
 };
 ext.storage.onChanged?.addListener((changes, area) => {
     if (area === "sync" && changes.displayShow) applyMenuVisibility(changes.displayShow.newValue);
-    if (area === "sync" && Object.keys(changes).some(key => key.startsWith("selected"))) queueRerender();
+    if (area === "sync" && Object.keys(changes).some(key => key.startsWith("selected"))) queueRerender(0);
     if (area !== "local") return;
     if (changes.assign_list || changes.quiz_list || changes.refreshHistory) queueRerender();
     if (changes.refreshCoordinator) refreshBusy = Boolean(changes.refreshCoordinator.newValue?.lease);
@@ -531,7 +561,10 @@ const applyColor = (type, toColor) => {
             (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][index], 0);
         if ((Math.max(base, brightness) + 0.05) / (Math.min(base, brightness) + 0.05) >= 3) break;
     }
-    document.querySelectorAll(`#display > .${type}, .duedle-task-status.${type}`).forEach(item => {
+    const states = type === "complete" ? ["complete", "qualify"]
+        : type === "expired" ? ["expired", "stuck"] : [type];
+    const selector = states.map(state => `#display > .${state}, .duedle-task-status.${state}`).join(", ");
+    document.querySelectorAll(selector).forEach(item => {
         item.style.setProperty("--duedle-status-color", toColor);
         item.style.setProperty("--duedle-status-text", text);
         item.style.setProperty("--duedle-status-link", `rgb(${link.map(Math.round).join(", ")})`);
@@ -539,8 +572,8 @@ const applyColor = (type, toColor) => {
     });
 };
 
-const colorDefault_light = ["#90ee90", "#add8e6", "#ffffe0", "#ffffff", "#ffb681", "#ff9090", "#c8c8c8", "#eac1ff"];
-const colorDefault_dark = ["#063906", "#12515e", "#57422a", "#000000", "#7c3316", "#821f1f", "#454545", "#4a1745"];
+const colorDefault_light = ["#90ee90", "#ffffe0", "#ff9090", "#ffb681", "#c8c8c8", "#eac1ff"];
+const colorDefault_dark = ["#063906", "#57422a", "#821f1f", "#7c3316", "#454545", "#4a1745"];
 colorTypesValue.map(async (value, index) => {
     const lsName_light = "colorSelect_light_" + value;
     const lsName_dark = "colorSelect_dark_" + value;
