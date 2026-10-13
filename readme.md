@@ -1,7 +1,3 @@
-# 注意
-
-Duedleは、Ryosuke Okazakiを含む5人のチームで共同開発したプロジェクトです。本リポジトリは、当時のソースコードを基に、Ryosuke Okazakiが個人で機能の追加・改善、UIの改修、Safariへの移植などを行い、継続的に開発しているものです。
-
 # Duedle
 
 **Due + Moodle = Duedle**
@@ -102,6 +98,10 @@ python3 scripts/prepare_debug.py
 - [Safari版のビルド・検証](docs/safari.md)
 - [モバイルUIの確認項目](docs/mobile-ui.md)
 - [自動更新の仕様](docs/auto-refresh.md)
+
+## 開発経緯
+
+Duedleは、Ryosuke Okazakiを含む5人のチームで共同開発したプロジェクトです。本リポジトリは、当時のソースコードを基に、Ryosuke Okazakiが個人で機能の追加・改善、UIの改修、Safariへの移植などを行い、継続的に開発しているものです。
 
 ## お問い合わせ
 
