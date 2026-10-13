@@ -141,7 +141,7 @@
     },
     {
       "matches": [
-        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=*"
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php*"
       ],
       "js": [
         "./qol/assign_files.js",
@@ -150,7 +150,7 @@
     },
     {
       "matches": [
-        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/view.php?id=*"
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/view.php*"
       ],
       "js": [
         "./storage/cs_scrapeQuiz.js"
@@ -159,7 +159,7 @@
     {
       "matches": [
         "https://cms7.ict.nitech.ac.jp/moodle40a/my/*",
-        "https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php?id=*"
+        "https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php*"
       ],
       "js": [
         "./storage/cs_scrapeTaskList.js",
@@ -181,7 +181,7 @@
     },
     {
       "matches": [
-        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/review.php?*"
+        "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/review.php*"
       ],
       "js": [
         "./storage/cs_scrapeQuizReview.js"

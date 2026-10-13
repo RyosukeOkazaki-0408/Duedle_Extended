@@ -92,6 +92,8 @@ const root = 'https://cms7.ict.nitech.ac.jp/moodle40a/';
         const a = await context.newPage(); a.on('pageerror', e => errors.push(e.message));
         await a.goto(root + 'my/'); await a.waitForSelector('#scrapebutton');
         const worker = context.serviceWorkers().find(worker => worker.url().includes(loaded.id)); assert(worker);
+        // This account-isolation scenario intentionally includes completed tasks.
+        await worker.evaluate(() => chrome.storage.sync.set({ selectedStatus: 'all' }));
         await worker.evaluate(() => chrome.storage.local.set({ assign_list: [{ group: 'assign_list', assignId: 1, courseName: 'Course A', assignName: 'A private task', file: 'a-private.pdf', filenum: 1, status: 'complete', show: true }], courseIds: [7], history: [{ title: 'Private A', url: 'https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=1' }] }));
         await a.waitForSelector('#display > .assign');
         await a.locator('#scrapebutton').click();

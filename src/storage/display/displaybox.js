@@ -8,7 +8,7 @@ const displaybox = async (data) => {
             const item = { ...savedItem, status: Scrape.statusAt(savedItem.status, savedItem.due) };
             //condition
             const savedType = settings.selectedType ?? "all";
-            const savedStatus = settings.selectedStatus ?? "all";
+            const savedStatus = settings.selectedStatus ?? "incomplete";
             const savedDue = settings.selectedDue ?? "all";
             const savedShow = settings.selectedShow ?? "normal";
             const currentURL = new URL(location.href);
@@ -155,6 +155,23 @@ const calendarEventMatches = (element, item, tasks) => {
     return item.group === group && keys.size === 1 && keys.has(group === "assign_list" ? item.assignId : item.quizId);
 };
 
+// Keep the absolute deadline after replacing Moodle's date label with a countdown.
+// Re-read it if Moodle updates the label or replaces the element.
+const eventDeadlines = new WeakMap();
+const updateEventRemaining = (element) => {
+    if (!element) return;
+    const text = element.textContent;
+    const saved = eventDeadlines.get(element);
+    const due = saved && text === saved.rendered ? saved.due : transDue(text);
+    if (!due) {
+        eventDeadlines.delete(element);
+        return;
+    }
+    const rendered = formatRemainingTime(due);
+    eventDeadlines.set(element, { due, rendered });
+    if (text !== rendered) element.textContent = rendered;
+};
+
 const changeAct = (item, tasks = []) => {
     const actbox = Array.from(document.querySelectorAll(`.event`));
     actbox.map((i) => {
@@ -164,12 +181,7 @@ const changeAct = (item, tasks = []) => {
         if (link ? taskLinkMatches(link, type, id) : calendarEventMatches(i, item, tasks)) {
             setActivityStatus(i, item.status);
         }
-        const dateElement = i.querySelector(".date");
-        const i_datetxt = dateElement?.textContent || "";
-        const due = transDue(i_datetxt);
-        if (due) {
-            dateElement.textContent = formatRemainingTime(due);
-        }
+        updateEventRemaining(i.querySelector(".date"));
         const i_title = i.querySelector("a.text-truncate");
         if (i_title) i_title.setAttribute("title", i_title.textContent);
 
@@ -178,6 +190,8 @@ const changeAct = (item, tasks = []) => {
 
 //unvisited
 const checkUnvisited = () => {
+    // Also update events with no saved task and events whose status is already known.
+    document.querySelectorAll(".event").forEach(event => updateEventRemaining(event.querySelector(".date")));
     document.querySelectorAll(".course-content .activity-item:not(.duedle-task-status)").forEach(activity => {
         const task = [...activity.querySelectorAll(".activityname a[href]")].some(link => {
             try {
@@ -198,12 +212,6 @@ const checkUnvisited = () => {
     const unvisitedboxes_ = Array.from(document.querySelectorAll(`.event:not(.complete,.incomplete,.unknown,.expired,.stuck,.qualify,.warning)`));
     unvisitedboxes_.map((i) => {
         i.classList.add("unvisited", "duedle-task-status");
-        const dateElement = i.querySelector(".date");
-        const i_datetxt = dateElement?.textContent || "";
-        const due = transDue(i_datetxt);
-        if (due) {
-            dateElement.textContent = formatRemainingTime(due);
-        }
         const i_title = i.querySelector("a.text-truncate");
         if (i_title) i_title.setAttribute("title", i_title.textContent);
     });

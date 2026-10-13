@@ -798,11 +798,11 @@
 
     test("deadline-specific filters exclude tasks without a deadline", async () => {
         for (const selectedDue of ["today", "week", "overdue", "dueweek", "progressing"]) {
-            const env = await displayEnvironment({ selectedDue });
+            const env = await displayEnvironment({ selectedDue, selectedStatus: "all" });
             await env.displaybox([{ group: "assign_list", assignId: 101, assignName: "Undated", courseName: "Course", show: true, due: null }]);
             equal(env.children.length, 0, selectedDue + " must not include undated tasks");
         }
-        const all = await displayEnvironment({ selectedDue: "all" });
+        const all = await displayEnvironment({ selectedDue: "all", selectedStatus: "all" });
         await all.displaybox([{ group: "assign_list", assignId: 101, assignName: "Undated", courseName: "Course", show: true, due: null }]);
         equal(all.children.length, 1);
     });

@@ -147,7 +147,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 | `storage.local` | `history` | 最近開いたコースページのタイトルとURL。最大10件 |
 | `storage.local` | `courseIds`、`refreshCoordinator`、`refreshHistory`、`scrapeCooldown` | 収集対象、更新予定・排他制御、成功時刻、手動更新制限 |
 | `storage.local` | `duedleAccount`、`duedleAccountTabs`、`duedleAccountData:*` | 現在のアカウント、ページ登録、退避データ |
-| `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み |
+| `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み。状態の初期値は `incomplete`（未提出）、保存済みの選択は維持 |
 | `storage.sync` | `displayShow`、`scrapeMode`、`colorSelect_light_*`、`colorSelect_dark_*` | 課題メニューの表示、更新方式、状態色 |
 | Moodleの `localStorage` | `hide` | 折りたたんだセクションの表示設定 |
 
@@ -186,6 +186,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 設定メニュー・使い方ガイド | `node tests/browser-support.cjs` |
 | アカウント切替・DOM表示 | `node tests/browser-review-fixes.cjs` |
 | モバイル表示・操作 | `node tests/browser-responsive.cjs` |
+| 非表示セクションへの移動・予定欄の残り時間 | `node tests/browser-course-calendar.cjs` |
 | 初回表示・設定保持 | `node tests/browser-production.cjs` |
 | ダミー環境での更新処理 | `node tests/browser-debug.cjs`（先にデバッグ版を生成） |
 | 更新の進捗・中断表示 | `node tests/browser-refresh-progress.cjs` |

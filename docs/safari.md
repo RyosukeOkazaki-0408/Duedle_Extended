@@ -1,5 +1,7 @@
 # Safari版の開発・動作確認
 
+コース・課題・小テストのページの読み込み条件は `view.php*`、採点結果は `review.php*` とします。WebKitのURLパターン判定はクエリを含まないパスを比較するため、`?id=*` や `?*` を含めるとスクリプトが読み込まれません。macOS 15.4以降とXcodeがある環境では、リポジトリ直下で `xcrun swift tests/safari-match-patterns.swift` を実行し、一覧・詳細保存・提出ファイルプレビューの読み込み条件を実際のWebKit APIで検証できます。
+
 Duedleの共有ソースは `src/` です。Chrome向けは従来どおり `src/` を読み込み、Safari向けは同じソースからiPhone・iPad・Mac用のアプリとSafari Web Extensionをビルドします。
 
 ## 対象環境

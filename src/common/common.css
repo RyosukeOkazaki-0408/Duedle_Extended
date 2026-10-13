@@ -40,10 +40,12 @@
 }
 
 .duedle-course-grip-icon {
-  width: 14px;
-  height: 21px;
-  background-image: radial-gradient(circle, currentColor 1.7px, transparent 2px);
-  background-size: 7px 7px;
+  width: 20px;
+  height: 16px;
+  box-sizing: border-box;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
   pointer-events: none;
 }
 
@@ -103,6 +105,12 @@
 
 .darkmode .duedle-course-grip {
   color: #bac4cc;
+}
+
+/* The course title can be a blue font/span beside the linked course number. */
+body.darkmode .duedle-course-order td:last-child,
+body.darkmode .duedle-course-order td:last-child * {
+  color: #8bc5e8 !important;
 }
 
 .darkmode .duedle-course-drag-preview {

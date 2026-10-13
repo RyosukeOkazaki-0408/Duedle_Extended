@@ -58,13 +58,14 @@ function installThemeSelector() {
     if (!settings) {
       settings = document.createElement("details");
       settings.id = "duedle-course-settings";
-      settings.dataset.taskSettings = String(!location.pathname.endsWith("/course/view.php"));
+      settings.dataset.taskSettings = "true";
       const summary = document.createElement("summary");
-      summary.textContent = location.pathname.endsWith("/course/view.php") ? "コースの設定" : "課題の設定";
+      summary.textContent = "課題の設定";
+      settings.appendChild(summary);
       const content = document.createElement("div");
       content.className = "duedle-course-settings-content";
       content.id = "duedle-settings-content";
-      settings.append(summary, content);
+      settings.appendChild(content);
       const display = document.getElementById("display");
       if (display) display.before(settings);
       else {
@@ -73,20 +74,27 @@ function installThemeSelector() {
         else document.body.prepend(settings);
       }
     }
-    const hideSettings = settings.dataset.taskSettings === "true" && document.getElementById("display")?.hidden === true;
-    if (settings.hidden !== hideSettings) settings.hidden = hideSettings;
     const settingsContent = settings.querySelector(".duedle-course-settings-content");
     const controls = [
       document.getElementById("notion"),
       document.getElementById("filter"),
     ];
     for (const node of controls) {
-      if (!node || node.parentElement === settingsContent) continue;
-      const anchor = document.createComment("Duedle original control position");
-      node.before(anchor);
-      compactSettingsControls.set(node, anchor);
-      settingsContent.appendChild(node);
+      if (!node) continue;
+      const dashboard = node.id === "notion" && document.getElementById("ext_dashboard");
+      if (node.id === "notion" && !dashboard) continue;
+      const destination = dashboard || settingsContent;
+      if (node.parentElement === destination) continue;
+      if (!compactSettingsControls.has(node)) {
+        const anchor = document.createComment("Duedle original control position");
+        node.before(anchor);
+        compactSettingsControls.set(node, anchor);
+      }
+      if (dashboard) dashboard.prepend(node);
+      else destination.appendChild(node);
     }
+    const hideSettings = !Array.from(settingsContent.children).some(node => !node.hidden);
+    if (settings.hidden !== hideSettings) settings.hidden = hideSettings;
   }
   let trigger = document.getElementById("thememode_selection");
   if (!trigger) {

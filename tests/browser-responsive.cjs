@@ -27,6 +27,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
             await page.locator('#duedle-theme-menu button[data-mode="'+value+'"]').click();
             if(value==='ios-toggle') await page.keyboard.press('Escape');
         };
+  await page.waitForFunction(()=>document.querySelector('#statusSelect')?.value==='incomplete');
   const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id)); assert(worker);
   await worker.evaluate(async () => {
    await chrome.storage.local.set({assign_list:Array.from({length:5},(_,i)=>({group:'assign_list',assignId:i+1,courseId:1,courseName:'回帰テストコース 2026',assignName:'課題 '+(i+1),status:'incomplete',show:true,start:Date.now()-3600000,due:Date.now()+4*86400000,filenum:1,file:i===0?'long_ascii_filename_'.repeat(20):'report.pdf'}))});
@@ -255,18 +256,45 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   await page.locator('#display').evaluate(el=>el.scrollLeft=0);
   await page.locator('#display .taskbox a').first().tap(); await page.waitForURL(root+'mod/assign/view.php?id=1'); await page.waitForSelector('#thememode_selection',{state:'attached'});
   await page.locator('#course-link').tap(); await page.waitForURL(root+'course/view.php?id=1'); await page.waitForSelector('#thememode_selection',{state:'attached'});
+  await page.goto(root+'course/view.php?section=0&id=1');
   await page.evaluate(()=>{const content=document.createElement('div');content.id='page-content';content.className='blocks-post';content.style.cssText='display:flex;flex-direction:column';const main=document.createElement('div');main.id='native-course-content';main.textContent='Course sections';const column=document.createElement('aside');column.className='columnright';const link=document.createElement('a');link.id='native-syllabus-link';link.href='/moodle40a/blocks/syllabus/view.php';link.textContent='シラバスを表示';column.append(link);content.append(main,column);document.body.append(content)});
   assert(await page.evaluate(()=>document.getElementById('native-syllabus-link').getBoundingClientRect().top>=document.getElementById('native-course-content').getBoundingClientRect().bottom),'Native syllabus sidebar stays below course content on phone');
   await page.waitForSelector('#duedle-course-settings');
-  assert.equal(await page.locator('#duedle-course-settings').evaluate(el=>el.open),false,'Phone course settings start collapsed');
+  await page.waitForFunction(()=>document.querySelectorAll('#display > .assign').length===5);
+  assert(await page.locator('#display').isVisible(),'Course task list remains visible on phone');
+  assert(await page.locator('#scrapebutton').isVisible(),'Course task actions remain visible on phone');
+  assert.equal(await page.locator('#duedle-course-settings > summary').innerText(),'課題の設定');
+  assert.equal(await page.locator('#duedle-course-settings').evaluate(el=>el.open),false,'Course task settings start collapsed like the dashboard');
+  assert.equal(await page.locator('#statusSelect').isVisible(),false,'Course filters stay inside the collapsed settings');
+  await page.locator('#duedle-course-settings > summary').tap();
+  assert(await page.locator('#statusSelect').isVisible(),'Course task settings open with one tap');
+  await page.locator('#duedle-course-settings > summary').tap();
   assert(await page.locator('#thememode_selection').isVisible(),'Theme stays accessible outside task settings');
   await page.evaluate(()=>{
     const sidebar=document.createElement('aside'); sidebar.id='test-sidebar';
-    for(const id of ['notion']) { const control=document.createElement('div'); control.id=id; control.textContent=id; sidebar.append(control); }
+    document.querySelector('.columnright').classList.remove('columnright');
+    sidebar.className='columnright';
+    const section=document.createElement('h3'); section.className='sectionname'; section.textContent='第1回'; document.body.append(section);
     document.body.append(sidebar);
   });
-  await page.waitForFunction(()=>['notion'].every(id=>document.getElementById(id).closest('#duedle-course-settings')));
-  await page.locator('#duedle-course-settings > summary').tap();
+  await page.addScriptTag({path:path.resolve('src/notionnav/navigation.js')});
+  await page.waitForFunction(()=>document.getElementById('notion')?.parentElement.id==='ext_dashboard');
+  assert(await page.locator('#notion summary').isVisible(),'Section dropdown is directly accessible');
+  assert.equal(await page.locator('#notion').evaluate(el=>Boolean(el.closest('#duedle-course-settings'))),false,'Section navigation is separate from task settings');
+  const sectionOffset = () => page.locator('#notion').evaluate(el=>el.getBoundingClientRect().top-document.getElementById('ext_dashboard').getBoundingClientRect().top);
+  const sectionTop = await sectionOffset();
+  assert(await page.locator('#notion').evaluate(el=>el.getBoundingClientRect().bottom<=document.getElementById('scrapebutton').getBoundingClientRect().top),'Sections appear above task actions');
+  await page.locator('#displaybutton').tap();
+  await page.waitForFunction(()=>document.getElementById('display').hidden);
+  assert(await page.locator('#notion summary').isVisible(),'Sections remain accessible with tasks hidden');
+  assert.equal(await page.locator('#duedle-course-settings').isVisible(),false,'Empty course settings leave no background or spacing');
+  assert.equal(await sectionOffset(),sectionTop,'Hiding tasks does not move sections');
+  await page.locator('#displaybutton').tap();
+  await page.waitForFunction(()=>!document.getElementById('display').hidden);
+  assert.equal(await sectionOffset(),sectionTop,'Showing tasks does not move sections');
+  assert(await page.locator('#duedle-course-settings').isVisible(),'Course filters return when tasks are shown');
+  await page.locator('#notion summary').tap();
+  assert(await page.locator('#notion a').last().isVisible(),'One tap reveals section links');
   await chooseTheme('1'); await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
   await page.setViewportSize({width:1024,height:900});
   await page.waitForFunction(()=>!document.getElementById('duedle-course-settings')&&['notion'].every(id=>document.getElementById(id).parentElement.id==='test-sidebar'));

@@ -81,7 +81,7 @@ typeFilter.applyDefault("all");
 const statusValues = ["all", "complete", "ex-complete", "qualify", "incomplete", "stuck", "expired", "unknown"];
 const statusOptionsText = ["すべて", "完了", "完了以外", "合格(小テストのみ)", "未提出", "行き詰まり(小テストのみ)", "期限切れ", "点数不明(小テストのみ)"];
 const statusFilter = new FilterSelect("statusSelect", "状態", statusValues, statusOptionsText, "selectedStatus");
-statusFilter.applyDefault("all");
+statusFilter.applyDefault("incomplete");
 (async () => {
     const statusFilterel = await statusFilter.getElement();
     statusFilterel.map((el) => {
@@ -412,7 +412,7 @@ function applyMenuVisibility(value) {
     const updated = document.querySelector("#listupdated");
     if (updated) updated.hidden = !visible;
     const settings = document.querySelector("#duedle-course-settings");
-    if (settings?.dataset.taskSettings === "true") settings.hidden = !visible;
+    if (settings && !settings.querySelector("#notion")) settings.hidden = !visible;
     displaybutton.textContent = visible ? "一覧を隠す" : "一覧を表示";
     displaybutton.setAttribute("aria-expanded", String(visible));
     if (!visible) setTaskSelection(false);

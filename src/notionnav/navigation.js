@@ -29,6 +29,10 @@
         const target = new URL(pageUrl.href);
         target.hash = id;
         link.href = target.href;
+        link.addEventListener("click", event => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            globalThis.duedleClosedTabs?.openSection(document.getElementById(id));
+        });
         links.appendChild(link);
     };
     addLink("▲トップへ戻る", "page-wrapper");
