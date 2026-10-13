@@ -4,7 +4,6 @@ dist/
 
 # Safari resources are staged from src; native build products are local artifacts.
 safari/build/
-safari/DerivedData/
 *.xcuserstate
 xcuserdata/
 
