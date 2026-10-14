@@ -99,6 +99,10 @@ python3 scripts/prepare_debug.py
 - [モバイルUIの確認項目](docs/mobile-ui.md)
 - [自動更新の仕様](docs/auto-refresh.md)
 
+## 開発経緯
+
+Duedleは、Ryosuke Okazakiを含む5人のチームで共同開発したプロジェクトです。本リポジトリでは、当時のDuedleを基に、Ryosuke Okazakiが個人で機能の追加・改善、UIの改修、Safariへの移植などを進め、継続的に開発しています。
+
 ## お問い合わせ
 
 不具合報告、改善のご要望、使い方の質問は[Googleフォーム](https://forms.gle/DkUKfGv2Eqx12jhC6)からお送りください。Moodleの「Duedle設定」→「お問い合わせ」からも開けます。
