@@ -10,7 +10,10 @@ const fixture='<!doctype html><html><head><meta name="viewport" content="width=d
  let release;
  try {
   await context.route('**/*',async route=>{
-   if(route.request().resourceType()==='document') return route.fulfill({contentType:'text/html',body:fixture});
+   if (route.request().url().includes('info=core_course_get_enrolled_courses_by_timeline_classification')) {
+                return route.fulfill({ json: [{ data: { courses: [1].map(id => ({ id })), nextoffset: [1].length } }] });
+            }
+            if(route.request().resourceType()==='document') return route.fulfill({contentType:'text/html',body:fixture});
    if(route.request().url().includes('course/view.php')) { await new Promise(resolve=>release=resolve); return route.fulfill({contentType:'text/html',body:fixture}).catch(()=>{}); }
    return route.abort();
   });

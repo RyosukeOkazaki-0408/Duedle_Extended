@@ -41,7 +41,11 @@ globalThis.fetch = async (input, options = {}) => {
     const response = { ok: status === 200, status, url: scenario === 'login' ? root + 'login/index.php' : url,
         text: async () => url.includes("/lib/ajax/") ? JSON.stringify(await response.json()) : fixtureHTML(url),
         json: async () => {
-            const after = JSON.parse(options.body)[0].args.aftereventid;
+            const request = JSON.parse(options.body)[0];
+            if (request.methodname === 'core_course_get_enrolled_courses_by_timeline_classification') {
+                return [{ data: { courses: [{ id: 1 }], nextoffset: 1 } }];
+            }
+            const after = request.args.aftereventid;
             const tasks = fixtureTasks().filter(task => task.id > after).slice(0,50);
             return [{ data: { events: tasks.map(task => ({ id: task.id, instance: task.id, modulename: task.type,
                 name: task.name, course: { id: 1 }, timesort: task.due / 1000,

@@ -73,6 +73,42 @@ class CourseCollector {
         }
     }
 
+    // Moodle 4.0 core_course_external::get_enrolled_courses_by_timeline_classification:
+    // classification=all excludes courses removed from the overview; limit=0
+    // returns the complete result independently of UI filters and pagination.
+    async enrolledCourseIds(doc = document) {
+        await this.assertContinue();
+        const sesskey = AutoRefreshCollector.findSesskey(doc);
+        if (!sesskey) throw new Error("登録コースを確認できません。Moodleのページを再読み込みしてください。");
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        this.signal?.addEventListener?.("abort", abort, { once: true });
+        const timer = setTimeout(abort, 20000);
+        try {
+            const method = "core_course_get_enrolled_courses_by_timeline_classification";
+            const response = await this.fetch(CourseCollector.baseURL + "lib/ajax/service.php?sesskey="
+                + encodeURIComponent(sesskey) + "&info=" + method + "&nosessionupdate=true", {
+                method: "POST", credentials: "include", signal: controller.signal,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify([{ index: 0, methodname: method,
+                    args: { classification: "all", limit: 0, offset: 0 } }])
+            });
+            if (!response.ok || response.redirected) throw new Error("登録コースの取得に失敗しました。再読み込みしてからお試しください。");
+            const payload = await response.json();
+            const entry = Array.isArray(payload) && payload.length === 1 ? payload[0] : null;
+            const courses = entry?.data?.courses;
+            if (entry?.error || entry?.exception || !Array.isArray(courses) || courses.length > 10000
+                || courses.some(course => !Number.isSafeInteger(course?.id) || course.id <= 0)) {
+                throw new Error("登録コースを確認できませんでした。Moodleへのログイン状態を確認してください。");
+            }
+            await this.assertContinue();
+            return [...new Set(courses.map(course => course.id))];
+        } finally {
+            clearTimeout(timer);
+            this.signal?.removeEventListener?.("abort", abort);
+        }
+    }
+
     static shouldStop(error) {
         return error.code === "REFRESH_CANCELLED" || error.code === "AUTH_REQUIRED"
             || [401, 403, 429].includes(error.status) || error.status >= 500;

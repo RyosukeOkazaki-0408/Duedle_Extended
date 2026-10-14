@@ -14,6 +14,9 @@ const root = 'https://cms7.ict.nitech.ac.jp/moodle40a/';
     const errors = [];
     try {
         await context.route('**/*', route => {
+            if (route.request().url().includes('info=core_course_get_enrolled_courses_by_timeline_classification')) {
+                return route.fulfill({ json: [{ data: { courses: [7].map(id => ({ id })), nextoffset: [7].length } }] });
+            }
             const requested = route.request().url();
             const courseFetch = requested.startsWith(root + 'course/view.php');
             const taskFetch = requested.startsWith(root + 'mod/assign/view.php');

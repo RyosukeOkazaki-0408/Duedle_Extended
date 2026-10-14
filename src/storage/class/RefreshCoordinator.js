@@ -137,7 +137,7 @@ class RefreshCoordinator {
     }
 
     async load() {
-        const stored = await this.storage.get([RefreshCoordinator.storageKey, "scrapeCooldown"]);
+        const stored = await this.storage.get([RefreshCoordinator.storageKey, "scrapeCooldown", "manualCooldownDisabled"]);
         const now = this.now();
         const raw = stored[RefreshCoordinator.storageKey];
         let changed = false;
@@ -183,7 +183,7 @@ class RefreshCoordinator {
         }
         const savedCooldown = typeof stored.scrapeCooldown === "number"
             ? stored.scrapeCooldown : new Date(stored.scrapeCooldown).getTime();
-        const cooldownUntil = Number.isFinite(savedCooldown) && savedCooldown > 0
+        const cooldownUntil = stored.manualCooldownDisabled !== true && Number.isFinite(savedCooldown) && savedCooldown > 0
             ? savedCooldown + RefreshCoordinator.manualCooldownMs : 0;
         if (changed) await this.save(state);
         return { state, cooldownUntil };
@@ -281,6 +281,17 @@ class RefreshCoordinator {
             extra.refreshHistory = { ...storedHistory,
                 attempt: { at: now, mode: manual ? "manual" : "auto", outcome: message.outcome,
                     reason: typeof message.reason === "string" ? message.reason.slice(0, 40) : null } };
+            if (manual && message.summary && typeof message.summary === "object") {
+                const summary = message.summary;
+                if (![summary.courses, summary.saved, summary.failed].every(value =>
+                    Number.isSafeInteger(value) && value >= 0 && value <= 1000000)) {
+                    throw new Error("更新結果の件数が不正です");
+                }
+                // Persist only the bounded user-facing result, never fetched HTML,
+                // session data, stack traces or arbitrary result objects.
+                extra.refreshHistory.attempt.summary = { courses: summary.courses, saved: summary.saved,
+                    failed: summary.failed, message: typeof summary.message === "string" ? summary.message.slice(0, 500) : "" };
+            }
             if (message.outcome === "success") {
                 if (manual && message.fullSweep === true && message.moreWork !== true) {
                     extra.refreshHistory.fullSweepAt = now;

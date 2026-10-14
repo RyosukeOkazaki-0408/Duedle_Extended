@@ -3,6 +3,14 @@ class ScrapeAssign extends Scrape {
         //assignId, courseName, assignName, start, submit, due, file, filenum, status
         //assignId
         const urlParams = new URL(pageURL).searchParams;
+        // Edit/confirmation/grading pages share view.php and the same headings,
+        // but do not describe the student's saved submission status.
+        const action = urlParams.get("action");
+        if (action && action !== "view") return null;
+        // The ordinary details page also has an action=editsubmission hidden
+        // input in its navigation button. Only actual editor controls identify
+        // an edit form when the supplied URL is the canonical view URL.
+        if (doc.querySelector('form .filemanager, form [name="onlinetext_editor[text]"]')) return null;
         const assignId = Number(urlParams.get("id"));
         if (!Number.isInteger(assignId) || assignId <= 0) return null;
 

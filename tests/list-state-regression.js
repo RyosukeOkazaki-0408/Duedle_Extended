@@ -20,13 +20,28 @@
     assert(!stalled.running && stalled.status.includes('応答が途絶え'), 'Stalled counters cannot remain updating');
     const prep = State.describe({ coordinator: { lease: { expiresAt: now + 90000, startedAt: now - 30000 } }, now });
     assert(!prep.running && prep.status.includes('応答が途絶え'), 'Preparation expires even with a live heartbeat');
-    const completed = State.describe({ history: { attempt: { outcome: 'success', mode: 'manual' } }, now });
+    const completed = State.describe({ showOutcome: true, history: { attempt: { outcome: 'success', mode: 'manual' } }, now });
     assert(completed.status === '', 'A completed message is not restored from saved history after reload');
+    const result = { courses: 14, saved: 18, failed: 2, message: "課題の情報を読み取れませんでした" };
+    const partial = State.describe({ showOutcome: true, history: { attempt: { outcome: "partial", mode: "manual", summary: result } }, now });
+    assert(partial.status.includes("18件を更新しました。2件を取得できませんでした。") && partial.status.includes(result.message), "Partial results retain counts and cause");
+    const done = State.describe({ showOutcome: true, history: { attempt: { outcome: "success", mode: "manual", summary: { ...result, failed: 0 } } }, now });
+    assert(done.status === "14コース・18件の課題情報を更新しました。", "An explicit transient notification shows success counts");
+    const filteredAfterSuccess = State.describe({ total: 18, visible: 0, history: { attempt: { outcome: "success", mode: "manual", summary: result } }, now });
+    assert(filteredAfterSuccess.empty.includes("条件に一致"), "A saved success summary must not suppress the filtered empty state");
+    for (const outcome of ['success', 'partial', 'error', 'cancelled']) {
+        const history = {fullSweepAt: now - 1, attempt: {at: now, mode: 'manual', outcome, reason: 'auth', summary: result}};
+        const reloaded = State.describe({history, now});
+        assert(reloaded.status === '', 'Reload does not restore outcome: ' + outcome);
+        assert(reloaded.empty.includes('条件に一致'), 'Old failure does not suppress empty state: ' + outcome);
+    }
+    const next = State.describe({ showOutcome: true, history: { attempt: { outcome: "partial", mode: "manual", summary: result } }, coordinator: { lease: active }, now });
+    assert(next.status.includes("3/14コース") && !next.status.includes("取得できません"), "A new run replaces a previous result");
     for (const outcome of ['error', 'partial', 'cancelled']) {
-        const state = State.describe({ history: { attempt: { outcome } }, now });
+        const state = State.describe({ showOutcome: true, history: { attempt: { outcome } }, now });
         assert(state.status && !state.empty, 'Failed attempts do not claim no tasks: ' + outcome);
     }
-    assert(State.describe({ history: { attempt: { outcome: 'error', reason: 'auth' } }, now }).status.includes('再ログイン'), 'Authentication failures give next action');
+    assert(State.describe({ showOutcome: true, history: { attempt: { outcome: 'error', reason: 'auth' } }, now }).status.includes('再ログイン'), 'Authentication failures give next action');
     assert(!State.describe({ total: 3, visible: 1, now }).empty, 'Existing results remain available');
     assert(!State.describe({ coordinator: { lease: { expiresAt: now - 1 } }, now }).running, 'Expired lease is not permanently loading');
     assert(State.timestamp({ calendarAt: now }) === '最終更新：記録なし', 'Automatic list checks cannot claim a completed full refresh');

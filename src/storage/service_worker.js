@@ -12,9 +12,10 @@ let tabCollection = null;
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !["SAVE_TASK", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
     "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS", "REFRESH_PROGRESS", "REFRESH_PAGE_READY",
-    "ACCOUNT_READY", "ACCOUNT_GET", "ACCOUNT_SET"].includes(msg.type)) return false;
+    "ACCOUNT_READY", "ACCOUNT_RESUME", "ACCOUNT_GET", "ACCOUNT_SET"].includes(msg.type)) return false;
   const operation = async () => {
     if (msg.type === "ACCOUNT_READY") return accountSession.register(msg, sender);
+    if (msg.type === "ACCOUNT_RESUME") return accountSession.register(msg, sender, true);
     if (msg.type === "GET_SETTINGS") {
       await installationReady;
       return { ok: true, ...(await ext.storage.local.get(["thememode", "themeDefault", "iosAppearance"])) };
@@ -38,8 +39,9 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const values = {};
         if ("courseIds" in msg.values) {
           if (!Array.isArray(msg.values.courseIds) || msg.values.courseIds.length > 10000) throw new Error("コース一覧が不正です");
-          const old = (await ext.storage.local.get("courseIds")).courseIds || [];
-          values.courseIds = [...new Set([...old, ...msg.values.courseIds])].filter(id => Number.isSafeInteger(id) && id > 0);
+          if (msg.values.courseIds.some(id => !Number.isSafeInteger(id) || id <= 0)) throw new Error("コース一覧が不正です");
+          // This is a complete enrolled-course snapshot, not browsing history.
+          values.courseIds = [...new Set(msg.values.courseIds)];
         }
         if ("history" in msg.values) {
           if (!Array.isArray(msg.values.history) || msg.values.history.length > 10) throw new Error("履歴が不正です");

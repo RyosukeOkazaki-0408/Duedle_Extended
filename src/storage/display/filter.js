@@ -19,6 +19,7 @@ const extInner =
       <button type="button" class="btn btn-outline-secondary" id="canceltaskselection">キャンセル</button>
     </div>
     <p id="collectionstatus" role="status" aria-live="polite" class="my-2"></p>
+    <p id="collectionhint" class="my-2 small text-muted" hidden>更新が終わるまで、このページを開いたままにしてください。</p>
     <p id="listupdated" class="my-2 small text-muted"></p>
     <div hidden id="filter" class="filter-group my-2 p-2 border-radius border">
         <fieldset id="fieldfilter">
@@ -42,6 +43,35 @@ const COOLDOWN_MS = 3 * 60 * 60 * 1000;
 let collectionRunning = false;
 let collectionErrorReason = null;
 let completionError = "";
+let completionStatus = "";
+let completionTimer;
+function clearCompletionNotice() {
+    clearTimeout(completionTimer);
+    completionStatus = "";
+    completionError = "";
+}
+function expireCompletionNotice() {
+    clearTimeout(completionTimer);
+    completionTimer = setTimeout(() => {
+        clearCompletionNotice();
+        if (!collectionRunning && globalThis.duedleAccountActive !== false) {
+            setCollectionStatus("");
+            queueRerender(0);
+        }
+    }, 10000);
+}
+let settledToken = null;
+let refreshUiRevision = 0;
+const collectionhint = document.querySelector("#collectionhint");
+function setCollectionStatus(text) {
+    if (collectionstatus.textContent !== text) collectionstatus.textContent = text;
+}
+function showRefreshState(state, coordinator) {
+    // Late progress notifications/reads cannot restore "updating" after finish.
+    if (coordinator?.lease?.token && coordinator.lease.token === settledToken) return;
+    if (collectionRunning && !state.running) return;
+    setCollectionStatus(state.running ? state.status : completionError || completionStatus || state.status);
+}
 let cooldownTimer;
 let refreshBusy = false;
 let manualToken = null;
@@ -124,37 +154,106 @@ async function updateCooldownButton() {
         return;
     }
     if (collectionRunning) return;
-    const [{ scrapeCooldown }, refresh] = await Promise.all([
-        ext.storage.local.get("scrapeCooldown"),
+    const revision = refreshUiRevision;
+    const [{ scrapeCooldown, manualCooldownDisabled }, refresh] = await Promise.all([
+        ext.storage.local.get(["scrapeCooldown", "manualCooldownDisabled"]),
         ext.runtime.sendMessage({ type: "REFRESH_STATUS" })
     ]);
+    if (revision !== refreshUiRevision) return;
     if (globalThis.duedleAccountActive === false) return updateCooldownButton();
     if (collectionRunning) return;
     const next = new Date(new Date(scrapeCooldown).getTime() + COOLDOWN_MS);
-    const coolingDown = next.getTime() > Date.now();
+    const coolingDown = manualCooldownDisabled !== true && next.getTime() > Date.now();
     const busy = refresh?.busy === true;
     refreshBusy = busy;
     scrapebutton.disabled = coolingDown || busy;
+    const remainingMinutes = Math.max(1, Math.ceil((next.getTime() - Date.now()) / 60000));
+    const remainingLabel = remainingMinutes >= 60
+        ? `残り${Math.floor(remainingMinutes / 60)}時間${remainingMinutes % 60}分`
+        : `残り${remainingMinutes}分`;
     scrapebutton.textContent = busy ? "更新中…"
-        : coolingDown ? "クールダウン: " + formatRemainingTime(next) : "課題を更新";
+        : coolingDown ? "クールダウン: " + remainingLabel : "課題を更新";
     if (coolingDown || busy) cooldownTimer = setTimeout(() => updateCooldownButton().catch(console.error), 30000);
 }
+
+// Listen on the existing action row: disabled buttons do not reliably receive
+// pointer events in Safari. Their hit area falls through to this row via CSS.
+const refreshActions = document.querySelector(".duedle-dashboard-actions");
+let cooldownHold = null;
+let suppressRefreshClick = false;
+let cooldownTogglePending = false;
+const cancelCooldownHold = () => {
+    if (cooldownHold) clearTimeout(cooldownHold.timer);
+    cooldownHold = null;
+};
+const onRefreshButton = event => {
+    const rect = scrapebutton.getBoundingClientRect();
+    return event.clientX >= rect.left && event.clientX <= rect.right
+        && event.clientY >= rect.top && event.clientY <= rect.bottom;
+};
+refreshActions.addEventListener("pointerdown", event => {
+    suppressRefreshClick = false;
+    if (cooldownHold) { cancelCooldownHold(); return; }
+    if (event.button !== 0 || !event.isPrimary || !onRefreshButton(event)
+        || globalThis.duedleAccountActive === false || cooldownTogglePending) return;
+    const hold = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    cooldownHold = hold;
+    hold.timer = setTimeout(async () => {
+        if (cooldownHold !== hold || globalThis.duedleAccountActive === false) return;
+        suppressRefreshClick = true;
+        cooldownTogglePending = true;
+        try {
+            const saved = await ext.storage.local.get("manualCooldownDisabled");
+            if (globalThis.duedleAccountActive === false) return;
+            await ext.storage.local.set({ manualCooldownDisabled: saved.manualCooldownDisabled !== true });
+            refreshUiRevision++;
+            await updateCooldownButton();
+        } catch (error) { console.error(error); }
+        finally { cooldownTogglePending = false; }
+    }, 5000);
+});
+window.addEventListener("pointermove", event => {
+    const hold = cooldownHold;
+    if (hold && event.pointerId === hold.pointerId
+        && (Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > 10 || !onRefreshButton(event))) cancelCooldownHold();
+}, { passive: true });
+window.addEventListener("pointerup", event => {
+    if (event.pointerId === cooldownHold?.pointerId) cancelCooldownHold();
+});
+window.addEventListener("pointercancel", cancelCooldownHold);
+window.addEventListener("pagehide", cancelCooldownHold);
+window.addEventListener("blur", cancelCooldownHold);
+window.addEventListener("scroll", cancelCooldownHold, { capture: true, passive: true });
+document.addEventListener("visibilitychange", () => { if (document.hidden) cancelCooldownHold(); });
+refreshActions.addEventListener("contextmenu", event => {
+    if (cooldownHold || suppressRefreshClick) event.preventDefault();
+});
+refreshActions.addEventListener("click", event => {
+    if (!suppressRefreshClick || event.detail === 0) return;
+    suppressRefreshClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+}, true);
 
 scrapebutton.addEventListener("click", async () => {
     if (globalThis.duedleAccountActive === false) return;
     if (collectionRunning) return;
     collectionRunning = true;
+    refreshUiRevision++;
+    settledToken = null;
+    collectionhint.hidden = false;
     collectionErrorReason = null;
-    completionError = "";
+    clearCompletionNotice();
     scrapebutton.disabled = true;
     scrapebutton.textContent = "更新中…";
-    collectionstatus.textContent = "更新が終わるまで、このページを開いたままにしてください。";
+    setCollectionStatus("更新の準備中…");
     let token;
     let owned = true;
     let heartbeatTimer;
     let lastVerified = 0;
     let verifying;
     let outcome = "error";
+    let summary = { courses: 0, saved: 0, failed: 0, message: "" };
     const verifyLease = async (force = false) => {
         if (!owned || !token) return false;
         if (!force && Date.now() - lastVerified < 20000) return true;
@@ -184,46 +283,49 @@ scrapebutton.addEventListener("click", async () => {
         lastVerified = Date.now();
         heartbeatTimer = setInterval(() => verifyLease(true).catch(console.error), 30000);
         const { scrapeMode = "scrape" } = await ext.storage.sync.get("scrapeMode");
+        collectionstatus.textContent = "登録コースを確認中…";
+        const enrolled = await new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal }).enrolledCourseIds();
+        await ext.storage.local.set({ courseIds: enrolled });
         let result;
         if (scrapeMode === "tab") {
             const response = await ext.runtime.sendMessage({ type: "TAB_COURSE", refreshToken: token });
             if (!response?.ok) throw new Error(response?.error || "課題情報を更新できませんでした");
             result = response.result;
         } else {
-            const stored = (await ext.storage.local.get("courseIds")).courseIds || [];
-            // Include the current/visible courses even if the MutationObserver has not saved them yet.
-            const visible = [...document.querySelectorAll("[data-course-id]")].map(el => Number(el.dataset.courseId));
-            const current = location.pathname.endsWith("/course/view.php")
-                ? Number(new URL(location.href).searchParams.get("id")) : 0;
             const collector = new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal, onProgress: async progress => {
                 const reply = await ext.runtime.sendMessage({ type: "REFRESH_PROGRESS", token,
                     progress: { phase: "courses", completed: progress.courses, total: progress.totalCourses, saved: progress.saved } });
                 if (!reply?.ok || !reply.owned) throw Object.assign(new Error("更新が中断されました。再度お試しください。"), { code: "REFRESH_CANCELLED" });
-                collectionstatus.textContent = `${progress.courses}/${progress.totalCourses}コース・${progress.saved}件を更新中… このページを開いたままにしてください。`;
+                summary = { courses: progress.courses, saved: progress.saved, failed: progress.failed,
+                    message: progress.errors[0]?.message || "" };
+                setCollectionStatus(TaskListState.progressLabel({ phase: "courses", completed: progress.courses,
+                    total: progress.totalCourses, saved: progress.saved }));
             } });
-            result = await collector.run([...stored, ...visible, current]);
+            result = await collector.run(enrolled);
         }
-        if (result.failed === 0) {
-            outcome = "success";
-            collectionstatus.textContent = `${result.courses}コース・${result.saved}件の課題情報を更新しました。`;
-        } else {
-            outcome = "partial";
-            collectionstatus.textContent = `${result.saved}件を更新しました。${result.failed}件を取得できませんでした。${result.errors[0]?.message || "もう一度お試しください"}`;
-        }
-        await rerender();
+        outcome = result.failed === 0 ? "success" : "partial";
+        summary = { courses: result.courses, saved: result.saved, failed: result.failed,
+            message: result.errors[0]?.message || "" };
     } catch (error) {
         collectionErrorReason = error.code === "AUTH_REQUIRED" ? "auth" : null;
         if (error.code === "REFRESH_CANCELLED") outcome = "cancelled";
-        collectionstatus.textContent = error.message || "課題情報を更新できませんでした。もう一度お試しください。";
+        summary.message = error.message || "課題情報を更新できませんでした。もう一度お試しください。";
+        if (!token) completionError = summary.message;
+        setCollectionStatus(summary.message);
     } finally {
         clearInterval(heartbeatTimer);
+        settledToken = token || null;
+        refreshUiRevision++;
         if (token) {
             try {
                 const finished = await ext.runtime.sendMessage({
-                    type: "REFRESH_FINISH", token, outcome, fullSweep: true, reason: collectionErrorReason
+                    type: "REFRESH_FINISH", token, outcome, fullSweep: true, reason: collectionErrorReason, summary
                 });
-                if (!finished?.ok) throw new Error("更新結果を保存できませんでした。次回の更新で再試行します。");
-                if (!finished.owned) {
+                if (!finished?.ok) throw new Error(finished?.error || "更新結果を保存できませんでした。次回の更新で再試行します。");
+                if (finished.owned) {
+                    completionStatus = TaskListState.describe({ showOutcome: true,
+                        history: { attempt: { mode: "manual", outcome, reason: collectionErrorReason, summary } } }).status;
+                } else {
                     const stored = await ext.storage.local.get(["refreshCoordinator", "refreshHistory"]);
                     collectionstatus.textContent = TaskListState.describe({ coordinator: stored.refreshCoordinator,
                         history: stored.refreshHistory }).status;
@@ -234,7 +336,13 @@ scrapebutton.addEventListener("click", async () => {
         manualToken = null;
         manualAbort = null;
         collectionRunning = false;
-        updateCooldownButton().catch(console.error);
+        collectionhint.hidden = true;
+        // Do not depend on storage.onChanged delivery to display the final result.
+        // The saved finish must precede this read; rendering during the lease shows stale progress.
+        try { await rerender(); }
+        catch (error) { setCollectionStatus(completionError || summary.message || error.message); }
+        if (completionStatus || completionError) expireCompletionNotice();
+        await updateCooldownButton().catch(console.error);
         if (globalThis.duedleAccountActive === false) collectionstatus.textContent = "アカウントが変わりました。このページを再読み込みしてください。";
     }
 });
@@ -243,13 +351,14 @@ let checkingProgress = false;
 setInterval(async () => {
     if (document.hidden || checkingProgress || !refreshBusy) return;
     checkingProgress = true;
+    const revision = refreshUiRevision;
     try {
         const stored = await ext.storage.local.get(["refreshCoordinator", "refreshHistory"]);
         const lease = stored.refreshCoordinator?.lease;
-        if (!lease) return;
+        if (!lease || revision !== refreshUiRevision || lease.token === settledToken) return;
         const state = TaskListState.describe({ coordinator: stored.refreshCoordinator,
             history: stored.refreshHistory });
-        if (state.status && collectionstatus.textContent !== state.status) collectionstatus.textContent = state.status;
+        if (state.status) showRefreshState(state, stored.refreshCoordinator);
         if (!state.running) {
             manualAbort?.abort();
             await ext.runtime.sendMessage({ type: "REFRESH_STATUS" });
@@ -462,7 +571,7 @@ async function renderList() {
         colorReload();
         resolveUpcomingEvents(stored).catch(console.error);
     }
-    if (state.status || !collectionRunning) collectionstatus.textContent = completionError || state.status;
+    showRefreshState(state, stored.refreshCoordinator);
     const updated = document.querySelector("#listupdated");
     updated.textContent = TaskListState.timestamp(stored.refreshHistory);
     updated.title = "「課題を更新」による全体更新が最後に正常完了した時刻です。自動更新や途中終了では変わりません。";
@@ -474,11 +583,13 @@ async function renderList() {
 }
 
 document.addEventListener("duedle:account-changed", () => {
+    clearCompletionNotice();
     upcomingGeneration++;
     upcomingResolver.clear();
     upcomingEventRefs.clear();
     refreshUpcomingEventStatuses([]);
     manualAbort?.abort();
+    collectionhint.hidden = true;
     setTaskSelection(false);
     display.replaceChildren();
     document.querySelector("#listupdated").textContent = "";
@@ -513,17 +624,24 @@ ext.storage.onChanged?.addListener((changes, area) => {
     if (area === "sync" && changes.displayShow) applyMenuVisibility(changes.displayShow.newValue);
     if (area === "sync" && Object.keys(changes).some(key => key.startsWith("selected"))) queueRerender(0);
     if (area !== "local") return;
-    if (changes.assign_list || changes.quiz_list || changes.refreshHistory) queueRerender();
+    if (changes.assign_list || changes.quiz_list || changes.refreshHistory
+        || changes.refreshCoordinator && !changes.refreshCoordinator.newValue?.lease) queueRerender();
     if (changes.refreshCoordinator) refreshBusy = Boolean(changes.refreshCoordinator.newValue?.lease);
     if (changes.refreshCoordinator?.newValue?.lease) {
-        const status = TaskListState.describe({ coordinator: changes.refreshCoordinator.newValue }).status;
-        if (status) collectionstatus.textContent = status;
+        const coordinator = changes.refreshCoordinator.newValue;
+        const state = TaskListState.describe({ coordinator });
+        if (state.status) showRefreshState(state, coordinator);
     }
-    if (changes.scrapeCooldown || changes.refreshCoordinator) {
+    if (changes.manualCooldownDisabled) refreshUiRevision++;
+    if (changes.scrapeCooldown || changes.manualCooldownDisabled || changes.refreshCoordinator) {
         updateCooldownButton().catch(console.error);
     }
 });
 document.addEventListener("duedle:tasks-updated", queueRerender);
+document.addEventListener("duedle:account-ready", () => {
+    queueRerender(0);
+    updateCooldownButton().catch(console.error);
+});
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) clearTimeout(renderTimer);
     else {

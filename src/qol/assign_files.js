@@ -4,6 +4,7 @@
         url.searchParams.delete("forcedownload");
         return url.href;
     };
+    // Remove the explicit download flag for ordinary PDF links.
     document.querySelectorAll("a[href]").forEach((link) => {
         let url;
         try {
@@ -11,53 +12,42 @@
         } catch {
             return;
         }
-        if (!url.pathname.includes("submission_files") && /\.pdf$/i.test(url.pathname) && url.searchParams.has("forcedownload")) {
+        if (!url.pathname.includes("submission_files") && !link.hasAttribute("download") && /\.pdf$/i.test(url.pathname) && url.searchParams.has("forcedownload")) {
             link.href = inlineUrl(link.href);
         }
     });
-    document.addEventListener("click", async (event) => {
+    document.addEventListener("click", async event => {
         const target = event.target instanceof Element ? event.target : event.target?.parentElement;
         const link = target?.closest("a[href]");
-        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.hasAttribute("download")) return;
-        let sourceUrl;
-        try {
-            sourceUrl = new URL(link.href);
-        } catch {
-            return;
-        }
-        if (!sourceUrl.pathname.includes("submission_files") || !["http:", "https:"].includes(sourceUrl.protocol)) return;
-        const previewUrl = inlineUrl(link.href);
-        // Open while the tap/click still has user activation. Safari blocks window.open after await.
-        const preview = window.open("about:blank", "_blank");
+        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey
+            || event.shiftKey || event.altKey || link.hasAttribute("download")) return;
+        const originalURL = link.href;
+        let url;
+        try { url = new URL(originalURL); } catch { return; }
+        // Download-only and unknown formats keep the browser's native handling.
+        if (!url.pathname.includes("submission_files") || !["http:", "https:"].includes(url.protocol)
+            || !/\.(pdf|jpe?g|png|gif|webp|avif|txt)$/i.test(url.pathname)) return;
         event.preventDefault();
-        if (!preview) {
-            location.assign(previewUrl);
-            return;
-        }
-        preview.opener = null;
-        preview.document.title = "提出ファイルを開いています";
-        preview.document.body.textContent = "提出ファイルを開いています…";
         try {
-            const response = await fetch(previewUrl, { credentials: "include" });
-            if (!response.ok || (response.redirected && new URL(response.url).pathname.includes("login"))) {
+            const response = await fetch(inlineUrl(originalURL), { credentials: "include" });
+            if (!response.ok || response.redirected && /\/(login|auth)\//.test(new URL(response.url).pathname)) {
                 throw new Error("Submitted file could not be fetched");
             }
-            const contentType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-            const inlineTypes = ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "text/plain"];
-            if (!inlineTypes.includes(contentType)) {
-                // Let Safari handle downloads and file formats without a built-in preview.
-                if (!preview.closed) preview.location.replace(previewUrl);
+            const type = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+            if (!["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "text/plain"].includes(type)) {
+                await response.body?.cancel();
+                location.assign(originalURL);
                 return;
             }
             const blob = await response.blob();
-            if (preview.closed) return;
-            const blobUrl = URL.createObjectURL(blob);
-            preview.location.replace(blobUrl);
-            // Keep the URL available for the viewer's download action, then release its memory.
-            window.setTimeout(() => URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
+            const blobURL = URL.createObjectURL(blob);
+            // Stay on the assignment while loading; navigate only when ready.
+            // A Blob URL avoids Moodle's attachment header without a waiting tab.
+            location.assign(blobURL);
+            window.setTimeout(() => URL.revokeObjectURL(blobURL), 10 * 60 * 1000);
         } catch (error) {
             console.warn("Duedle: submitted file preview fell back to the Moodle link", error);
-            if (!preview.closed) preview.location.replace(previewUrl);
+            location.assign(originalURL);
         }
     });
 })();

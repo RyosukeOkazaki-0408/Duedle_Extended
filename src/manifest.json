@@ -174,14 +174,6 @@
     },
     {
       "matches": [
-        "https://cms7.ict.nitech.ac.jp/moodle40a/my/*"
-      ],
-      "js": [
-        "./storage/getCourseIds.js"
-      ]
-    },
-    {
-      "matches": [
         "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/review.php*"
       ],
       "js": [
@@ -205,8 +197,7 @@
       "js": [
         "./cource/hide_closedTab.js",
         "./common/history_update.js",
-        "./notionnav/navigation.js",
-        "./storage/getCourseIdfromUrl.js"
+        "./notionnav/navigation.js"
       ],
       "css": [
         "./notionnav/style.css"

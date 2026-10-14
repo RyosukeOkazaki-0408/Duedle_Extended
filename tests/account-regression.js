@@ -57,6 +57,14 @@
     assert(values.refreshCoordinator === null, "Returning cannot revive an old lease");
     await denied(() => session.run(a, sender(1), async () => {}));
     await denied(() => session.run(page(11, "a-new"), sender(1, "old-document"), async () => {}));
+    await session.register(a, sender(1), true);
+    await session.run(a, sender(1), async () => {});
+    assert(values.assign_list[0].file === "a-private.pdf", "History resume re-registers the old page without changing task data");
+    await denied(() => session.run(page(11, "a-new"), sender(1, "new-document"), async () => {}));
+    await denied(() => session.register(b, sender(2), true));
+    await denied(() => session.register(a, { ...sender(1), documentLifecycle: "cached" }, true));
+    assert(values.duedleAccount === "11", "A cached page cannot switch the active account during resume");
+    await session.register(page(11, "a-new"), sender(1, "new-document"));
     await denied(() => session.run(page(11, "a-new"), { ...sender(1, "new-document"), frameId: 1 }, async () => {}));
     await denied(() => session.run(page(11, "a-new"), { ...sender(1), url: "https://example.invalid/moodle40a/my/" }, async () => {}));
     // A save queued before a switch completes in A; a save after the switch is rejected.
@@ -121,6 +129,13 @@
     assert(mismatch?.code === "AUTH_REQUIRED" && state.duedleAccountActive === false, "Changed cookies stop collection before saving another user's document");
     deliver({ ok: true, data: { assign_list: [{ file: "b-private.pdf" }] } });
     assert(!("assign_list" in await pendingRead), "A late personal-data response cannot repopulate an invalidated page");
+    const failedReadAPI = AccountSession.contentAPI({
+        ...native,
+        runtime: { async sendMessage(message) {
+            return message.type === "ACCOUNT_GET" ? { ok: false, error: "stale page" } : { ok: true };
+        } }
+    }, contentDoc, url);
+    await denied(() => failedReadAPI.storage.local.get("assign_list"));
     log("PASS account isolation: legacy quarantine, account restore, background restart, stale documents, logout, queued saves, failed writes and safe identity parsing");
 })().catch(error => {
     if (typeof process !== "undefined") { console.error(error); process.exitCode = 1; }

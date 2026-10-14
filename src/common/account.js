@@ -29,7 +29,7 @@ class AccountSession {
         return id;
     }
 
-    register(message, sender) {
+    register(message, sender, resume = false) {
         const tab = AccountSession.senderTab(sender);
         const user = AccountSession.userId(message.accountId);
         if (typeof message.pageId !== "string" || !message.pageId || message.pageId.length > 160) {
@@ -37,6 +37,14 @@ class AccountSession {
         }
         return this.serial(async () => {
             const saved = await this.storage.get(["duedleAccount", "duedleAccountTabs", ...AccountSession.keys]);
+            // A history-restored document may refresh its registration, but must
+            // never switch the active account using its cached DOM identity.
+            if (resume && (!user || saved.duedleAccount !== user)) {
+                throw new Error("Moodleのアカウントが変わりました。このページを再読み込みしてください。");
+            }
+            if (sender.documentLifecycle && sender.documentLifecycle !== "active") {
+                throw new Error("表示中のMoodleページから操作してください。");
+            }
             const tabs = saved.duedleAccountTabs || {};
             const update = {};
             if (saved.duedleAccount !== user) {
@@ -62,10 +70,12 @@ class AccountSession {
         const saved = await this.storage.get(["duedleAccount", "duedleAccountTabs"]);
         const registered = saved.duedleAccountTabs?.[tab];
         const user = AccountSession.userId(message.accountId);
-        if (!user || user !== saved.duedleAccount || registered?.accountId !== user
-            || registered.pageId !== message.pageId
-            || registered.documentId && sender.documentId && registered.documentId !== sender.documentId) {
+        if (!user || user !== saved.duedleAccount) {
             throw new Error("Moodleのアカウントが変わりました。このページを再読み込みしてください。");
+        }
+        if (registered?.accountId !== user || registered.pageId !== message.pageId
+            || registered.documentId && sender.documentId && registered.documentId !== sender.documentId) {
+            throw new Error("ページの登録が古くなりました。このページを再読み込みしてください。");
         }
         return user;
     }
@@ -145,7 +155,7 @@ class AccountSession {
             const timer = setTimeout(() => { observer.disconnect(); resolve(null); }, 2000);
             observer.observe(doc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-userid", "data-user-id", "href"] });
         });
-        const ready = identity.then(user => {
+        let ready = identity.then(user => {
             accountId = user;
             // Unknown markup does not prove logout and must not clear the
             // current account or its cached task information.
@@ -175,7 +185,9 @@ class AccountSession {
                     const result = shared.length ? await native.storage.local.get(shared) : {};
                     if (personal.length && globalThis.duedleAccountActive) {
                         const reply = await send({ type: "ACCOUNT_GET", keys: personal });
-                        if (reply?.ok && globalThis.duedleAccountActive) Object.assign(result, reply.data);
+                        // Failed authorization is not an empty task list.
+                        if (!reply?.ok) throw new Error(reply?.error || "課題情報を読み取れませんでした。");
+                        if (globalThis.duedleAccountActive) Object.assign(result, reply.data);
                     }
                     if (keys && typeof keys === "object" && !Array.isArray(keys)) {
                         for (const key of names) if (!(key in result)) result[key] = keys[key];
@@ -206,6 +218,27 @@ class AccountSession {
             doc.querySelector(".duedle-history-list")?.replaceChildren();
             doc.dispatchEvent(new CustomEvent("duedle:account-changed"));
         };
+        doc.defaultView?.addEventListener("pageshow", event => {
+            if (!event.persisted) return;
+            // BFCache restores this JS context without re-running content scripts.
+            // Queue every subsequent personal operation behind re-registration.
+            ready = ready.then(async () => {
+                const reply = await native.runtime.sendMessage({ type: "ACCOUNT_RESUME", accountId, pageId });
+                if (!reply?.ok) throw new Error(reply?.error || "ページの登録を復元できませんでした。");
+                const active = await native.storage.local.get("duedleAccount");
+                if (!accountId || active.duedleAccount !== accountId) throw new Error("Moodleのアカウントが変わりました。");
+                globalThis.duedleAccountActive = true;
+                const refreshed = await native.runtime.sendMessage({ type: "REFRESH_PAGE_READY", accountId, pageId });
+                if (!refreshed?.ok) throw new Error(refreshed?.error || "ページの復元に失敗しました。");
+            }).catch(error => { invalidate(); console.warn(error); });
+            globalThis.duedlePageReady = ready;
+            ready.then(() => {
+                if (!globalThis.duedleAccountActive) return;
+                doc.dispatchEvent(new CustomEvent("duedle:account-ready"));
+                globalThis.duedleAutoRefreshController?.start();
+                globalThis.duedleAutoRefreshController?.wake();
+            });
+        });
         // Cookies may change while an old tab remains open. Never save a fetched
         // page belonging to a different (or unidentified) signed-in user.
         globalThis.duedleAssertAccountDocument = (fetched, responseURL) => {

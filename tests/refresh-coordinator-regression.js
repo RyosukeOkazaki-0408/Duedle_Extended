@@ -76,6 +76,21 @@
             nextWorkAt: baseTime, failures: 0, pendingWork: false, lease: null,
             temporaryTabId: null, ...extra } };
     }
+    test("manual finish stores bounded result details across background restart", async () => {
+        const env = environment(dueState());
+        const claim = await env.coordinator.claim({ mode: "manual" }, sender(1));
+        const result = await env.coordinator.finish({ token: claim.token, outcome: "partial", fullSweep: true,
+            summary: { courses: 14, saved: 18, failed: 2, message: "x".repeat(700), ignored: "not stored" } }, sender(1));
+        assert(result.owned);
+        const summary = env.state.refreshHistory.attempt.summary;
+        equal(Object.keys(summary).sort(), ["courses", "failed", "message", "saved"]);
+        assert(summary.message.length === 500 && summary.saved === 18);
+        assert(!env.state.scrapeCooldown && !env.state.refreshHistory.fullSweepAt);
+        const restarted = env.create();
+        await restarted.status(sender(1));
+        equal(env.state.refreshHistory.attempt.summary, summary);
+    });
+
     function event() {
         const listeners = new Set();
         return { addListener(fn) { listeners.add(fn); }, removeListener(fn) { listeners.delete(fn); },
@@ -235,6 +250,26 @@
         equal((await reloaded.claim({ mode: "auto" }, sender(2))).nextAt, wake.nextAt);
         env.clock.now = wake.nextAt;
         assert((await reloaded.claim({ mode: "auto" }, sender(2))).granted);
+    });
+
+    test("persistent manual cooldown override allows repeated runs and retains cross-tab exclusion", async () => {
+        const env = environment({ ...dueState(), scrapeCooldown: new Date(baseTime).toISOString() });
+        equal((await env.coordinator.claim({ mode: "manual" }, sender(1))).reason, "cooldown");
+        await env.storage.set({ manualCooldownDisabled: true });
+        for (let i = 0; i < 2; i++) {
+            const coordinator = env.create(); // Also exercise nonpersistent background restart.
+            equal((await coordinator.status(sender(1))).cooldownUntil, 0);
+            const claim = await coordinator.claim({ mode: "manual" }, sender(1));
+            assert(claim.granted, "The override persists after a successful run");
+            equal((await env.create().claim({ mode: "manual" }, sender(2))).reason, "busy");
+            await coordinator.finish({ token: claim.token, outcome: "success", fullSweep: true }, sender(1));
+        }
+        assert(env.state.manualCooldownDisabled === true);
+        assert(env.state.scrapeCooldown, "Keep the real successful refresh time while bypassing it");
+        await env.storage.set({ manualCooldownDisabled: false });
+        equal((await env.create().claim({ mode: "manual" }, sender(1))).reason, "cooldown");
+        await env.storage.set({ manualCooldownDisabled: "true" });
+        equal((await env.create().claim({ mode: "manual" }, sender(1))).reason, "cooldown");
     });
 
     test("manual claims bypass automatic phase but honor persisted cooldown", async () => {

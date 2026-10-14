@@ -298,65 +298,35 @@ class Element {
 globalThis.Element = Element;
 globalThis.URL = FakeURL;
 const source = readSource("src/qol/assign_files.js");
-async function run(options = {}) {
-    const log = [];
-    const link = new Element("https://example.test/submission_files/report.pdf?forcedownload=1&token=keep");
+async function fileClick(options = {}) {
+    const events = [];
+    const link = new Element("https://example.test/submission_files/report." + (options.ext || "pdf") + "?forcedownload=1&token=keep");
     let handler;
-    const preview = {
-        closed: options.closed || false,
-        document: { body: {} },
-        location: { replace(url) { log.push(["replace", url]); } }
+    globalThis.location = {href:"https://example.test/assign", assign(url) {events.push(["navigate",url]);}};
+    globalThis.document = {querySelectorAll() {return [link];}, addEventListener(name, callback) {handler=callback;}};
+    globalThis.window = {open() {throw new Error("No waiting tabs");}, setTimeout() {}};
+    globalThis.fetch = async url => {
+        events.push(["fetch",url]);
+        if(options.fail) throw new Error("Offline");
+        return {ok:true, headers:{get() {return options.type || "application/pdf";}},
+            body:{async cancel(){events.push(["cancel"]);}}, async blob(){events.push(["blob"]);return {};}};
     };
-    globalThis.location = { href: "https://example.test/assign", assign(url) { log.push(["assign", url]); } };
-    globalThis.document = {
-        querySelectorAll() { return [link, new Element("invalid href")]; },
-        addEventListener(_name, callback) { handler = callback; }
-    };
-    globalThis.window = {
-        open() { log.push(["open"]); return options.blocked ? null : preview; },
-        setTimeout(callback, delay) { log.push(["timer", delay]); callback(); }
-    };
-    globalThis.fetch = async (url, request) => {
-        log.push(["fetch", url, request.credentials]);
-        if (options.reject) throw new Error("Network failure");
-        return {
-            ok: !options.fail,
-            redirected: false,
-            headers: { get() { return options.type || "application/pdf"; } },
-            async blob() { log.push(["blob"]); return {}; }
-        };
-    };
-    FakeURL.createObjectURL = () => { log.push(["create"]); return "blob:preview"; };
-    FakeURL.revokeObjectURL = () => { log.push(["revoke"]); };
-    globalThis.console = { warn() {} };
+    FakeURL.createObjectURL=()=>"blob:preview";
+    globalThis.console={warn(){}};
     eval(source);
-    await handler({
-        target: link,
-        button: 0,
-        ctrlKey: options.modified || false,
-        preventDefault() { log.push(["prevent"]); }
-    });
-    return { log, preview };
+    await handler({target:link, button:0, ctrlKey:options.modified, preventDefault(){events.push(["prevent"]);}});
+    return events;
 }
-(async () => {
-    let result = await run();
-    assert(result.log[0][0] === "open" && result.log[2][0] === "fetch", "Open occurs before fetch");
-    assert(result.log[2][1] === "https://example.test/submission_files/report.pdf?token=keep", "Remove forcedownload while preserving remaining query");
-    assert(result.log[2][2] === "include", "Fetch uses authenticated credentials");
-    assert(result.preview.opener === null, "Preview cannot control opener");
-    assert(result.log.some((entry) => entry[0] === "replace" && entry[1] === "blob:preview"), "PDF preview uses Blob");
-    assert(result.log.some((entry) => entry[0] === "revoke"), "Blob memory cleanup is scheduled");
-    result = await run({ blocked: true });
-    assert(result.log.some((entry) => entry[0] === "assign"), "Blocked popup falls back to same tab");
-    assert(!result.log.some((entry) => entry[0] === "fetch"), "Blocked popup avoids fetch");
-    for (const options of [{ fail: true }, { reject: true }, { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }, { type: "text/html" }]) {
-        result = await run(options);
-        assert(result.log.some((entry) => entry[0] === "replace" && entry[1].startsWith("https:")), "Fetch failure or unsupported type falls back to source");
-        assert(!result.log.some((entry) => entry[0] === "create"), "Fallback does not create Blob");
+(async()=>{
+    const pdf=await fileClick();
+    assert(pdf.some(e=>e[0]==="fetch" && !e[1].includes("forcedownload") && e[1].includes("token=keep")), "Preview fetch preserves authentication parameters");
+    assert(pdf.some(e=>e[0]==="navigate" && e[1]==="blob:preview"), "PDF opens inline in the current tab");
+    for(const ext of ["zip","docx","xlsx","bin"]) assert((await fileClick({ext})).length===0, "Download-only formats remain native: "+ext);
+    assert((await fileClick({modified:true})).length===0,"Modified clicks remain native");
+    for(const options of [{fail:true},{type:"application/zip"},{type:"text/html"}]) {
+        const events=await fileClick(options);
+        assert(events.some(e=>e[0]==="navigate" && e[1].includes("forcedownload=1")),"Failure/unsupported MIME uses original link");
+        assert(!events.some(e=>e[0]==="blob"),"Unsupported content never becomes an inline Blob");
     }
-    result = await run({ closed: true });
-    assert(!result.log.some((entry) => entry[0] === "create"), "Closing preview avoids Blob creation");
-    result = await run({ modified: true });
-    assert(result.log.length === 0, "Modified click retains native handling");
-    log("PASS synchronous popup, authenticated fetch, query preservation, blocked/failure/type fallbacks, memory cleanup, closed tab, modified click");
-})().catch((error) => { log(error); throw error; });
+    log("PASS inline submitted PDF without waiting tabs; native downloads; MIME and failure fallbacks");
+})().catch(error=>{log(error);throw error;});
