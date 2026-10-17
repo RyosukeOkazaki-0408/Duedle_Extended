@@ -36,7 +36,14 @@ class AccountSession {
             throw new Error("ページの識別子が不正です");
         }
         return this.serial(async () => {
-            const saved = await this.storage.get(["duedleAccount", "duedleAccountTabs", ...AccountSession.keys]);
+            const saved = await this.storage.get(["duedleAccount", "duedleAccountTabs", "duedleCollectionTabs", ...AccountSession.keys]);
+            // A collector tab is opened on behalf of the active account. Its
+            // cookies/DOM cannot switch that account while a sweep is running.
+            const collector = saved.duedleCollectionTabs?.[tab];
+            if ((collector || saved.refreshCoordinator?.temporaryTabId === tab)
+                && (!user || saved.duedleAccount !== user || collector && collector !== user)) {
+                throw new Error("Moodleのアカウントが変わったか、ログイン状態を確認できません。更新を中止しました。");
+            }
             // A history-restored document may refresh its registration, but must
             // never switch the active account using its cached DOM identity.
             if (resume && (!user || saved.duedleAccount !== user)) {
@@ -89,10 +96,12 @@ class AccountSession {
 
     forget(tab) {
         return this.serial(async () => {
-            const saved = await this.storage.get("duedleAccountTabs");
+            const saved = await this.storage.get(["duedleAccountTabs", "duedleCollectionTabs"]);
             const tabs = saved.duedleAccountTabs || {};
+            const collectors = saved.duedleCollectionTabs || {};
             delete tabs[tab];
-            await this.storage.set({ duedleAccountTabs: tabs });
+            delete collectors[tab];
+            await this.storage.set({ duedleAccountTabs: tabs, duedleCollectionTabs: collectors });
         });
     }
 
@@ -248,6 +257,20 @@ class AccountSession {
                 error.code = "AUTH_REQUIRED";
                 throw error;
             }
+        };
+        globalThis.duedleCollectAccountContext = async () => {
+            // ready deliberately catches failures for shared settings/UI. A
+            // collector must additionally require successful personal access.
+            await ready;
+            if (!globalThis.duedleAccountActive || !accountId) {
+                throw Object.assign(new Error("Moodleのログイン状態を確認できません。ページを再読み込みしてください。"), { code: "AUTH_REQUIRED" });
+            }
+            globalThis.duedleAssertAccountDocument(doc, pageURL);
+            const reply = await send({ type: "ACCOUNT_VERIFY" });
+            if (!reply?.ok || !globalThis.duedleAccountActive) {
+                throw Object.assign(new Error(reply?.error || "Moodleのログイン状態を確認できません。"), { code: "AUTH_REQUIRED" });
+            }
+            return { accountId, pageId };
         };
         native.storage.onChanged.addListener((changes, area) => {
             if (area === "local" && changes.duedleAccount && changes.duedleAccount.newValue !== accountId) invalidate();

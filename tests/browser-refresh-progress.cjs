@@ -31,6 +31,8 @@ const fixture='<!doctype html><html><head><meta name="viewport" content="width=d
   await owner.reload();
   await viewer.waitForFunction(()=>document.querySelector('#collectionstatus').textContent.includes('中断'));
   await viewer.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
+  await owner.waitForFunction(()=>document.querySelector('#scrapebutton') && !document.querySelector('#scrapebutton').disabled);
+  assert.equal(await owner.locator('#collectionstatus').textContent(),'','Reloading the owner does not replay its saved cancellation');
   release?.(); release=null;
   assert(!(await worker.evaluate(async()=> (await chrome.storage.local.get('scrapeCooldown')).scrapeCooldown)));
   for (const progress of [null,{phase:'courses',completed:3,total:14,saved:8,at:Date.now()-90001}]) {
@@ -42,6 +44,19 @@ const fixture='<!doctype html><html><head><meta name="viewport" content="width=d
    await viewer.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
    assert.equal(await worker.evaluate(async()=> (await chrome.storage.local.get('refreshCoordinator')).refreshCoordinator.lease),null);
   }
-  console.log('PASS browser progress: counters survive viewer reload; owner reload cancels without cooldown; preparation and stalled counts expire and allow retry');
+  await worker.evaluate(async()=>{
+   const stored=await chrome.storage.local.get('refreshCoordinator');
+   await chrome.storage.local.set({refreshCoordinator:{...stored.refreshCoordinator,lease:{token:'observed-success',tabId:999,mode:'manual',pageId:'viewer-test',startedAt:Date.now(),progress:{phase:'courses',completed:1,total:1,saved:2,at:Date.now()},expiresAt:Date.now()+90000}}});
+  });
+  await viewer.waitForFunction(()=>document.querySelector('#collectionstatus').textContent.includes('1/1コース'));
+  await worker.evaluate(async()=>{
+   const stored=await chrome.storage.local.get(['refreshCoordinator','refreshHistory']);
+   await chrome.storage.local.set({refreshCoordinator:{...stored.refreshCoordinator,lease:null},refreshHistory:{...stored.refreshHistory,fullSweepAt:Date.now(),attempt:{at:Date.now(),mode:'manual',outcome:'success',summary:{courses:1,saved:2,failed:0,message:''}}}});
+  });
+  await viewer.waitForFunction(()=>document.querySelector('#collectionstatus').textContent==='1コース・2件の課題情報を更新しました。');
+  await viewer.reload();
+  await viewer.waitForFunction(()=>document.querySelector('#listupdated')?.textContent.includes('最終更新：') && !document.querySelector('#scrapebutton').disabled);
+  assert.equal(await viewer.locator('#collectionstatus').textContent(),'','Reloading never replays a saved success notice');
+  console.log('PASS browser progress: counters survive viewer reload; owner reload cancels without cooldown; preparation and stalled counts expire and allow retry; observed success is transient and reload never replays outcomes');
  } finally {release?.();await context.close();}
 })().catch(error=>{console.error(error);process.exitCode=1});

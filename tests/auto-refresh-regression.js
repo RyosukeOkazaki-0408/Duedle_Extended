@@ -181,7 +181,8 @@
             advance(ms) { clock += ms; }, setVisible(value) { visible = value; }, clock: () => clock };
         const fetch = async (raw, options) => {
             const url = new URLClass(raw);
-            const path = url.pathname.replace("/moodle40a/", "") + (url.searchParams.get("id") ? "?id=" + url.searchParams.get("id") : "");
+            const path = url.pathname.replace("/moodle40a/", "") + (url.searchParams.get("id") ? "?id=" + url.searchParams.get("id") : "")
+                + (url.searchParams.get("section") !== null ? "&section=" + url.searchParams.get("section") : "");
             requests.push({ url: raw, path, options });
             if (config.onRequest) await config.onRequest(env, path);
             let route;
@@ -374,6 +375,42 @@
         assert(!result.state.courses[99], "Historical inactive course IDs expire");
         assert(result.state.courses[42].discoveredAt > 0);
         equal(result.moreWork, true);
+    });
+
+    test("automatic multipage discovery resumes one section per batch before marking the course fresh", async () => {
+        const env = environment({ routes: {
+            "course/view.php?id=42": { links: [base + "course/view.php?id=42&section=1", base + "course/view.php?id=99&section=7"] },
+            "course/view.php?id=42&section=1": { links: [base + "course/view.php?id=42&section=2", base + "mod/assign/view.php?id=201"] },
+            "course/view.php?id=42&section=2": { links: [base + "course/view.php?id=42&section=1", base + "mod/quiz/view.php?id=202"] }
+        } });
+        const first = await env.collector.run({ courseIds: [42] });
+        equal(first.state.courses[42].discoveredAt, 0);
+        equal(first.state.courses[42].sectionScan.pending, [1]);
+        equal(env.requests.filter(item => item.path.startsWith("course/")).length, 1);
+        assert(first.moreWork);
+        env.advance(5 * 60000);
+        const second = await env.collector.run({ state: first.state });
+        equal(second.state.courses[42].discoveredAt, 0);
+        equal(second.state.courses[42].sectionScan.pending, [2]);
+        equal(second.saved, 1);
+        equal(env.requests.filter(item => item.path.startsWith("course/")).length, 2);
+        env.advance(5 * 60000);
+        const last = await env.collector.run({ state: second.state });
+        assert(last.state.courses[42].discoveredAt > 0);
+        assert(!last.state.courses[42].sectionScan);
+        equal(last.saved, 1);
+        equal(env.requests.filter(item => item.path.startsWith("course/")).length, 3);
+        assert(!last.moreWork);
+    });
+
+    test("failed automatic section remains pending without advancing course freshness", async () => {
+        const env = environment({ routes: { "course/view.php?id=42&section=1": { status: 404 } } });
+        const result = await env.collector.run({ state: { courses: { 42: { seenAt: epoch, discoveredAt: 0,
+            sectionScan: { startedAt: epoch, pending: [1], visited: [] } } } } });
+        equal(result.failed, 1);
+        equal(result.state.courses[42].discoveredAt, 0);
+        equal(result.state.courses[42].sectionScan.pending, [1]);
+        assert(result.state.courses[42].retryAt > epoch);
     });
 
     test("login, rate limits and server errors stop the sweep immediately with a backoff reason", async () => {

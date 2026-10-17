@@ -4,7 +4,19 @@
         + ", .que.ddwtos .answercontainer, .course-content .contentwithoutlink, .course-content .summarytext, .course-content .no-overflow"
         + (/\/mod\/(?:assign|quiz)\//.test(location.pathname) ? ", #intro" : "");
     const sources = new WeakMap();
-    const important = new Map();
+    const originals = new WeakMap();
+    const applied = new WeakMap();
+    const properties = ["color", "background-color"];
+    const inlineColors = node => properties.map(property => ({
+        value: node.style.getPropertyValue(property), priority: node.style.getPropertyPriority(property)
+    }));
+    const same = (a, b) => a.value === b.value && a.priority === b.priority;
+    const setStyle = (node, property, value, priority = "") => {
+        if (node.style.getPropertyValue(property) !== value || node.style.getPropertyPriority(property) !== priority) {
+            if (value) node.style.setProperty(property, value, priority);
+            else node.style.removeProperty(property);
+        }
+    };
     const rgb = value => {
         const wide = /^color\((?:srgb|display-p3)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/.exec(value);
         if (wide) return [...wide.slice(1, 4).map(channel => Math.min(255, Number(channel) * 255)), Number(wide[4] ?? 1)];
@@ -35,55 +47,89 @@
         }
         return css([...result, 1]);
     };
-    const applyImportant = (node, original) => {
+    const applyImportant = node => {
         const dark = document.body.classList.contains("darkmode");
         const source = sources.get(node);
-        for (const [property, value] of Object.entries(original)) {
-            node.style.setProperty(property, dark
+        originals.get(node)?.forEach((original, index) => {
+            if (original.priority !== "important") return;
+            const property = properties[index];
+            setStyle(node, property, dark
                 ? property === "color" ? foreground(source.color) : background(source.background)
-                : value, "important");
-        }
+                : original.value, original.priority);
+        });
+        applied.set(node, inlineColors(node));
     };
     const adapt = root => {
         const nodes = [root, ...root.querySelectorAll("*")]
             .filter(node => node.style && !node.matches("img, svg, svg *, canvas, video, iframe, picture, source"));
-        // Read all original colors before applying classes to avoid inheriting
-        // a parent's converted color while inspecting a child.
+        // Remember page edits, but never adopt our own adapted inline values.
         for (const node of nodes) {
-            if (sources.has(node)) continue;
-            const style = getComputedStyle(node);
-            sources.set(node, { color: rgb(style.color), background: rgb(style.backgroundColor) });
-            const original = Object.fromEntries(["color", "background-color"]
-                .filter(property => node.style.getPropertyPriority(property) === "important")
-                .map(property => [property, node.style.getPropertyValue(property)]));
-            if (Object.keys(original).length) important.set(node, original);
+            const current = inlineColors(node), previous = applied.get(node);
+            const original = originals.get(node);
+            originals.set(node, current.map((value, index) => previous && same(value, previous[index])
+                ? original[index] : value));
         }
         root.classList.add("duedle-authored-content");
+        // Restore the entire author subtree before reading it. New descendants
+        // and inherited colors must not capture an already converted parent.
+        for (const node of nodes) {
+            node.classList.remove("duedle-content-colors");
+            originals.get(node).forEach((original, index) =>
+                setStyle(node, properties[index], original.value, original.priority));
+        }
+        for (const node of nodes) {
+            const style = getComputedStyle(node);
+            sources.set(node, { color: rgb(style.color), background: rgb(style.backgroundColor) });
+        }
         for (const node of nodes) {
             const source = sources.get(node);
-            node.style.setProperty("--duedle-content-color", foreground(source.color));
-            node.style.setProperty("--duedle-content-background", background(source.background));
+            setStyle(node, "--duedle-content-color", foreground(source.color));
+            setStyle(node, "--duedle-content-background", background(source.background));
             node.classList.add("duedle-content-colors");
-            if (important.has(node)) applyImportant(node, important.get(node));
+            applyImportant(node);
         }
     };
-    const mark = root => {
-        if (root?.nodeType !== 1) return;
-        const parent = root.closest(".duedle-authored-content");
-        if (parent) adapt(parent);
-        else if (root.matches(selector)) adapt(root);
-        root.querySelectorAll(selector).forEach(adapt);
+    const collectRoots = (root, roots) => {
+        if (root?.nodeType !== 1 || !root.isConnected) return;
+        // Nested Moodle content selectors share one author-color read.
+        let parent = root.closest(".duedle-authored-content");
+        while (parent?.parentElement?.closest(".duedle-authored-content")) {
+            parent = parent.parentElement.closest(".duedle-authored-content");
+        }
+        if (parent) roots.add(parent);
+        else if (root.matches(selector)) roots.add(root);
+        root.querySelectorAll(selector).forEach(node => roots.add(node));
     };
-    mark(document.body);
+    const adaptRoots = roots => {
+        for (const root of roots) {
+            if (![...roots].some(other => other !== root && other.contains(root))) adapt(root);
+        }
+    };
+    const initial = new Set();
+    collectRoots(document.body, initial);
+    adaptRoots(initial);
     new MutationObserver(records => {
+        const roots = new Set();
+        let themeChanged = false;
         for (const record of records) {
-            if (record.type === "attributes" && record.target === document.body) {
-                for (const [node, original] of important) {
-                    if (node.isConnected) applyImportant(node, original);
-                    else important.delete(node);
+            if (record.type === "attributes") {
+                if (record.target === document.body && record.attributeName === "class") themeChanged = true;
+                if (record.attributeName === "style" && applied.has(record.target)) {
+                    const previous = applied.get(record.target);
+                    if (inlineColors(record.target).some((value, index) => !same(value, previous[index]))) {
+                        collectRoots(record.target, roots);
+                    }
                 }
             }
-            for (const node of record.addedNodes) mark(node);
+            for (const node of record.addedNodes) collectRoots(node, roots);
         }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+        adaptRoots(roots);
+        if (themeChanged) {
+            // Weak maps never retain detached teaching content. Only connected,
+            // already adapted nodes need restoration when the mode changes.
+            document.querySelectorAll(".duedle-content-colors").forEach(node => {
+                if (sources.has(node)) applyImportant(node);
+            });
+        }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
 })();

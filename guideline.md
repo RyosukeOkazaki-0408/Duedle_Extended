@@ -94,6 +94,8 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 ### 取得対象とページ復元の注意点
 
 - 手動更新は通常・CSE用とも、Moodleのコース概要用APIを `classification=all, limit=0` で読み、概要から削除済みのものを除く登録コースの全一覧で `courseIds` を置き換えます。画面の絞り込み・ページ送り・閲覧履歴は更新対象に混ぜません。一覧取得に失敗した場合は保存済みデータを保持し、更新を中止します。
+- ページ分割されたコースでは同じコースのセクションを確認し、活動を重複取得しません。手動更新は最大200ページを上限とし、未取得・失敗があれば全件成功にしません。自動更新は1回1コースページの取得量を維持し、残りのセクションを次回へ引き継ぎます。
+- CSE収集は取得先タブの本人確認と元タブとの一致を検証してから保存します。識別不能・別アカウントの場合は中断します。履歴への追加は背景側で直列化し、収集専用タブは履歴に入れません。
 - ブラウザの履歴キャッシュ（BFCache）から復元されたページは、同じアカウントが有効であることを背景処理で確認して再登録し、保存済み課題を再描画します。復元したページの情報でアカウントを切り替えたり、読取失敗を空の課題一覧として扱ったりしないでください。
 - 課題の提出編集・確認・採点画面は、課題詳細として保存しません。提出編集画面に提出状況表がなくても、既存の状態・提出ファイル・取得時刻を上書きしないでください。
 
@@ -111,7 +113,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 
 初回・再開時の待機、新規課題の優先取得、分割取得、負荷分散、失敗時の再試行があります。詳細は[自動更新の仕様](docs/auto-refresh.md)を参照してください。
 
-`fetchedAt` は課題詳細の鮮度、`refreshHistory.fullSweepAt` は手動巡回の成功時刻、`refreshHistory.calendarAt` は締切一覧の対象期間を確認し終えた成功時刻です。意味が異なるため、表示操作や部分成功で一律に更新しないでください。小テストのレビューだけでは詳細全体の `fetchedAt` を進めません。
+`fetchedAt` は課題詳細の鮮度、`refreshHistory.fullSweepAt` は手動巡回の成功時刻、`refreshHistory.calendarAt` は締切一覧の対象期間を確認し終えた成功時刻です。意味が異なるため、表示操作や部分成功で一律に更新しないでください。小テストのレビューの単一受験点だけでは詳細全体の `fetchedAt` を進めません。レビュー閲覧時に正規の概要ページを追加取得できた場合は、その総合点・期限・回数を保存して `fetchedAt` を更新します。取得中に別の概要保存が入った場合は、古い応答で上書きしません。
 
 ## 保存データとアカウント
 
@@ -130,8 +132,9 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 | `status` | 解析した状態。期限に応じて表示時にも再評価 |
 | `show` | Duedleの一覧に表示するかどうか |
 | `file` / `filenum` | 課題のみ。最初の提出ファイル名とリンク数 |
-| `point` / `required` / `maxp` | 小テストのみ。得点・合格点・満点。取得不能なら `null` |
-| `count` / `maxcount` | 小テストのみ。受験回数・上限。上限を取得できない場合は `null` |
+| `point` / `required` / `maxp` | 小テストのみ。概要ページの総合点・合格点・満点。取得不能なら `null` |
+| `requiredState` | 合格点を判定できた `known`、設定なしを確認した `none`、解析不能の `unknown`。解析不能を合格とは扱わない |
+| `count` / `maxcount` | 小テストのみ。受験回数・上限。正整数は上限、確認済み無制限は `0`、取得不能は `null`。旧データの欠損も「?」で表示 |
 
 課題の状態は `complete`・`incomplete`・`unknown`・`warning`・`expired`、小テストではさらに `qualify`・`stuck` を扱います。`incomplete`・`warning`・`expired` は期限で再評価し、期限が3日以内なら `warning`、期限後なら `expired` として表示します。`unknown`・`qualify`・`stuck` はこの再評価の対象外です。現行スクレイパーは提出日時の `submit` フィールドを生成していません。
 
@@ -153,6 +156,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 | `storage.local` | `history` | 最近開いたコースページのタイトルとURL。最大10件 |
 | `storage.local` | `courseIds`、`refreshCoordinator`、`refreshHistory`、`scrapeCooldown` | 収集対象、更新予定・排他制御、成功時刻、手動更新制限 |
 | `storage.local` | `duedleAccount`、`duedleAccountTabs`、`duedleAccountData:*` | 現在のアカウント、ページ登録、退避データ |
+| `storage.local` | `duedleCollectionTabs` | 一時収集タブの所有アカウント。アカウント切替時も保持し、タブ終了・ブラウザ起動時に除去 |
 | `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み。状態の初期値は `ex-complete`（完了以外）、保存済みの選択は維持 |
 | `storage.sync` | `displayShow`、`scrapeMode`、`colorSelect_light_*`、`colorSelect_dark_*` | 課題メニューの表示、更新方式、状態色 |
 | Moodleの `localStorage` | `hide` | 折りたたんだセクションの表示設定 |

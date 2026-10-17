@@ -61,6 +61,7 @@ function expireCompletionNotice() {
     }, 10000);
 }
 let settledToken = null;
+let observedRefresh = null;
 let refreshUiRevision = 0;
 const collectionhint = document.querySelector("#collectionhint");
 function setCollectionStatus(text) {
@@ -69,8 +70,24 @@ function setCollectionStatus(text) {
 function showRefreshState(state, coordinator) {
     // Late progress notifications/reads cannot restore "updating" after finish.
     if (coordinator?.lease?.token && coordinator.lease.token === settledToken) return;
+    if (coordinator?.lease?.mode === "manual") {
+        if (observedRefresh?.token !== coordinator.lease.token) clearCompletionNotice();
+        observedRefresh = { token: coordinator.lease.token, startedAt: coordinator.lease.startedAt };
+    }
     if (collectionRunning && !state.running) return;
-    setCollectionStatus(state.running ? state.status : completionError || completionStatus || state.status);
+    setCollectionStatus(coordinator?.lease ? state.status : completionError || completionStatus || state.status);
+}
+function observeRefreshOutcome(coordinator, history) {
+    // A page opened after completion must stay quiet. Only report the end of a
+    // manual refresh whose progress this page has actually displayed.
+    if (collectionRunning || coordinator?.lease || !observedRefresh) return;
+    const attempt = history?.attempt;
+    if (attempt?.mode !== "manual" || !(attempt.at >= observedRefresh.startedAt)) return;
+    settledToken = observedRefresh.token;
+    observedRefresh = null;
+    clearCompletionNotice();
+    completionStatus = TaskListState.describe({ history, coordinator, showOutcome: true }).status;
+    if (completionStatus) expireCompletionNotice();
 }
 let cooldownTimer;
 let refreshBusy = false;
@@ -335,6 +352,7 @@ scrapebutton.addEventListener("click", async () => {
         }
         manualToken = null;
         manualAbort = null;
+        observedRefresh = null;
         collectionRunning = false;
         collectionhint.hidden = true;
         // Do not depend on storage.onChanged delivery to display the final result.
@@ -559,6 +577,7 @@ async function renderList() {
     // Keep the current cards visible while asynchronous card construction finishes.
     const nextDisplay = document.createElement("div");
     const visible = await displaybox(alldata, nextDisplay);
+    observeRefreshOutcome(stored.refreshCoordinator, stored.refreshHistory);
     const state = TaskListState.describe({ total: alldata.length, visible,
         history: stored.refreshHistory, coordinator: stored.refreshCoordinator });
     if (!visible) nextDisplay.textContent = state.empty;
@@ -584,6 +603,7 @@ async function renderList() {
 
 document.addEventListener("duedle:account-changed", () => {
     clearCompletionNotice();
+    observedRefresh = null;
     upcomingGeneration++;
     upcomingResolver.clear();
     upcomingEventRefs.clear();

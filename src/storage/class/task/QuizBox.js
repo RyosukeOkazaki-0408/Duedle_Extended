@@ -12,7 +12,8 @@ class QuizBox extends TaskBox {
         quiz.querySelector(".li3").textContent = `得点: ${point} / ${maxpoint}  ${required}`;
 
         const count = this.data.count ? this.data.count : "0";
-        const maxcount = this.data.maxcount !== null ? this.data.maxcount : "∞";
+        const limit = this.data.maxcount;
+        const maxcount = Number.isSafeInteger(limit) && limit >= 0 ? (limit === 0 ? "∞" : limit) : "?";
         quiz.querySelector(".li4").textContent = `受験回数: ${count} / ${maxcount}`;
 
         const link = document.createElement("a");

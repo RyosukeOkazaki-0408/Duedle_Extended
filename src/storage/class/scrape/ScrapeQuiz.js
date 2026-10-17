@@ -16,60 +16,49 @@ class ScrapeQuiz extends Scrape {
             return null;
         }
 
-        //point
-        let point = null, maxp = null;
-        try {
-            const pointraw = doc.querySelector("#feedback h3").textContent.trim();
-            const match = pointraw.match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+        // Only the overview's aggregate grade belongs in the task record.
+        const grade = this.gradeRatio(doc.querySelector("#feedback h3")?.textContent);
+        let point = grade?.point ?? null, maxp = grade?.maxp ?? null;
+        const information = [...doc.querySelectorAll(".quizinfo p, p.text-left")]
+            .filter(node => !node.closest("#intro, .activity-description"))
+            .map(node => node.textContent.trim());
+        const requiredraw = information.find(text => /^(?:合格点|Grade to pass)(?:\s|[:：]|$)/i.test(text));
+        const requiredGrade = this.gradeRatio(requiredraw);
+        const required = requiredGrade?.point ?? null;
+        if (maxp === null) maxp = requiredGrade?.maxp ?? null;
+        // Moodle omits the pass-mark/attempt-limit messages when unset. This is
+        // meaningful only on a recognized overview in a supported language;
+        // unreadable settings must never turn a failing attempt into a pass.
+        const language = doc.documentElement?.lang || "";
+        const recognizedOverview = /^(?:ja|en)(?:[-_]|$)/i.test(language)
+            && Boolean(doc.querySelector(".quizattempt"));
+        const requiredState = requiredGrade ? "known" : !requiredraw && recognizedOverview ? "none" : "unknown";
 
-            if (match) {
-                point = parseFloat(match[1]); // 左側（現在の得点）
-                maxp = parseFloat(match[2]);     // 右側（満点）
-            }
-        } catch (error) {
-            point = null;
-            maxp = null;
-        }
-        //required,maxp
-        const requiredraw = [...doc.querySelectorAll("p.text-left")]
-            .find(e => e.textContent.includes("合格点"));
-        const requiredMatch = requiredraw ? requiredraw.textContent.trim().match(/合格点:\s*([\d.]+)\s*\/\s*([\d.]+)/) : null;
-        const required = requiredMatch ? parseFloat(requiredMatch[1]) : null;
-        if (maxp === null) maxp = requiredMatch ? parseFloat(requiredMatch[2]) : null;
-
-        //count
         const count = [...doc.querySelectorAll("table.quizattemptsummary tbody tr")]
             .filter(row => row.querySelector("td")).length;
-
-        //maxcount
-        const maxcountraw = [...doc.querySelectorAll("p.text-left")]
-            .find(e => e.textContent.includes("受験可能回数"));
-        const maxcountMatch = maxcountraw?.textContent.trim().match(/受験可能回数:\s*(\d+)/);
-        const maxcount = maxcountMatch ? Number(maxcountMatch[1]) : null;
+        const maxcountraw = information.find(text => /^(?:受験可能回数|Attempts allowed)(?:\s|[:：]|$)/i.test(text));
+        const maxcountMatch = maxcountraw?.match(/[:：]\s*(\d+)\s*$/);
+        const explicitUnlimited = /[:：]\s*(?:無制限|Unlimited)\s*$/i.test(maxcountraw || "");
+        const parsedMaxcount = maxcountMatch ? Number(maxcountMatch[1]) : null;
+        const maxcount = Number.isSafeInteger(parsedMaxcount) && parsedMaxcount >= 0 ? parsedMaxcount
+            : explicitUnlimited || (!maxcountraw && recognizedOverview) ? 0 : null;
 
         let a_status;
-        if (maxp !== null && point !== null) { //得点状況がわかるとき
+        if (maxp !== null && point !== null) {
             if (point === maxp) {
                 a_status = "complete";
-            } else if (required === null || required === undefined) {
-                if (count === 0) {
-                    a_status = "incomplete";
-                } else {
-                    a_status = "qualify";
-                }
-            } else if (point >= required) {
-                a_status = "qualify";
+            } else if (requiredState === "unknown") {
+                a_status = count === 0 ? "incomplete" : "unknown";
+            } else if (requiredState === "none") {
+                a_status = count === 0 ? "incomplete" : "qualify";
             } else {
-                a_status = "incomplete";
+                a_status = point >= required ? "qualify" : "incomplete";
             }
-        } else { //得点状況がわからないとき
-            if (count === 0) {
-                a_status = "incomplete";
-            } else {
-                a_status = "unknown";
-            }
+        } else {
+            a_status = count === 0 ? "incomplete" : "unknown";
         }
-        if (point !== null && required !== null && point < required && a_status === "incomplete" && count === maxcount) { //受験回数が上限に達しているのに合格点に達していないとき
+        if (point !== null && required !== null && point < required && a_status === "incomplete"
+            && maxcount > 0 && count >= maxcount) {
             a_status = "stuck";
         }
 
@@ -87,6 +76,7 @@ class ScrapeQuiz extends Scrape {
             due: due?.toISOString() ?? null,
             point: point,
             required: required,
+            requiredState: requiredState,
             maxp: maxp,
             count: count,
             maxcount: maxcount,

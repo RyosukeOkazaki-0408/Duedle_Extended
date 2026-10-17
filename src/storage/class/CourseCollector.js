@@ -1,6 +1,7 @@
 // Fetch in the Moodle tab so Safari uses the same authenticated session.
 class CourseCollector {
     static baseURL = "https://cms7.ict.nitech.ac.jp/moodle40a/";
+    static maxCoursePages = 200;
 
     constructor({ fetch = globalThis.fetch.bind(globalThis),
         parse = html => new DOMParser().parseFromString(html, "text/html"),
@@ -33,6 +34,31 @@ class CourseCollector {
             items.set(`${type}:${id}`, { type, id });
         }
         return [...items.values()];
+    }
+
+    // Follow only read-only section links for this exact course. Strip hashes
+    // and unrelated parameters (including editing/session actions).
+    static sectionURL(raw, pageURL, courseId) {
+        try {
+            const url = new URL(raw, pageURL);
+            const section = url.searchParams.get("section");
+            if (!Number.isSafeInteger(Number(courseId)) || Number(courseId) <= 0
+                || url.origin !== new URL(this.baseURL).origin
+                || url.pathname !== "/moodle40a/course/view.php"
+                || Number(url.searchParams.get("id")) !== Number(courseId)
+                || !/^\d+$/.test(section || "") || !Number.isSafeInteger(Number(section))) return null;
+            return `${this.baseURL}course/view.php?id=${Number(courseId)}&section=${Number(section)}`;
+        } catch { return null; }
+    }
+
+    static getSectionURLs(doc, pageURL, courseId) {
+        const urls = new Set();
+        for (const link of doc.querySelectorAll("a[href]")) {
+            const url = this.sectionURL(link.getAttribute("href"), pageURL, courseId);
+            if (url) urls.add(url);
+            if (urls.size >= this.maxCoursePages) throw new Error("コースのページ数が多すぎるため、全課題を確認できませんでした。");
+        }
+        return [...urls];
     }
 
     async fetchDocument(url) {
@@ -124,29 +150,40 @@ class CourseCollector {
         for (const courseId of ids) {
             const url = `${CourseCollector.baseURL}course/view.php?id=${courseId}`;
             try {
-                const course = await this.fetchDocument(url);
-                if (!course.querySelector("h1") || course.querySelector(".errorcode, .errormessage")) {
-                    throw new Error("コースを開けませんでした。Moodleのアクセス権を確認してください");
-                }
-                for (const item of CourseCollector.getItems(course, url)) {
-                    const key = `${item.type}:${item.id}`;
-                    if (seen.has(key)) continue;
-                    seen.add(key);
-                    const taskURL = `${CourseCollector.baseURL}mod/${item.type}/view.php?id=${item.id}`;
-                    try {
-                        const taskDoc = await this.fetchDocument(taskURL);
-                        const scraper = item.type === "assign" ? ScrapeAssign : ScrapeQuiz;
-                        const data = scraper.getData(taskDoc, taskURL);
-                        if (!data) throw new Error("課題の情報を読み取れませんでした");
-                        await this.assertContinue();
-                        await StorageUtil.saveData(data.group, item.type === "assign" ? "assignId" : "quizId", data);
-                        result.saved++;
-                    } catch (error) {
-                        if (CourseCollector.shouldStop(error)) throw error;
-                        result.failed++;
-                        result.errors.push({ url: taskURL, message: error.message });
+                const pages = [url];
+                const scheduled = new Set(pages);
+                for (let page = 0; page < pages.length; page++) {
+                    const pageURL = pages[page];
+                    const course = await this.fetchDocument(pageURL);
+                    if (!course.querySelector("h1") || course.querySelector(".errorcode, .errormessage")) {
+                        throw new Error("コースを開けませんでした。Moodleのアクセス権を確認してください");
                     }
-                    await this.onProgress({ ...result, totalCourses: ids.length });
+                    for (const section of CourseCollector.getSectionURLs(course, pageURL, courseId)) {
+                        if (scheduled.has(section)) continue;
+                        if (scheduled.size >= CourseCollector.maxCoursePages) throw new Error("コースのページ数が多すぎるため、全課題を確認できませんでした。");
+                        scheduled.add(section);
+                        pages.push(section);
+                    }
+                    for (const item of CourseCollector.getItems(course, pageURL)) {
+                        const key = `${item.type}:${item.id}`;
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        const taskURL = `${CourseCollector.baseURL}mod/${item.type}/view.php?id=${item.id}`;
+                        try {
+                            const taskDoc = await this.fetchDocument(taskURL);
+                            const scraper = item.type === "assign" ? ScrapeAssign : ScrapeQuiz;
+                            const data = scraper.getData(taskDoc, taskURL);
+                            if (!data) throw new Error("課題の情報を読み取れませんでした");
+                            await this.assertContinue();
+                            await StorageUtil.saveData(data.group, item.type === "assign" ? "assignId" : "quizId", data);
+                            result.saved++;
+                        } catch (error) {
+                            if (CourseCollector.shouldStop(error)) throw error;
+                            result.failed++;
+                            result.errors.push({ url: taskURL, message: error.message });
+                        }
+                        await this.onProgress({ ...result, totalCourses: ids.length });
+                    }
                 }
                 result.courses++;
             } catch (error) {

@@ -1,71 +1,28 @@
 class ScrapeQuizReview extends Scrape {
-    static getData(oldData) {
-        //courseName
-        const courseName = document.querySelector("h1").textContent.trim();
-
-        //quizName
-        const quizName = document.querySelector("[aria-current='page']").textContent.trim();
-
-        //point
-        let point = oldData.point ?? null, maxp = oldData.maxp ?? null;
-        try {
-            const pointraw = document.querySelector("tr:last-of-type td").textContent.trim();
-            const match = pointraw.match(/([\d.]+)\s*\/\s*([\d.]+)/);
-
-            if (match && (point === null || point <= parseFloat(match[1]))) {
-                point = parseFloat(match[1]); // 左側（現在の得点）
-                maxp = parseFloat(match[2]);     // 右側（満点）
-            }
-        } catch (error) {
-            // Keep the previously reviewed score if the current page hides grades.
+    // This is a single attempt, never an aggregate grade or a task snapshot.
+    static getData(doc = document, pageURL = doc.URL) {
+        let url;
+        try { url = new URL(pageURL); } catch { return null; }
+        if (url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/mod/quiz/review.php") return null;
+        const ids = new Set();
+        const cmid = Number(url.searchParams.get("cmid"));
+        if (Number.isSafeInteger(cmid) && cmid > 0) ids.add(cmid);
+        for (const link of doc.querySelectorAll('#page-navbar a[href*="/mod/quiz/view.php"], a.mod_quiz-next-nav[href*="/mod/quiz/view.php"]')) {
+            try {
+                const target = new URL(link.getAttribute("href"), pageURL);
+                const id = Number(target.searchParams.get("id"));
+                if (target.origin === url.origin && target.pathname === "/moodle40a/mod/quiz/view.php"
+                    && Number.isSafeInteger(id) && id > 0) ids.add(id);
+            } catch { /* Ignore malformed or unrelated links. */ }
         }
-        const count = oldData.count === 0 ? 1 : oldData.count;
-
-        let a_status;
-        if (maxp !== null && point !== null) { //得点状況がわかるとき
-            if (point === maxp) {
-                a_status = "complete";
-            } else if (oldData.required === null || oldData.required === undefined) {
-                if (count === 0) {
-                    a_status = "incomplete";
-                } else {
-                    a_status = "qualify";
-                }
-            } else if (point >= oldData.required) {
-                a_status = "qualify";
-            } else {
-                a_status = "incomplete";
-            }
-        } else { //得点状況がわからないとき
-            if (count === 0) {
-                a_status = "incomplete";
-            } else {
-                a_status = "unknown";
-            }
+        if (ids.size !== 1 || doc.querySelector(".errorcode, .errormessage")) return null;
+        let grade = null;
+        for (const row of doc.querySelectorAll("table.quizreviewsummary tr")) {
+            const label = row.querySelector("th")?.textContent.trim();
+            if (!/^(?:評点|成績|Grade)\s*[:：]?$/i.test(label || "")) continue;
+            grade = this.gradeRatio(row.querySelector("td")?.textContent);
+            break;
         }
-        if (point !== null && oldData.required != null && point < oldData.required && a_status === "incomplete" && count === oldData.maxcount) { //受験回数が上限に達しているのに合格点に達していないとき
-            a_status = "stuck";
-        }
-        //warningやexpiredにおきかえ
-
-        a_status = this.statusAt(a_status, oldData.due);
-
-        const newData = {
-            group: oldData.group,
-            quizId: oldData.quizId,
-            courseName: courseName,
-            quizName: quizName,
-            start: oldData.start,
-            due: oldData.due,
-            point: point,
-            required: oldData.required,
-            maxp: maxp,
-            count: count,
-            maxcount: oldData.maxcount,
-            status: a_status,
-            show: oldData.show,
-
-        }
-        return newData;
+        return { quizId: [...ids][0], attemptPoint: grade?.point ?? null, attemptMaxp: grade?.maxp ?? null };
     }
 }

@@ -31,47 +31,35 @@ class Scrape {
         return metadata;
     }
 
-    //return start
-    static callstart(doc = document) {
-        try {
-            const temp = doc.querySelector(".description-inner div:nth-child(2)").textContent.trim();
-            const start = doc.querySelector(".description-inner div").textContent.trim();
-            return extractDate(start);
-        } catch (error) {
-            try {
-                const start = doc.querySelector(".description-inner div").textContent.trim();
-                if (start.includes("始")) {
-                    return extractDate(start);
-                } else {
-                    return null;
-                }
-            } catch {
-                return null;
-            }
-            // 開始日時が見つからない場合はnullを返す
-        }
-    }
-    //return due
-    static calldue(doc = document) {
-        try {
-            const dueraw = doc.querySelector(".description-inner div:nth-child(2)").textContent.trim();
-            return extractDate(dueraw);
-        } catch (error) {
-            try {
-                const dueraw = doc.querySelector(".description-inner div").textContent.trim();
-                if (!dueraw.includes("始")) {
-                    return extractDate(dueraw);
-                } else {
-                    return null;
-                }
-
-            } catch (error) {
-                return null;
-            }
-        }
+    // Grade ratios occur both as "8 / 10" and "8 out of 10" in Moodle.
+    static gradeRatio(text) {
+        const match = String(text ?? "").replace(/\u00a0/g, " ")
+            .match(/(?:^|[^\d.,-])(\d+(?:\.\d+)?)\s*(?:\/|out of)\s*(\d+(?:\.\d+)?)(?![\d.,])/i);
+        if (!match) return null;
+        const point = Number(match[1]), maxp = Number(match[2]);
+        return Number.isFinite(point) && Number.isFinite(maxp) && maxp > 0 ? { point, maxp } : null;
     }
 
-    
+    static activityDate(kind, doc = document) {
+        const rows = [...doc.querySelectorAll(".description-inner > div")];
+        const startLabel = /^(?:開始(?:日時)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
+        const dueLabel = /^(?:終了|終了日時|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
+        const label = kind === "start" ? startLabel : dueLabel;
+        let row = rows.find(item => label.test(item.textContent.trim()));
+        // Retain the historical positional fallback for unlabelled date blocks,
+        // but never reinterpret an explicitly labelled opening date as a deadline.
+        if (!row && !rows.some(item => startLabel.test(item.textContent.trim()) || dueLabel.test(item.textContent.trim()))) {
+            row = rows.length > 1 ? rows[kind === "start" ? 0 : 1] : kind === "due" ? rows[0] : null;
+        }
+        if (!row) return null;
+        const timestamp = row.querySelector("time[datetime]")?.getAttribute("datetime");
+        if (timestamp) {
+            const date = new Date(timestamp);
+            if (Number.isFinite(date.getTime())) return date;
+        }
+        return extractDate(row.textContent);
+    }
 
-
+    static callstart(doc = document) { return this.activityDate("start", doc); }
+    static calldue(doc = document) { return this.activityDate("due", doc); }
 }

@@ -137,6 +137,59 @@ const fs = require('node:fs');
                 assert.equal(await page.locator('input[type=color]').inputValue(),'#063906');
             }
         }
+        // Page-owned inline colors can change before or during dark mode.
+        // Restoring light mode must use those latest values and priorities.
+        const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await page.evaluate(() => {
+            const root = document.createElement('div');
+            root.className = 'activity-description';
+            root.innerHTML = '<span id="dynamic-author" style="color:red!important;background-color:yellow!important"><span id="dynamic-child">教材</span></span>';
+            document.querySelector('#region-main').append(root);
+            globalThis.authorMutations = 0;
+            new MutationObserver(records => { authorMutations += records.length; }).observe(root, {attributes:true, subtree:true});
+        });
+        await settle();
+        await page.evaluate(() => document.querySelector('#dynamic-author').style.setProperty('color','blue','important'));
+        await settle();
+        assert.equal((await style('#dynamic-author')).color,'rgb(0, 0, 255)');
+        await page.evaluate(() => duedleApplyTheme(1));
+        await settle();
+        assert.notEqual((await style('#dynamic-author')).color,'rgb(0, 0, 255)','New author color is adapted in dark mode');
+        assert.equal((await style('#dynamic-child')).color,(await style('#dynamic-author')).color,'Inherited author colors are read before adaptation');
+        await page.evaluate(() => {
+            const author = document.querySelector('#dynamic-author');
+            author.style.setProperty('color','green','important');
+            author.style.setProperty('background-color','white','important');
+            author.insertAdjacentHTML('beforeend','<span id="inserted-child">追加</span>');
+        });
+        await settle();
+        assert.equal((await style('#inserted-child')).color,(await style('#dynamic-author')).color,'A new child inherits the latest author color, not a second conversion');
+        await page.evaluate(() => duedleApplyTheme(2));
+        await settle();
+        assert.equal((await style('#dynamic-author')).color,'rgb(0, 128, 0)');
+        assert.equal((await style('#dynamic-author')).bg,'rgb(255, 255, 255)');
+        assert.equal((await style('#inserted-child')).color,'rgb(0, 128, 0)');
+        await page.evaluate(() => {
+            const author = document.querySelector('#dynamic-author');
+            duedleApplyTheme(1);
+            author.style.setProperty('color','purple');
+            author.style.removeProperty('background-color');
+        });
+        await settle();
+        await page.evaluate(() => duedleApplyTheme(2));
+        await settle();
+        assert.equal((await style('#dynamic-author')).color,'rgb(128, 0, 128)');
+        assert.deepEqual(await page.locator('#dynamic-author').evaluate(el => ({
+            priority:el.style.getPropertyPriority('color'), background:el.style.getPropertyValue('background-color')
+        })),{priority:'',background:''},'Page removal of important/background declarations remains intact');
+        await page.evaluate(() => document.querySelector('#dynamic-author').style.removeProperty('color'));
+        await settle();
+        await page.evaluate(() => { duedleApplyTheme(1); duedleApplyTheme(2); });
+        await settle();
+        assert.equal(await page.locator('#dynamic-author').evaluate(el => el.style.getPropertyValue('color')),'','Removed author color is not resurrected');
+        const mutationCount = await page.evaluate(() => authorMutations);
+        await settle();
+        assert.equal(await page.evaluate(() => authorMutations),mutationCount,'Theme observer reaches a fixed point without a style mutation loop');
         // A custom task color needs readable text in both light and dark modes.
         await page.evaluate(()=>{duedleApplyTheme(2);applyColor('complete','#101010')});
         assert.equal((await style('#display .info')).color,'rgb(255, 255, 255)');
@@ -156,6 +209,17 @@ const fs = require('node:fs');
         await page.addScriptTag({path:'src/theme/content.js'});
         assert.equal((await style('.draghome.group1')).bg,'rgb(38, 53, 65)');
         assert.notEqual((await style('.draghome.group3')).bg,(await style('.draghome.group1')).bg,'Initial dark loading preserves drag group hues');
+        await page.evaluate(() => {
+            document.querySelector('#authored').style.setProperty('color','blue','important');
+            document.querySelector('#authored td').insertAdjacentHTML('beforeend','<span id="initial-dark-child">追加</span>');
+        });
+        await settle();
+        await page.evaluate(() => document.body.classList.remove('darkmode'));
+        await settle();
+        assert.equal((await style('#authored')).color,'rgb(0, 0, 255)','Direct dark loading restores a subsequent page-owned color change');
+        assert.equal((await style('#initial-dark-child')).color,'rgb(0, 0, 255)');
+        await page.evaluate(() => document.body.classList.add('darkmode'));
+        await settle();
         await page.locator('.drop.active').focus();
         assert.equal((await style('.drop.active')).border,'rgb(139, 197, 232)','Focused drop target has a visible border');
         for (const width of [320,390,1280]) {

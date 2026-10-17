@@ -155,6 +155,16 @@ class AutoRefreshCollector {
                     discoveredAt: Number.isFinite(entry.discoveredAt) ? Math.min(now, entry.discoveredAt) : 0,
                     failures: Math.max(0, Math.min(12, Number(entry.failures) || 0)),
                     retryAt: Number.isFinite(entry.retryAt) ? Math.min(entry.retryAt, now + AutoRefreshCollector.DAY) : 0 };
+                const scan = entry.sectionScan;
+                if (scan && recent(scan.startedAt) && now - scan.startedAt < 7 * AutoRefreshCollector.DAY
+                    && Array.isArray(scan.pending) && Array.isArray(scan.visited)
+                    && scan.pending.length + scan.visited.length < CourseCollector.maxCoursePages
+                    && [...scan.pending, ...scan.visited].every(section => Number.isSafeInteger(section) && section >= 0)
+                    && new Set([...scan.pending, ...scan.visited]).size === scan.pending.length + scan.visited.length
+                    && scan.pending.length) {
+                    state.courses[id].sectionScan = { startedAt: scan.startedAt,
+                        pending: [...scan.pending], visited: [...scan.visited] };
+                }
             });
         return state;
     }
@@ -352,15 +362,34 @@ class AutoRefreshCollector {
             if (discovery) {
                 await this.onProgress({ phase: "courses", completed: 0, total: 1, saved: result.saved });
                 const [courseId, course] = discovery;
-                const url = AutoRefreshCollector.baseURL + "course/view.php?id=" + courseId;
+                const section = course.sectionScan?.pending[0];
+                const url = AutoRefreshCollector.baseURL + "course/view.php?id=" + courseId
+                    + (section === undefined ? "" : "&section=" + section);
                 try {
                     const doc = await this.fetchDocument(url);
                     if (!doc.querySelector("h1") || doc.querySelector(".errorcode, .errormessage")) throw this.error("invalid", "コースの情報を読み取れませんでした");
+                    // Keep the existing budget of one course page per batch.
+                    // A multipage course is fresh only after every section is read.
+                    const scan = course.sectionScan || { startedAt: this.now(), pending: [], visited: [] };
+                    const visited = new Set(scan.visited);
+                    if (section !== undefined) visited.add(section);
+                    const pending = scan.pending.filter(value => value !== section);
+                    for (const sectionURL of CourseCollector.getSectionURLs(doc, url, courseId)) {
+                        const number = Number(new URL(sectionURL).searchParams.get("section"));
+                        if (!visited.has(number) && !pending.includes(number)) pending.push(number);
+                    }
+                    if (pending.length + visited.size >= CourseCollector.maxCoursePages) {
+                        throw this.error("invalid", "コースのページ数が多すぎるため、全課題を確認できませんでした。");
+                    }
                     for (const item of CourseCollector.getItems(doc, url)) {
                         const key = item.type + ":" + item.id;
                         if (!local.has(key)) this.queue(state, { ...item, courseId: Number(courseId), due: null });
                     }
-                    course.discoveredAt = this.now();
+                    if (pending.length) course.sectionScan = { startedAt: scan.startedAt, pending, visited: [...visited] };
+                    else {
+                        delete course.sectionScan;
+                        course.discoveredAt = this.now();
+                    }
                     course.failures = 0;
                     course.retryAt = 0;
                 } catch (error) {

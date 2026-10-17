@@ -1,22 +1,12 @@
-console.log("update");
-const MAX_HISTORY_LENGTH = 10;
 (async () => {
-  let history = (await ext.storage.local.get("history")).history || [];
-  if (globalThis.duedleAccountActive === false) return;
-  let title = document.title;
-  let url = location.href;
+  const title = document.title;
+  const url = location.href;
   if (!title || !url) {
     alert("ページのタイトルまたはURLの取得に失敗しました。");
     return;
   }
-  //重複削除
-  history = history.filter((e) => e.title.trim() !== title.trim());
-  history.push({
-    title,
-    url,
-  });
-  if (history.length > MAX_HISTORY_LENGTH) {
-    history.shift();
-  }
-  await ext.storage.local.set({ history });
+  // Append against the latest background snapshot so simultaneous page opens
+  // cannot overwrite one another. Collector tabs are filtered there as well.
+  const reply = await ext.runtime.sendMessage({ type: "ACCOUNT_APPEND_HISTORY", entry: { title, url } });
+  if (!reply?.ok) throw new Error(reply?.error || "履歴を保存できませんでした。");
 })().catch(console.error);

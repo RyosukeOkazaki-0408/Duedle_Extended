@@ -114,8 +114,8 @@
                 return tab;
             },
             async sendMessage(id, message) {
-                if (options.sendMessage) return options.sendMessage(id, message, env);
-                return { ok: true, items: [] };
+                const reply = options.sendMessage ? await options.sendMessage(id, message, env) : { ok: true, items: [] };
+                return { accountId: "1", pageId: "collection-page", sections: [], ...reply };
             },
             async remove(id) { removed.push(id); ext.tabs.onRemoved.emit(id); }
         } };
@@ -129,6 +129,7 @@
             AccountSession: class {
                 serial(fn) { return fn(); }
                 run(message, from, fn) { return fn(); }
+                async authorize() { return "1"; }
                 forget() { return Promise.resolve(); }
             },
             ext, StorageUtil, RefreshCoordinator: ClockCoordinator, importScripts() {},
@@ -137,7 +138,7 @@
             clearTimeout(id) { timers.delete(id); }, console: { warn() {}, error() {} }
         });
         const message = (data, from = sender(1)) => new Promise((resolve, reject) => {
-            const handled = ext.runtime.onMessage.emit(data, from, resolve);
+            const handled = ext.runtime.onMessage.emit({ accountId: "1", pageId: "owner-page", ...data }, from, resolve);
             if (!handled.includes(true)) reject(new Error("Message was not handled"));
         });
         return { ...env, ext, message, created, removed, navigated, timers };

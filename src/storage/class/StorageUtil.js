@@ -59,18 +59,38 @@ class StorageUtil {
         if (!this.isBackground) {
             return this.requestMutation({ type: "SAVE_TASK", table, idproperty, data });
         }
-        await this.mutate(table, items => {
-            const index = items.findIndex(item => String(item[idproperty]) === String(data[idproperty]));
-            const old = items[index];
-            const merged = { ...old, ...data };
-            merged[idproperty] = Number(data[idproperty]);
-            merged.show = old?.show ?? data.show ?? true;
-            delete merged.notified; // Retire legacy reminder metadata when a task is saved.
-            if (old?.maxp != null && data.maxp == null) merged.maxp = old.maxp;
-            if (old?.point != null && data.point == null) merged.point = old.point;
-            if (old?.status === "complete" && data.status === "unknown") merged.status = old.status;
-            if (index === -1) return [...items, merged];
-            return items.map((item, i) => i === index ? merged : item);
+        await this.mutate(table, items => this.mergeTask(items, idproperty, data));
+    }
+
+    // A review fetches the authoritative overview, but must not roll back an
+    // overview another tab saved while that request was in flight.
+    static async saveQuizReviewOverview(data, expectedFetchedAt) {
+        if (!data || data.group !== "quiz_list" || !Number.isSafeInteger(Number(data.quizId)) || Number(data.quizId) <= 0
+            || !Number.isFinite(data.fetchedAt) || data.fetchedAt < 0
+            || expectedFetchedAt !== null && (!Number.isFinite(expectedFetchedAt) || expectedFetchedAt < 0)) {
+            throw new Error("Invalid quiz overview");
+        }
+        if (!this.isBackground) {
+            return this.requestMutation({ type: "SAVE_QUIZ_REVIEW_OVERVIEW", data, expectedFetchedAt });
+        }
+        await this.mutate("quiz_list", items => {
+            const old = items.find(item => Number(item.quizId) === Number(data.quizId));
+            if ((old?.fetchedAt ?? null) !== expectedFetchedAt) return items;
+            return this.mergeTask(items, "quizId", data);
         });
+    }
+
+    static mergeTask(items, idproperty, data) {
+        const index = items.findIndex(item => String(item[idproperty]) === String(data[idproperty]));
+        const old = items[index];
+        const merged = { ...old, ...data };
+        merged[idproperty] = Number(data[idproperty]);
+        merged.show = old?.show ?? data.show ?? true;
+        delete merged.notified; // Retire legacy reminder metadata when a task is saved.
+        if (old?.maxp != null && data.maxp == null) merged.maxp = old.maxp;
+        if (old?.point != null && data.point == null) merged.point = old.point;
+        if (old?.status === "complete" && data.status === "unknown") merged.status = old.status;
+        if (index === -1) return [...items, merged];
+        return items.map((item, i) => i === index ? merged : item);
     }
 }

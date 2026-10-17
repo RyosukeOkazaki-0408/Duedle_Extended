@@ -1,0 +1,33 @@
+{
+  "feedback": {
+    "actualPoint": 5,
+    "actualStatus": "incomplete",
+    "expectedPoint": 10,
+    "expectedStatus": "complete"
+  },
+  "firstAttemptMethod": {
+    "actualPoint": 10,
+    "actualStatus": "complete",
+    "expectedPoint": 5,
+    "expectedStatus": "incomplete"
+  },
+  "multipage": {
+    "result": {
+      "courses": 1,
+      "saved": 0,
+      "failed": 0,
+      "errors": []
+    },
+    "requests": [
+      "https://cms7.ict.nitech.ac.jp/moodle40a/course/view.php?id=42"
+    ]
+  },
+  "englishQuiz": {
+    "due": null,
+    "start": null,
+    "required": null,
+    "maxcount": null,
+    "status": "qualify",
+    "point": 7
+  }
+}

@@ -1,0 +1,5 @@
+initial hash { hash: '#section-1', sectionDisplay: 'none', hiddenContent: true }
+dynamic native update { color: 'rgb(0, 0, 255)', inline: 'blue' }
+after theme roundtrip { color: 'rgb(255, 0, 0)', inline: 'red' }
+legacy maxcount 受験回数: 0 / undefined
+errors []

@@ -1,6 +1,6 @@
 // Chrome uses a service worker; Safari loads this in a nonpersistent background page.
 if (typeof importScripts === "function") {
-  importScripts("../common/account.js", "../common/common.js", "./class/StorageUtil.js", "./class/RefreshCoordinator.js");
+  importScripts("../common/account.js", "../common/common.js", "./class/StorageUtil.js", "./class/RefreshCoordinator.js", "./class/CourseCollector.js");
 }
 StorageUtil.isBackground = true;
 
@@ -10,9 +10,9 @@ const accountSession = new AccountSession({ storage: ext.storage.local });
 let tabCollection = null;
 
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || !["SAVE_TASK", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
+  if (!msg || !["SAVE_TASK", "SAVE_QUIZ_REVIEW_OVERVIEW", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
     "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS", "REFRESH_PROGRESS", "REFRESH_PAGE_READY",
-    "ACCOUNT_READY", "ACCOUNT_RESUME", "ACCOUNT_GET", "ACCOUNT_SET"].includes(msg.type)) return false;
+    "ACCOUNT_READY", "ACCOUNT_RESUME", "ACCOUNT_GET", "ACCOUNT_SET", "ACCOUNT_VERIFY", "ACCOUNT_APPEND_HISTORY"].includes(msg.type)) return false;
   const operation = async () => {
     if (msg.type === "ACCOUNT_READY") return accountSession.register(msg, sender);
     if (msg.type === "ACCOUNT_RESUME") return accountSession.register(msg, sender, true);
@@ -31,6 +31,26 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     return accountSession.run(msg, sender, async () => {
     switch (msg.type) {
+      case "ACCOUNT_VERIFY":
+        return { ok: true };
+      case "ACCOUNT_APPEND_HISTORY": {
+        const entry = msg.entry;
+        let url;
+        try { url = new URL(entry?.url); } catch { throw new Error("履歴が不正です"); }
+        if (typeof entry?.title !== "string" || !entry.title.trim()
+          || url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/course/view.php") {
+          throw new Error("履歴が不正です");
+        }
+        const saved = await ext.storage.local.get(["history", "refreshCoordinator", "duedleCollectionTabs"]);
+        if (saved.duedleCollectionTabs?.[sender.tab.id] || saved.refreshCoordinator?.temporaryTabId === sender.tab.id) {
+          return { ok: true, skipped: true };
+        }
+        const history = (Array.isArray(saved.history) ? saved.history : [])
+          .filter(item => typeof item?.title === "string" && item.title.trim() !== entry.title.trim());
+        history.push({ title: entry.title, url: entry.url });
+        await ext.storage.local.set({ history: history.slice(-10) });
+        return { ok: true };
+      }
       case "ACCOUNT_GET":
         if (!Array.isArray(msg.keys) || msg.keys.some(key => !AccountSession.keys.includes(key))) throw new Error("保存キーが不正です");
         return { ok: true, data: await ext.storage.local.get(msg.keys) };
@@ -57,6 +77,9 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case "SAVE_TASK":
         await StorageUtil.saveData(msg.table, msg.idproperty, msg.data);
+        return { ok: true };
+      case "SAVE_QUIZ_REVIEW_OVERVIEW":
+        await StorageUtil.saveQuizReviewOverview(msg.data, msg.expectedFetchedAt);
         return { ok: true };
       case "EDIT_TASK":
         await StorageUtil.editData(msg.table, msg.idproperty, msg.id, msg.property, msg.value);
@@ -122,6 +145,18 @@ function tabCollectionError(message) {
   return error;
 }
 
+function collectedPageOperation(context, sender, response, tabId, url, operation = async () => {}) {
+  return accountSession.run(context, sender, async () => {
+    try {
+      if (!response?.accountId || response.accountId !== context.accountId) throw new Error("Account mismatch");
+      await accountSession.authorize(response, { tab: { id: tabId }, url, frameId: 0 });
+    } catch {
+      throw Object.assign(new Error("収集先のMoodleアカウントを確認できません。ログインし直してから更新してください。"), { code: "AUTH_REQUIRED" });
+    }
+    return operation();
+  });
+}
+
 async function runTabScraping(refreshToken, sender, context) {
   const { courseIds = [] } = await accountSession.run(context, sender, () => ext.storage.local.get("courseIds"));
   const ids = [...new Set(courseIds.map(Number))].filter(id => Number.isInteger(id) && id > 0);
@@ -136,43 +171,82 @@ async function runTabScraping(refreshToken, sender, context) {
   };
   const seen = new Set();
   try {
-    if (refreshToken) await accountSession.run(context, sender, () => refreshCoordinator.setTemporaryTab(refreshToken, sender, tab.id));
+    await accountSession.run(context, sender, async () => {
+      // This marker is browser-wide: account switching clears the per-account
+      // coordinator, but a delayed collector document must remain a collector.
+      const { duedleCollectionTabs = {} } = await ext.storage.local.get("duedleCollectionTabs");
+      await ext.storage.local.set({ duedleCollectionTabs: { ...duedleCollectionTabs, [tab.id]: context.accountId } });
+      if (refreshToken) await refreshCoordinator.setTemporaryTab(refreshToken, sender, tab.id);
+    });
     await publish();
     for (const courseId of ids) {
       if (refreshToken) await requireTabLease(refreshToken, sender, context);
       const url = `${MOODLE_ROOT}course/view.php?id=${courseId}`;
-      try {
-        await navigateTab(tab.id, url);
-        const response = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_COURSE_ITEMS" });
-        if (!response?.ok) throw tabCollectionError(response?.error || "コースを読み取れませんでした");
-        for (const item of response.items) {
-          const key = `${item.type}:${item.id}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+      const pages = [url];
+      const queuedPages = new Set(pages);
+      let opened = false;
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        const pageURL = pages[pageIndex];
+        try {
           if (refreshToken) await requireTabLease(refreshToken, sender, context);
-          const taskURL = `${MOODLE_ROOT}mod/${item.type}/view.php?id=${item.id}`;
-          try {
-            await navigateTab(tab.id, taskURL);
-            const detail = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_TASK" });
-            if (!detail?.ok || !detail.data) throw tabCollectionError(detail?.error || "課題を読み取れませんでした");
-            if (refreshToken) await requireTabLease(refreshToken, sender, context);
-            await accountSession.run(context, sender, () => StorageUtil.saveData(detail.data.group,
-              item.type === "assign" ? "assignId" : "quizId",
-              { ...detail.data, courseId, fetchedAt: detail.data.fetchedAt ?? Date.now() }));
-            result.saved++;
-          } catch (error) {
-            if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
-            result.failed++;
-            result.errors.push({ url: taskURL, message: error.message });
+          await navigateTab(tab.id, pageURL);
+          const response = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_COURSE_ITEMS" });
+          if (!response?.ok) {
+            const error = tabCollectionError(response?.error || "コースを読み取れませんでした");
+            if (response?.code === "AUTH_REQUIRED") error.code = response.code;
+            throw error;
           }
-          await publish();
+          await collectedPageOperation(context, sender, response, tab.id, pageURL);
+          if (!Array.isArray(response.items) || !Array.isArray(response.sections)
+            || response.items.some(item => !["assign", "quiz"].includes(item?.type) || !Number.isSafeInteger(item.id) || item.id <= 0)) {
+            throw new Error("コースの取得結果を確認できませんでした");
+          }
+          opened = true;
+          for (const section of response.sections) {
+            const sectionURL = CourseCollector.sectionURL(section, pageURL, courseId);
+            if (!sectionURL) throw new Error("コースのセクションURLが不正です");
+            if (queuedPages.has(sectionURL)) continue;
+            if (queuedPages.size >= CourseCollector.maxCoursePages) throw new Error("コースのページ数が取得上限を超えました");
+            queuedPages.add(sectionURL);
+            pages.push(sectionURL);
+          }
+          for (const item of response.items) {
+            const key = `${item.type}:${item.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            if (refreshToken) await requireTabLease(refreshToken, sender, context);
+            const taskURL = `${MOODLE_ROOT}mod/${item.type}/view.php?id=${item.id}`;
+            try {
+              await navigateTab(tab.id, taskURL);
+              const detail = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_TASK" });
+              if (!detail?.ok || !detail.data) {
+                const error = tabCollectionError(detail?.error || "課題を読み取れませんでした");
+                if (detail?.code === "AUTH_REQUIRED") error.code = detail.code;
+                throw error;
+              }
+              const table = item.type === "assign" ? "assign_list" : "quiz_list";
+              const idproperty = item.type === "assign" ? "assignId" : "quizId";
+              if (detail.data.group !== table || Number(detail.data[idproperty]) !== item.id) throw new Error("課題の取得結果が一致しません");
+              if (refreshToken) await requireTabLease(refreshToken, sender, context);
+              await collectedPageOperation(context, sender, detail, tab.id, taskURL, () =>
+                StorageUtil.saveData(table, idproperty,
+                  { ...detail.data, courseId, fetchedAt: detail.data.fetchedAt ?? Date.now() }));
+              result.saved++;
+            } catch (error) {
+              if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
+              result.failed++;
+              result.errors.push({ url: taskURL, message: error.message });
+            }
+            await publish();
+          }
+        } catch (error) {
+          if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
+          result.failed++;
+          result.errors.push({ url: pageURL, message: error.message });
         }
-        result.courses++;
-      } catch (error) {
-        if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
-        result.failed++;
-        result.errors.push({ url, message: error.message });
+        await publish();
       }
+      if (opened) result.courses++;
       await publish();
     }
     return result;
@@ -203,7 +277,8 @@ function navigateTab(tabId, url, timeout = 20000) {
         if (tab.url.startsWith(MOODLE_ROOT)) {
           const actual = new URL(tab.url);
           const expected = new URL(url);
-          if (actual.pathname !== expected.pathname || actual.searchParams.get("id") !== expected.searchParams.get("id")) return;
+          if (actual.pathname !== expected.pathname || actual.searchParams.get("id") !== expected.searchParams.get("id")
+            || actual.searchParams.get("section") !== expected.searchParams.get("section")) return;
         }
       }
       settled = true;
@@ -252,6 +327,17 @@ async function initializeInstallation(details) {
 ext.runtime.onInstalled.addListener(details => {
   installationReady = initializeInstallation(details);
   installationReady.catch(console.error);
+});
+
+// Tab IDs may be reused after a full browser restart. This event is not a
+// service-worker wake, so in-flight markers survive normal background restarts.
+ext.runtime.onStartup?.addListener(() => {
+  accountSession.serial(async () => {
+    const { refreshCoordinator } = await ext.storage.local.get("refreshCoordinator");
+    const update = { duedleCollectionTabs: {} };
+    if (refreshCoordinator) update.refreshCoordinator = { ...refreshCoordinator, temporaryTabId: null };
+    await ext.storage.local.set(update);
+  }).catch(console.error);
 });
 
 ext.tabs.onUpdated.addListener((tabId, change) => {

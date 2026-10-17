@@ -248,6 +248,22 @@
         await rejects(() => StorageUtil.saveData("assign_list", "assignId", { assignId: 61 }), /Background storage unavailable/);
     });
 
+    test("review overview saves cannot overwrite a newer overview and preserve visibility", async () => {
+        const old = { group: "quiz_list", quizId: 7, point: 5, count: 1, due: "2026-10-15", show: false, fetchedAt: 1000 };
+        const env = mockStorage({ quiz_list: [old] });
+        const latest = { ...old, point: 10, count: 2, due: "2026-10-20", fetchedAt: 2000 };
+        await env.StorageUtil.saveData("quiz_list", "quizId", latest);
+        await env.StorageUtil.saveQuizReviewOverview({ ...old, show: true, fetchedAt: 3000 }, 1000);
+        equal(env.state.quiz_list, [latest], "A stale review must not roll back grades, dates, count or freshness");
+        await env.StorageUtil.saveQuizReviewOverview({ ...latest, point: 8, show: true, fetchedAt: 4000 }, 2000);
+        equal(env.state.quiz_list[0].point, 8, "The authoritative aggregate may decrease");
+        equal(env.state.quiz_list[0].show, false);
+        equal(env.state.quiz_list[0].fetchedAt, 4000);
+        await rejects(() => env.StorageUtil.saveQuizReviewOverview({ ...latest }, undefined), /Invalid/);
+        await env.StorageUtil.saveQuizReviewOverview({ group: "quiz_list", quizId: 8, fetchedAt: 5000 }, null);
+        equal(env.state.quiz_list.map(item => item.quizId), [7, 8], "A direct review can discover a new quiz via its overview");
+    });
+
     function scrapeBindings() {
         const utils = production("src/common/utils.js", ["extractDate"]);
         const { Scrape } = production("src/storage/class/scrape/Scrape.js", ["Scrape"], { ...utils, URL: URLClass });
@@ -303,32 +319,21 @@
         assert(second.fetchedAt >= before && second.fetchedAt <= Date.now());
     });
 
-    test("reviewing an older lower or hidden quiz grade does not falsely complete the quiz", async () => {
+    test("review grades remain attempt data and never become a stored task snapshot", async () => {
         for (const grade of ["8 / 10", "成績は非公開です"]) {
-            const old = {
-                group: "quiz_list", quizId: 63, courseName: "Course", quizName: "Quiz", point: 9, maxp: 10,
-                required: 5, count: 1, maxcount: null, status: "qualify", show: true, start: null, due: null,
-                fetchedAt: 1700000000000, courseId: 615
-            };
-            const env = mockStorage({ quiz_list: [old] });
             const doc = {
-                querySelector(selector) {
-                    if (selector === "h1") return { textContent: "Course" };
-                    if (selector === "[aria-current='page']") return { textContent: "Quiz" };
-                    if (selector === "tr:last-of-type td") return { textContent: grade };
-                    return null;
+                querySelector() { return null; },
+                querySelectorAll(selector) {
+                    return selector === "table.quizreviewsummary tr" ? [{
+                        querySelector(tag) { return { textContent: tag === "th" ? "評点" : grade }; }
+                    }] : [];
                 }
             };
-            const { ScrapeQuizReview } = production("src/storage/class/scrape/ScrapeQuizReview.js", ["ScrapeQuizReview"], {
-                ...scrapeBindings(), document: doc
-            });
-            const review = ScrapeQuizReview.getData(old);
-            await env.StorageUtil.saveData("quiz_list", "quizId", review);
-            equal(env.state.quiz_list[0].status, "qualify", "Review of " + grade + " should preserve the qualified result");
-            equal(env.state.quiz_list[0].point, 9);
-            equal(env.state.quiz_list[0].maxp, 10);
-            equal(env.state.quiz_list[0].fetchedAt, old.fetchedAt, "Review reads do not extend complete-detail freshness");
-            equal(env.state.quiz_list[0].courseId, old.courseId);
+            const { ScrapeQuizReview } = production("src/storage/class/scrape/ScrapeQuizReview.js", ["ScrapeQuizReview"], scrapeBindings());
+            const review = ScrapeQuizReview.getData(doc, "https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/review.php?cmid=63");
+            equal(review, { quizId: 63, attemptPoint: grade === "8 / 10" ? 8 : null,
+                attemptMaxp: grade === "8 / 10" ? 10 : null });
+            assert(!("status" in review) && !("fetchedAt" in review), "An attempt cannot claim aggregate status or full-detail freshness");
         }
     });
 
@@ -421,6 +426,43 @@
             "/moodle40a/mod/assign/view.php"
         ]);
         equal(env.CourseCollector.getItems(doc, moodle + "course/view.php?id=1"), [{ type: "assign", id: 71 }, { type: "quiz", id: 71 }]);
+    });
+
+    test("multipage courses visit same-course sections once and collect their activities", async () => {
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([
+                "view.php?id=1&section=1&sesskey=do-not-forward#title", "view.php?section=1&id=1",
+                "view.php?id=2&section=3", "https://example.org/moodle40a/course/view.php?id=1&section=2",
+                "view.php?id=1&section=-1", "view.php?id=1&section=abc"
+            ]) },
+            "course/view.php?id=1&section=1": { doc: courseDocument([
+                "view.php?id=1&section=1", "view.php?id=1&section=2", "../mod/assign/view.php?id=10"
+            ]) },
+            "course/view.php?id=1&section=2": { doc: courseDocument([
+                "view.php?id=1&section=1", "../mod/assign/view.php?id=10", "../mod/quiz/view.php?id=20"
+            ]) },
+            "mod/assign/view.php?id=10": { doc: taskDocument("assign") },
+            "mod/quiz/view.php?id=20": { doc: taskDocument("quiz") }
+        });
+        const result = await env.collector.run([1]);
+        equal([result.courses, result.saved, result.failed], [1, 2, 0]);
+        equal(env.requests.length, 5);
+        assert(env.requests.every(item => !item.url.includes("sesskey")));
+        const failed = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument(["view.php?id=1&section=1"]) },
+            "course/view.php?id=1&section=1": { ok: false, status: 404 }
+        });
+        const partial = await failed.collector.run([1]);
+        equal([partial.courses, partial.saved, partial.failed], [0, 0, 1]);
+    });
+
+    test("multipage course discovery is bounded and never reports truncated coverage as success", async () => {
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument(Array.from({ length: 201 }, (_, section) => `view.php?id=1&section=${section}`)) }
+        });
+        const result = await env.collector.run([1]);
+        equal([result.courses, result.failed], [0, 1]);
+        equal(env.requests.length, 1);
     });
 
     test("collector reports task and course failures while saving available tasks", async () => {
@@ -728,7 +770,7 @@
         const env = backgroundEnvironment({ courseIds: [1, "1"] }, {
             async sendMessage() { return { ok: false, error: "Course unavailable" }; }
         });
-        const result = await env.runTabScraping();
+        const result = await env.runTabScraping(null, { tab: { id: 1 } }, { accountId: "1", pageId: "owner" });
         equal({ courses: result.courses, saved: result.saved, failed: result.failed }, { courses: 0, saved: 0, failed: 1 });
         equal(env.created, [{ url: "about:blank", active: false }]);
         equal(env.removed, [77]);
