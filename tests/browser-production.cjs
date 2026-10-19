@@ -20,6 +20,11 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
         });
         const page=await context.newPage();
         page.on('pageerror',error=>errors.push(error.message));
+        // Include isolated content-script worlds, not only page-world errors.
+        const runtime=await context.newCDPSession(page);
+        runtime.on('Runtime.exceptionThrown',({exceptionDetails:detail})=>
+            errors.push(detail.exception?.description || detail.text));
+        await runtime.send('Runtime.enable');
         await page.goto('https://cms7.ict.nitech.ac.jp/moodle40a/my/');
         await page.waitForFunction(()=>document.documentElement.style.opacity==='1');
         await page.evaluate(()=>{

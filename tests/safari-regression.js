@@ -153,6 +153,25 @@
         return { state, writes, api, ext, StorageUtil };
     }
 
+    test("content scripts skip Moodle file responses while keeping normal pages enabled", () => {
+        const manifest = JSON.parse(read("src/manifest.json"));
+        const root = "https://cms7.ict.nitech.ac.jp/moodle40a/";
+        const matches = (pattern, url) => new RegExp("^" + pattern.split("*")
+            .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$").test(url);
+        const scriptsAt = url => manifest.content_scripts.filter(entry =>
+            entry.matches.some(pattern => matches(pattern, url))
+            && !(entry.exclude_matches || []).some(pattern => matches(pattern, url)));
+        for (const endpoint of ["pluginfile.php", "draftfile.php", "tokenpluginfile.php", "file.php"]) {
+            for (const suffix of ["/289810/mod_resource/content/6/Programming3-03-task.pdf", "?file=/lecture.pdf"]) {
+                equal(scriptsAt(root + endpoint + suffix).length, 0, "File viewers must not run Moodle content scripts");
+            }
+        }
+        for (const path of ["my/", "course/view.php?id=7", "mod/assign/view.php?id=8", "mod/resource/view.php?id=9", "login/index.php"]) {
+            const entries = scriptsAt(root + path);
+            assert(entries.some(entry => (entry.js || []).includes("./common/account.js")), "Normal Moodle pages retain account checks: " + path);
+        }
+    });
+
     test("storage awaits saves and preserves simultaneous tasks", async () => {
         const { state, StorageUtil } = mockStorage();
         await Promise.all([
