@@ -257,3 +257,24 @@ body.darkmode .duedle-authored-content .icon.text-success {
 body.darkmode .duedle-authored-content .icon.text-danger {
     color: #ffada8 !important;
 }
+
+/* Moodle's login panel has its own white surface and page gradient. */
+body.darkmode.pagelayout-login #page {
+    background-color: var(--ios-background, #1d2831);
+    background-image: none;
+}
+body.darkmode.pagelayout-login .login-container {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode.pagelayout-login .login-identityprovider-btn {
+    background-color: var(--ios-control, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
+}
+body.darkmode.pagelayout-login .login-divider {
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode.pagelayout-login .login-container .divider {
+    background-color: var(--ios-separator, #52616d);
+}

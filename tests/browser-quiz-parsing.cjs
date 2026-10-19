@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const root = 'https://cms7.ict.nitech.ac.jp/moodle40a/';
 const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/class/scrape/ScrapeQuiz.js',
-    'storage/class/scrape/ScrapeQuizReview.js', 'storage/class/StorageUtil.js', 'storage/class/CourseCollector.js',
+    'storage/class/scrape/ScrapeAssign.js', 'storage/class/scrape/ScrapeQuizReview.js', 'storage/class/StorageUtil.js', 'storage/class/CourseCollector.js',
     'storage/class/task/TaskBox.js', 'storage/class/task/QuizBox.js'];
 (async () => {
     const browser = await chromium.launch({ headless: true,
@@ -25,11 +25,19 @@ const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/cla
             const scrape = (html, lang) => ScrapeQuiz.getData(documentFor(base + html, lang), root + 'mod/quiz/view.php?id=101');
             const english = scrape(grade + setting + '<div class="description-inner"><div>Opened: Wednesday, 14 October 2099, 10:00 AM</div><div>Closes: Thursday, 15 October 2099, 10:00 PM</div></div>');
             const japanese = scrape('<div id="feedback"><h3>評点: 7.00 / 10.00</h3></div><p class="text-left">合格点: 8.00 / 10.00</p><p class="text-left">受験可能回数: 2</p><div class="description-inner"><div>開始: 2099年10月14日(水曜日) 10:00</div><div>終了: 2099年10月15日(木曜日) 22:00</div></div>', 'ja');
+            const wrappedDates = scrape('<div class="description-inner"><div class="activity-dates"><div>開始: 2099年10月14日 10:00</div><div>終了: 2099年10月15日 22:00</div></div></div>', 'ja');
+            const wrappedUnlabelledDates = scrape('<div class="description-inner"><div><div>2099年10月14日 10:00</div><div>2099年10月15日 22:00</div></div></div>', 'ja');
             const noThreshold = scrape(grade);
             const unknownThreshold = scrape(grade + '<p class="text-left">Grade to pass: unavailable</p>');
             const malformedThreshold = scrape(grade + '<p class="text-left">Grade to pass 8</p>');
             const unknownLanguage = scrape(grade, 'fr');
             const hidden = scrape(setting);
+            const progress = ScrapeQuiz.getData(documentFor('<div class="quizattempt"></div><table class="quizattemptsummary"><thead><tr><th>Attempt</th><th>State</th></tr></thead><tbody><tr><td>1</td><td>In progress</td></tr></tbody></table>'), root + 'mod/quiz/view.php?id=101');
+            const awaitingGrade = ScrapeQuiz.getData(documentFor('<div class="quizattempt"></div><table class="quizattemptsummary"><thead><tr><th>State</th><th>Grade / 10</th></tr></thead><tbody><tr><td>Finished</td><td>Not yet graded</td></tr></tbody></table>'), root + 'mod/quiz/view.php?id=101');
+            const misleading = scrape(setting + '<div id="intro">In progress</div>');
+            const assignmentError = ScrapeAssign.getData(documentFor('<div class="submissionstatustable">Unrecognised status</div>'), root + 'mod/assign/view.php?id=102');
+            const assignmentMissing = ScrapeAssign.getData(documentFor(''), root + 'mod/assign/view.php?id=102');
+            const assignmentKnown = ScrapeAssign.getData(documentFor('<div class="submissionstatustable"><span class="submissionstatussubmitted">Submitted</span></div>'), root + 'mod/assign/view.php?id=102');
             const exhausted = scrape(grade + setting.replace('allowed: 2', 'allowed: 1'));
             const openingOnly = scrape('<div class="description-inner"><div>Opens: 14 October 2099, 12:00 AM</div></div>');
             const japaneseOpeningOnly = scrape('<div class="description-inner"><div>開始日時: 2099年10月14日 10:00</div></div>', 'ja');
@@ -48,12 +56,16 @@ const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/cla
             const breadcrumbReview = ScrapeQuizReview.getData(reviewPage, root + 'mod/quiz/review.php?attempt=999');
             const conflictingId = ScrapeQuizReview.getData(reviewPage, root + 'mod/quiz/review.php?attempt=999&cmid=102');
             globalThis.ext = { storage: { sync: { async get() { return {}; } } } };
+            const savedUnknown = StorageUtil.mergeTask([{ ...english, status: 'complete' }], 'quizId', progress)[0];
+            if (savedUnknown.statusDetail.kind !== 'unknown' || savedUnknown.needsDetailRetry !== true || savedUnknown.status !== 'complete') throw new Error('Internal reason must survive display-state preservation');
+            const recovered = StorageUtil.mergeTask([savedUnknown], 'quizId', english)[0];
+            if (recovered.statusDetail.kind !== 'known' || recovered.needsDetailRetry) throw new Error('Successful reread must clear the prior diagnostic');
             const rendered = [];
             for (const maxcount of [undefined, null, 0, 2]) {
                 const box = await new QuizBox({ ...english, maxcount }).getElement();
                 rendered.push(box.querySelector('.li4').textContent);
             }
-            return { english, japanese, noThreshold, unknownThreshold, malformedThreshold, unknownLanguage, hidden, exhausted,
+            return { awaitingGrade, progress, misleading, assignmentMissing, assignmentError, assignmentKnown, english, japanese, wrappedDates, wrappedUnlabelledDates, noThreshold, unknownThreshold, malformedThreshold, unknownLanguage, hidden, exhausted,
                 openingOnly, japaneseOpeningOnly, closingOnly, machineDate, unlimited, unreadableLimit, invalidDates,
                 review, japaneseReview, hiddenReview, breadcrumbReview, conflictingId, rendered };
         }, root);
@@ -67,6 +79,10 @@ const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/cla
             assert.equal(item.count, 1);
             assert.equal(item.status, 'incomplete');
         }
+        for (const item of [parsed.wrappedDates, parsed.wrappedUnlabelledDates]) {
+            assert.equal(item.start, '2099-10-14T01:00:00.000Z', 'Nested date blocks preserve the opening time');
+            assert.equal(item.due, '2099-10-15T13:00:00.000Z', 'Nested date blocks preserve the deadline');
+        }
         assert.equal(parsed.noThreshold.requiredState, 'none');
         assert.equal(parsed.noThreshold.status, 'qualify');
         assert.equal(parsed.noThreshold.maxcount, 0);
@@ -75,6 +91,19 @@ const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/cla
             assert.equal(item.status, 'unknown');
         }
         assert.equal(parsed.hidden.status, 'unknown');
+        assert.deepEqual(parsed.progress.statusDetail, {kind: 'unknown', reason: 'attempt_in_progress'});
+        assert.equal(parsed.progress.status, 'unknown');
+        assert.deepEqual(parsed.awaitingGrade.statusDetail, {kind: 'unknown', reason: 'awaiting_grade'});
+        assert.equal(parsed.hidden.statusDetail.kind, 'unverified');
+        assert.equal(parsed.misleading.statusDetail.kind, 'unverified');
+        assert.equal(parsed.unknownThreshold.statusDetail.kind, 'error');
+        assert.equal(parsed.malformedThreshold.statusDetail.kind, 'error');
+        assert.equal(parsed.unknownLanguage.statusDetail.kind, 'unverified');
+        assert.deepEqual(parsed.assignmentError.statusDetail, {kind: 'error', reason: 'submission_status_parse_failed'});
+        assert.equal(parsed.assignmentError.status, 'unknown');
+        assert.equal(parsed.assignmentMissing.statusDetail.kind, 'unverified');
+        assert.deepEqual(parsed.assignmentKnown.statusDetail, {kind: 'known', reason: null});
+        assert.deepEqual(parsed.english.statusDetail, {kind: 'known', reason: null});
         assert.equal(parsed.exhausted.status, 'stuck');
         assert.equal(parsed.openingOnly.start, '2099-10-13T15:00:00.000Z');
         assert.equal(parsed.openingOnly.due, null);

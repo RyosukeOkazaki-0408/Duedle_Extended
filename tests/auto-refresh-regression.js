@@ -170,7 +170,10 @@
         let visible = true;
         let sequence = 0;
         const requests = [], pauses = [], documents = new Map();
-        const storage = mockStorage(config.initial || {});
+        const confirmed = config.confirmed || [];
+        const storage = mockStorage({ ...(confirmed.length ? { courseAvailability: { 42: {
+            items: Object.fromEntries(confirmed.map(key => [key, true])), complete: false
+        } } } : {}), ...config.initial });
         const timers = mockTimers();
         const { AutoRefreshCollector } = production("src/storage/class/AutoRefreshCollector.js", ["AutoRefreshCollector"], {
             CourseCollector, StorageUtil: storage.StorageUtil, ScrapeAssign: {}, ScrapeQuiz: {},
@@ -195,7 +198,10 @@
                 route = config.routes?.[path] || {};
             }
             if (route.error) throw route.error;
-            if (route.hang) return new Promise((resolve, reject) => options.signal.addEventListener("abort", () => reject(new Error("Aborted"))));
+            if (route.hang) return new Promise((resolve, reject) => {
+                if (options.signal.aborted) reject(new Error("Aborted"));
+                else options.signal.addEventListener("abort", () => reject(new Error("Aborted")));
+            });
             const token = "document:" + ++sequence;
             const isCourse = path.startsWith("course/");
             const type = path.includes("/quiz/") ? "quiz" : "assign";
@@ -231,7 +237,9 @@
     }
 
     test("Moodle 4.0 instance schema uses isolated authenticated read-only AJAX and canonical detail URLs", async () => {
-        const env = environment({ api: () => ({ events: [event(1, 101)], lastid: 1 }) });
+        const env = environment({ api: () => ({ events: [event(1, 101)], lastid: 1 }), routes: {
+            "course/view.php?id=42": { links: ["../mod/assign/view.php?id=101"] }
+        } });
         const result = await env.collector.run({ listDue: true });
         equal(result.saved, 1);
         equal(result.listComplete, true);
@@ -254,6 +262,38 @@
         equal(env.timers.count(), 0);
     });
 
+    test("empty course snapshots preserve normal updates while explicit restrictions block calendar tasks", async () => {
+        const env = environment({ initial: { courseAvailability: { 42: {
+            items: { "quiz:250333": false }, complete: true
+        } } }, api: () => ({ events: [event(1, 101), event(2, 250333, {
+            modulename: "quiz", action: { url: base + "mod/quiz/view.php?id=250333" }
+        })], lastid: 2 }) });
+        const first = await env.collector.run({ listDue: true, courseIds: [41, 42], state: {
+            courses: { 42: { seenAt: epoch, discoveredAt: epoch } }
+        } });
+        equal(first.saved, 1, "An unobserved normal task must remain collectable");
+        assert(env.requests.some(request => request.path === "mod/assign/view.php?id=101"));
+        assert(!env.requests.some(request => request.path === "mod/quiz/view.php?id=250333"), "An explicitly unavailable calendar task is never fetched");
+        assert(!first.state.pending["quiz:250333"]);
+        const cached = environment({ initial: { courseAvailability: { 42: { items: {}, complete: true } },
+            assign_list: [{ group: "assign_list", assignId: 101, courseId: 42, fetchedAt: 1, show: true, status: "incomplete" }] } });
+        equal((await cached.collector.run({ state: discoveredState() })).saved, 1, "A previously saved empty snapshot cannot stop automatic updates");
+    });
+
+    test("new calendar tasks recheck an older API inventory before being excluded", async () => {
+        for (const visible of [true, false]) {
+            const env = environment({ initial: { courseAvailability: { 42: {
+                inventoryComplete: true, complete: true, items: {}, detailsCheckedSince: 123
+            } } }, api: () => ({ events: [event(1, 101)], lastid: 1 }), routes: {
+                "course/view.php?id=42": { links: visible ? [base + "mod/assign/view.php?id=101"] : [] }
+            } });
+            const result = await env.collector.run({ listDue: true, state: discoveredState() });
+            assert(env.requests.some(request => request.path === "course/view.php?id=42"), "Old inventory must be rechecked for newly discovered tasks");
+            equal(result.saved, visible ? 1 : 0);
+            equal(env.requests.some(request => request.path === "mod/assign/view.php?id=101"), visible);
+        }
+    });
+
     test("sesskey comes from DOM or JSON bootstrap without executing page-world code", async () => {
         const cls = environment().AutoRefreshCollector;
         equal(cls.findSesskey(pageDocument({ input: null, links: ["https://other.test/?sesskey=ForeignKey", base + "login/logout.php?sesskey=FromLink99"] })), "FromLink99");
@@ -266,7 +306,7 @@
     });
 
     test("fresh first calendar baseline caches fingerprints without refetching cached details", async () => {
-        const env = environment({ initial: { assign_list: [{ group: "assign_list", assignId: 101, fetchedAt: epoch - 60000, status: "incomplete", due: new Date(epoch + 7200000).toISOString(), courseId: 42 }] },
+        const env = environment({ confirmed: ["assign:101"], initial: { assign_list: [{ group: "assign_list", assignId: 101, fetchedAt: epoch - 60000, status: "incomplete", due: new Date(epoch + 7200000).toISOString(), courseId: 42 }] },
             api: () => ({ events: [event(1, 101)], lastid: 1 }) });
         const result = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(result.saved, 0);
@@ -277,7 +317,7 @@
 
     test("two bounded pages resume the same fixed window and deduplicate multiple events for one task", async () => {
         const pages = [Array.from({ length: 50 }, (_, i) => event(i + 1, 101)), Array.from({ length: 50 }, (_, i) => event(i + 51, 101))];
-        const env = environment({ api: () => ({ events: pages.shift(), lastid: pages.length ? 50 : 100 }) });
+        const env = environment({ confirmed: ["assign:101"], api: () => ({ events: pages.shift(), lastid: pages.length ? 50 : 100 }) });
         const first = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(first.saved, 1);
         equal(first.listComplete, false);
@@ -297,7 +337,7 @@
 
     test("different stable events for the same task do not alternate fingerprints or oscillate detail fetches", async () => {
         const events = [event(1, 101, { eventtype: "open" }), event(2, 101, { eventtype: "due" })];
-        const env = environment({ api: () => ({ events, lastid: 2 }) });
+        const env = environment({ confirmed: ["assign:101"], api: () => ({ events, lastid: 2 }) });
         const first = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(first.saved, 1);
         const before = env.requests.length;
@@ -307,12 +347,12 @@
     });
 
     test("failed pending details survive cached fingerprints and retry backoff until a successful save", async () => {
-        const env = environment({ api: () => ({ events: [event(1, 101)], lastid: 1 }), routes: { "mod/assign/view.php?id=101": { status: 404 } } });
+        const env = environment({ confirmed: ["assign:101"], api: () => ({ events: [event(1, 101)], lastid: 1 }), routes: { "mod/assign/view.php?id=101": { status: 404 } } });
         const first = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(first.failed, 1);
         assert(first.state.pending["assign:101"].retryAt > env.clock());
         assert(first.state.events[1]);
-        const retry = environment({ api: () => ({ events: [event(1, 101)], lastid: 1 }) });
+        const retry = environment({ confirmed: ["assign:101"], api: () => ({ events: [event(1, 101)], lastid: 1 }) });
         const early = await retry.collector.run({ listDue: true, state: first.state });
         equal(early.saved, 0);
         equal(retry.requests.length, 1);
@@ -323,7 +363,7 @@
     });
 
     test("manual or open-page refresh satisfies queued work while a newly changed event advances neededAt", async () => {
-        const env = environment({ initial: { assign_list: [{ group: "assign_list", assignId: 101, fetchedAt: epoch - 1000, courseId: 42, status: "incomplete", due: null }] } });
+        const env = environment({ confirmed: ["assign:101"], initial: { assign_list: [{ group: "assign_list", assignId: 101, fetchedAt: epoch - 1000, courseId: 42, status: "incomplete", due: null }] } });
         const first = await env.collector.run({ state: discoveredState({ pending: { "assign:101": pending("assign", 101) } }) });
         equal(first.saved, 0);
         equal(Object.keys(first.state.pending).length, 0);
@@ -337,7 +377,7 @@
     });
 
     test("calendar rejects wrong module IDs and external action URLs without trusting event status", async () => {
-        const env = environment({ api: () => ({ events: [
+        const env = environment({ confirmed: ["assign:107"], api: () => ({ events: [
             event(1, 0), event(2, 102, { modulename: "forum" }),
             event(3, 103, { action: { url: "https://other.test/moodle40a/mod/assign/view.php?id=103" } }),
             event(4, 104, { action: { url: base + "mod/quiz/view.php?id=104" } }),
@@ -359,7 +399,7 @@
         assert(cls.detailDue({ fetchedAt: null }, epoch));
         assert(!cls.detailDue({ fetchedAt: epoch - 3600000, due: new Date(epoch + 1000).toISOString() }, epoch));
         const tasks = [{ group: "assign_list", assignId: 999, courseId: 42, due: null, status: "complete", fetchedAt: epoch - 3 * 86400000, show: false }];
-        const env = environment({ initial: { assign_list: tasks }, api: () => ({ events: Array.from({ length: 20 }, (_, i) => event(i + 1, i + 101)), lastid: 20 }) });
+        const env = environment({ confirmed: ["assign:999", ...Array.from({ length: 20 }, (_, i) => "assign:" + (i + 101))], initial: { assign_list: tasks }, api: () => ({ events: Array.from({ length: 20 }, (_, i) => event(i + 1, i + 101)), lastid: 20 }) });
         const result = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(result.saved, 8);
         assert(env.requests.some(item => item.path === "mod/assign/view.php?id=999"), "Oldest eligible cached detail must not starve behind new events");
@@ -375,6 +415,21 @@
         assert(!result.state.courses[99], "Historical inactive course IDs expire");
         assert(result.state.courses[42].discoveredAt > 0);
         equal(result.moreWork, true);
+    });
+
+    test("confirmed membership excludes departed courses from discovery and detail refresh", async () => {
+        const env = environment({ initial: { enrolledCourseIds: [42],
+            assign_list: [{ group: "assign_list", assignId: 101, courseId: 99, fetchedAt: 1 }],
+            courseAvailability: { 42: { items: {} }, 99: { items: { "assign:101": true } } } } });
+        const result = await env.collector.run({ courseIds: [42, 99], state: {
+            courses: { 42: { seenAt: epoch, discoveredAt: epoch }, 99: { seenAt: epoch, discoveredAt: 0 } },
+            pending: { "assign:101": { type: "assign", id: 101, courseId: 99, neededAt: epoch } }
+        } });
+        equal(env.requests.length, 0, "A departed course is not visited even if an old calendar/UI reference remains");
+        equal(result.moreWork, false, "Departed courses must not keep automatic collection waking");
+        assert(!result.state.pending["assign:101"]);
+        equal((await env.storage.StorageUtil.getAllData()).length, 0);
+        equal((await env.storage.StorageUtil.getAllData({ includeUnavailable: true })).length, 1);
     });
 
     test("automatic multipage discovery resumes one section per batch before marking the course fresh", async () => {
@@ -446,7 +501,7 @@
     });
 
     test("visibility or lease cancellation prevents subsequent requests and saves without penalizing pending entries", async () => {
-        const env = environment({ onRequest(_env, path) { if (path.startsWith("mod/")) _env.setVisible(false); } });
+        const env = environment({ confirmed: ["assign:101"], onRequest(_env, path) { if (path.startsWith("mod/")) _env.setVisible(false); } });
         const state = discoveredState({ pending: { "assign:101": pending("assign", 101) } });
         const result = await env.collector.run({ state });
         equal(result.cancelled, true);
@@ -454,7 +509,7 @@
         equal(env.requests.length, 1);
         equal(env.storage.writes.length, 0);
         equal(result.state.pending["assign:101"].failures, 0);
-        const save = environment({ onScrape(_env) { _env.setVisible(false); } });
+        const save = environment({ confirmed: ["assign:101"], onScrape(_env) { _env.setVisible(false); } });
         const stopped = await save.collector.run({ state });
         equal(stopped.cancelled, true);
         equal(save.storage.writes.length, 0);
@@ -462,7 +517,7 @@
 
     test("external abort and stalled fetches clean up request timers and retain pending work", async () => {
         const external = new TestAbortController();
-        const env = environment({ signal: external.signal, routes: { "mod/assign/view.php?id=101": { hang: true } } });
+        const env = environment({ confirmed: ["assign:101"], signal: external.signal, routes: { "mod/assign/view.php?id=101": { hang: true } } });
         const state = discoveredState({ pending: { "assign:101": pending("assign", 101) } });
         const running = env.collector.run({ state });
         await flushPromises();
@@ -470,9 +525,10 @@
         const cancelled = await running;
         equal(cancelled.cancelled, true);
         equal(env.timers.count(), 0);
-        const timeout = environment({ routes: { "mod/assign/view.php?id=101": { hang: true } } });
+        const timeout = environment({ confirmed: ["assign:101"], routes: { "mod/assign/view.php?id=101": { hang: true } } });
         const stalled = timeout.collector.run({ state });
-        await flushPromises();
+        for (let attempt = 0; attempt < 20 && !timeout.requests.length; attempt++) await flushPromises();
+        equal(timeout.requests.length, 1, "Start the request before advancing its timeout");
         timeout.timers.advance(15000);
         equal((await stalled).stopReason, "temporary");
         equal(timeout.timers.count(), 0);
@@ -480,7 +536,7 @@
 
     test("detail saves use StorageUtil preference merges and never infer completion from calendar absence", async () => {
         const old = { group: "quiz_list", quizId: 301, courseId: 42, status: "complete", show: false, notified: true, maxp: 10, point: 0, due: null, fetchedAt: epoch - 2 * 86400000 };
-        const env = environment({ initial: { quiz_list: [old] }, routes: { "mod/quiz/view.php?id=301": { data: { status: "unknown", point: null, maxp: null } } } });
+        const env = environment({ confirmed: ["quiz:301"], initial: { quiz_list: [old] }, routes: { "mod/quiz/view.php?id=301": { data: { status: "unknown", point: null, maxp: null } } } });
         const result = await env.collector.run({ listDue: true, state: discoveredState() });
         equal(result.saved, 1);
         const saved = env.storage.state.quiz_list[0];
@@ -507,7 +563,7 @@
 
     test("time budget stops additional requests and saves while retaining unfinished details", async () => {
         const work = Object.fromEntries(Array.from({ length: 12 }, (_, index) => ["assign:" + (index + 101), pending("assign", index + 101)]));
-        const env = environment({ onRequest(_env) { _env.advance(15000); } });
+        const env = environment({ confirmed: Object.keys(work), onRequest(_env) { _env.advance(15000); } });
         const result = await env.collector.run({ state: discoveredState({ pending: work }) });
         equal(result.stopReason, "budget");
         equal(result.failed, 0);
@@ -539,6 +595,9 @@
         if (failures) throw new Error(failures + " automatic collector regression(s) failed");
     }
     let complete = false, failure;
+    if (isNode) process.once("beforeExit", () => {
+        if (!complete) { console.error("Automatic collector checks left asynchronous work pending"); process.exitCode = 1; }
+    });
     runTests().then(() => { complete = true; }, error => { complete = true; failure = error; if (isNode) process.exitCode = 1; });
     if (!isNode && typeof drainMicrotasks === "function") {
         drainMicrotasks();

@@ -15,12 +15,13 @@ class RefreshCoordinator {
 
     async interrupt(state, reason) {
         const history = (await this.storage.get("refreshHistory")).refreshHistory || {};
-        const mode = state.lease.mode;
+        const { mode, tabId } = state.lease;
         state.lease = null;
         state.pendingWork = true;
         state.nextWorkAt = this.now() + this.interval(1, 5);
         await this.save(state, { refreshHistory: { ...history,
-            attempt: { at: this.now(), mode, outcome: "cancelled", reason } } });
+            attempt: { at: this.now(), mode, outcome: "cancelled", reason,
+                ...(mode === "manual" && reason === "navigation" ? { navigationTabId: tabId } : {}) } } });
     }
 
     progress(message, sender) {
@@ -49,7 +50,17 @@ class RefreshCoordinator {
             if (state.lease?.tabId === tabId && state.lease.pageId && state.lease.pageId !== pageId) {
                 await this.interrupt(state, "navigation");
             }
-            return { ok: true };
+            const history = (await this.storage.get("refreshHistory")).refreshHistory;
+            const attempt = history?.attempt;
+            const navigationInterrupted = attempt?.mode === "manual" && attempt.outcome === "cancelled"
+                && attempt.reason === "navigation" && attempt.navigationTabId === tabId
+                && this.now() >= attempt.at && this.now() - attempt.at < 60000;
+            if (navigationInterrupted) {
+                const consumed = { ...attempt };
+                delete consumed.navigationTabId;
+                await this.save(state, { refreshHistory: { ...history, attempt: consumed } });
+            }
+            return { ok: true, navigationInterrupted };
         });
     }
 
@@ -280,7 +291,9 @@ class RefreshCoordinator {
             const storedHistory = (await this.storage.get("refreshHistory")).refreshHistory || {};
             extra.refreshHistory = { ...storedHistory,
                 attempt: { at: now, mode: manual ? "manual" : "auto", outcome: message.outcome,
-                    reason: typeof message.reason === "string" ? message.reason.slice(0, 40) : null } };
+                    reason: typeof message.reason === "string" ? message.reason.slice(0, 40) : null,
+                    ...(manual && message.outcome === "cancelled" && message.reason === "navigation"
+                        ? { navigationTabId: tabId } : {}) } };
             if (manual && message.summary && typeof message.summary === "object") {
                 const summary = message.summary;
                 if (![summary.courses, summary.saved, summary.failed].every(value =>

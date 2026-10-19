@@ -1,8 +1,8 @@
 // Personal data is a projection of the currently signed-in Moodle account.
 // Switching accounts archives the old projection and restores only the new one.
 class AccountSession {
-    static keys = ["assign_list", "quiz_list", "courseIds", "history", "refreshHistory", "refreshCoordinator", "scrapeCooldown"];
-    static empty = { assign_list: [], quiz_list: [], courseIds: [], history: [], refreshHistory: {}, refreshCoordinator: null, scrapeCooldown: null };
+    static keys = ["assign_list", "quiz_list", "courseIds", "enrolledCourseIds", "courseAvailability", "history", "refreshHistory", "refreshCoordinator", "scrapeCooldown"];
+    static empty = { assign_list: [], quiz_list: [], courseIds: [], enrolledCourseIds: null, courseAvailability: {}, history: [], refreshHistory: {}, refreshCoordinator: null, scrapeCooldown: null };
 
     constructor({ storage }) {
         this.storage = storage;

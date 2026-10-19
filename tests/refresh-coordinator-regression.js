@@ -165,6 +165,22 @@
         assert((await env.coordinator.claim({ mode: "manual" }, sender(2))).granted, "Manual retry is immediate");
     });
 
+    test("navigation interruption is delivered once to the owner replacement page", async () => {
+        for (const path of ['page-ready', 'pagehide', 'tab-gone']) {
+            const env = environment();
+            const claim = await env.coordinator.claim({ mode: 'manual', pageId: 'old' }, sender(1));
+            if (path === 'pagehide') await env.coordinator.finish({ token: claim.token, outcome: 'cancelled', reason: 'navigation' }, sender(1));
+            if (path === 'tab-gone') await env.coordinator.tabGone(1);
+            assert(!(await env.coordinator.pageReady('other', sender(2))).navigationInterrupted);
+            assert((await env.coordinator.pageReady('new', sender(1))).navigationInterrupted, path);
+            assert(!(await env.coordinator.pageReady('again', sender(1))).navigationInterrupted, 'Old interruption must not reappear');
+        }
+        const env = environment();
+        const claim = await env.coordinator.claim({ mode: 'manual', pageId: 'old' }, sender(1));
+        await env.coordinator.finish({ token: claim.token, outcome: 'success' }, sender(1));
+        assert(!(await env.coordinator.pageReady('new', sender(1))).navigationInterrupted);
+    });
+
     test("heartbeats cannot keep stalled preparation or progress alive", async () => {
         for (const progressed of [false, true]) {
             const env = environment(dueState());

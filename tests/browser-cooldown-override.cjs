@@ -61,9 +61,17 @@ const root='https://cms7.ict.nitech.ac.jp/moodle40a/';
   await page.waitForFunction(()=>Boolean(document.querySelector('#listupdated')?.textContent));
   assert.equal(await page.locator('#collectionstatus').textContent(),'');
   assert.equal(await page.locator('#listupdated').textContent(),updated);
-  // Restore the normal cooldown; the timestamp was preserved during bypass.
-  await hold();await page.waitForFunction(()=>document.querySelector('#scrapebutton').disabled);
+  // Leaving bypass clears only the previous cooldown.
+  await hold();await page.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
   assert.equal((await read()).manualCooldownDisabled,false);
+  assert.equal((await read()).scrapeCooldown,null);
+  await second.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
+  await page.reload();await page.waitForFunction(()=>document.querySelector('#scrapebutton')&&!document.querySelector('#scrapebutton').disabled);
+  await page.locator('#scrapebutton').click();
+  await page.waitForFunction(()=>document.querySelector('#scrapebutton').disabled && document.querySelector('#collectionstatus').textContent.includes('1コース・0件'));
+  assert.equal(requests,3);
+  assert((await read()).scrapeCooldown);
+
   await second.waitForFunction(()=>document.querySelector('#scrapebutton').disabled);
   await page.reload();await page.waitForFunction(()=>document.querySelector('#scrapebutton')?.disabled);
   // Exercise an actual touch hold on the disabled button (including Safari-like hit fallthrough).
@@ -72,7 +80,7 @@ const root='https://cms7.ict.nitech.ac.jp/moodle40a/';
   await page.waitForTimeout(5100);
   await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await page.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
-  assert.equal((await read()).manualCooldownDisabled,true);assert.equal(requests,2);
+  assert.equal((await read()).manualCooldownDisabled,true);assert.equal(requests,3);
   // Cancelled touch is not a mode switch.
   const c=await point();await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:c.x,y:c.y}]});
   await touch.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});

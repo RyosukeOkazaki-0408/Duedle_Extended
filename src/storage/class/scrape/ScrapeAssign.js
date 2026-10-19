@@ -1,5 +1,6 @@
 class ScrapeAssign extends Scrape {
     static getData(doc = document, pageURL = doc.URL) {
+        if (this.hasTaskDenial(doc)) return null;
         //assignId, courseName, assignName, start, submit, due, file, filenum, status
         //assignId
         const urlParams = new URL(pageURL).searchParams;
@@ -38,7 +39,7 @@ class ScrapeAssign extends Scrape {
                 if (cells.length < 2 || !/^(提出ステータス|Submission status)$/i.test(cells[0].textContent.trim())) return false;
                 return /^(まだ提出されていません[。.]?|何も提出されていません[。.]?|未提出|No submissions have been made yet[.]?|No submission[.]?|Nothing has been submitted[.]?)$/i.test(cells[1].textContent.trim());
             });
-        // Files and online text may both be drafts. An unfamiliar page is unknown,
+        // Files and online text may both be drafts. An unfamiliar page is displayed as unknown,
         // rather than claiming that the student has completed a submission.
         const a_status = this.statusAt(submitted ? "complete" : pending ? "incomplete" : "unknown", due);
 
@@ -53,6 +54,11 @@ class ScrapeAssign extends Scrape {
             file: file,
             filenum: filenum,
             status: a_status,
+            statusDetail: a_status === "unknown"
+                ? doc.querySelector(".submissionstatustable")
+                    ? { kind: "error", reason: "submission_status_parse_failed" }
+                    : { kind: "unverified", reason: "submission_status_unavailable" }
+                : { kind: "known", reason: null },
             show: true, //default
         }
         return data;

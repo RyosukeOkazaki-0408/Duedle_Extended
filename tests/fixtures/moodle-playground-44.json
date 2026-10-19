@@ -1,0 +1,56 @@
+{
+  "environment": {
+    "release": "4.4.12+ (Build: 20251212)",
+    "playgroundBuild": "20261017T152405Z-3e257773",
+    "database": "sqlite3",
+    "role": "enrolled student",
+    "capturedAt": "2026-10-18",
+    "source": "https://ateeducacion.github.io/moodle-playground/",
+    "scope": "Selected fields from actual core_courseformat_get_state and core_course_get_updates_since PHP results, not a Moodle 4.0 compatibility guarantee. URL prefixes are adapted only in the test."
+  },
+  "courseId": 2,
+  "availability": [
+    ["all-visible",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["assignment-hidden",[3,2],[[1,true,[]],[2,true,[3]],[3,true,[2]],[4,true,[]]],[[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["assignment-released",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["quiz-hidden",[1,2],[[1,true,[]],[2,true,[1]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["quiz-released",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["activity-date-restricted-listed",[3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,false,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["activity-date-restricted-hidden",[3,2],[[1,true,[]],[2,true,[3]],[3,true,[2]],[4,true,[]]],[[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["activity-date-restriction-removed",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["section-hidden",[1,3],[[1,true,[]],[2,true,[1,3]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"]]],
+    ["section-released",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]],
+    ["section-date-restricted-listed",[1,3],[[1,true,[]],[2,true,[1,3]],[3,true,[]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"]]],
+    ["section-date-restricted-hidden",[1,3],[[1,true,[]],[2,true,[1,3]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"]]],
+    ["section-date-restriction-removed",[1,3,2],[[1,true,[]],[2,true,[1,3]],[3,true,[2]],[4,true,[]]],[[1,2,true,true,"assign/view.php?id=1"],[3,2,true,true,"quiz/view.php?id=3"],[2,3,true,true,"assign/view.php?id=2"]]]
+  ],
+  "changes": [
+    ["assignment-deadline-changed",[{"contextlevel":"module","id":1,"updates":[{"name":"configuration","timeupdated":1792306438}]}]],
+    ["assignment-submitted",[{"contextlevel":"module","id":1,"updates":[{"name":"configuration","timeupdated":1792306438},{"name":"submissions","itemids":[1]}]}]],
+    ["assignment-reopened",[{"contextlevel":"module","id":1,"updates":[{"name":"configuration","timeupdated":1792306438},{"name":"submissions","itemids":[1]}]}]],
+    ["quiz-grade-changed",[{"contextlevel":"module","id":1,"updates":[{"name":"configuration","timeupdated":1792306438},{"name":"submissions","itemids":[1]}]},{"contextlevel":"module","id":3,"updates":[{"name":"grades","itemids":[1]}]}]]
+  ],
+  "enrollment": [
+    ["course-hidden",[],[]],
+    ["course-released",[2],[1,2,3]],
+    ["course-unenrolled",[],[]],
+    ["course-reenrolled",[2],[1,2,3]]
+  ],
+  "rowFormat": {
+    "availability": [
+      "name",
+      "expectedIds",
+      "sections: [id, visible, cmlist]",
+      "activities: [id, sectionid, visible, uservisible, URL suffix]"
+    ],
+    "changes": [
+      "name",
+      "actual update instances"
+    ],
+    "enrollment": [
+      "name",
+      "actual enrolled course IDs",
+      "expected visible activity IDs"
+    ]
+  }
+}

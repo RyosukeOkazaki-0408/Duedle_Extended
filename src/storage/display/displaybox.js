@@ -49,8 +49,8 @@ const displaybox = async (data, target = null) => {
                 continue;
             }
             const remainhours = item.due ? (item.due - Date.now()) / (1000 * 60 * 60) : NaN;
-            if (savedDue !== "all" && !Number.isFinite(remainhours)) continue;
-            if (savedDue !== "all" && savedDue !== "progressing") {
+            // An unknown deadline must remain visible so it cannot hide urgent work.
+            if (Number.isFinite(remainhours) && savedDue !== "all" && savedDue !== "progressing") {
                 // 期限フィルタのロジックをここに追加
 
                 if (savedDue === "today" && (remainhours > 24 || remainhours < 0)) {

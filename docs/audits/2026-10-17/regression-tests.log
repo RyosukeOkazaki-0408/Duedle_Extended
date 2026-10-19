@@ -1,0 +1,117 @@
+PASS storage awaits saves and preserves simultaneous tasks
+PASS refresh preserves visibility, reviewed grades and completion
+PASS storage edit racing a refresh does not lose the user's preference
+PASS legacy reminder flags are removed and a fetched zero grade replaces an old grade
+PASS a storage write failure rejects and does not poison later saves
+PASS separate content tabs await mutations through one background storage queue
+PASS content tab reports a rejected background save
+PASS review overview saves cannot overwrite a newer overview and preserve visibility
+PASS fetched assignment reads its task ID from the supplied URL
+PASS fetched quiz reads its task ID from the supplied URL
+PASS full detail reads discover course ID from body or Moodle breadcrumbs
+PASS review grades remain attempt data and never become a stored task snapshot
+PASS collector normalizes course IDs and collects each activity once
+PASS collector excludes activities outside Moodle and invalid IDs
+PASS multipage courses visit same-course sections once and collect their activities
+PASS multipage course discovery is bounded and never reports truncated coverage as success
+PASS collector reports task and course failures while saving available tasks
+PASS collector rejects login redirects, external redirects and login forms
+PASS collector stops immediately on access, rate-limit and server failures
+PASS collector stops fetching after the owner loses permission to continue
+PASS collector checks ownership again before saving a parsed task
+PASS collector external cancellation aborts pending fetch and releases listeners
+PASS collector explains when course IDs are unavailable
+PASS collector aborts stalled fetches and clears the timeout
+PASS notification removal never registers delivery or click handlers
+PASS fresh installs use light while upgrades and explicit themes are preserved
+PASS navigation catches cached-page completion before update resolves
+PASS navigation ignores queued completion from the previous page
+PASS navigation cleans up listeners when updating a tab fails
+PASS navigation without tabs permission ignores a hidden queued blank-page completion
+PASS navigation without tabs permission rejects an inaccessible completed destination
+PASS navigation cleans up when a hidden completed tab disappears during recheck
+PASS navigation ignores other tabs and cleans up a timed-out load
+PASS navigation rejects a closed collection tab and cleans up
+PASS navigation rejects login redirects and cleans up
+PASS tab collection closes its temporary tab after course failure
+PASS activity color matching handles task titles containing quotes and ampersands
+PASS automatic recoloring replaces the previous task status
+PASS deadline-specific filters exclude tasks without a deadline
+PASS dashboard rendering tolerates events with no date or link
+40/40 regression checks passed
+PASS account isolation: legacy quarantine, account restore, background restart, stale documents, logout, queued saves, failed writes and safe identity parsing
+PASS collection/account integration: verified identity, delayed/failed registration, stale pages, temporary tabs, atomic history, section traversal and safe cleanup
+PASS long-press arbitrary reorder, early/cancel/capture cleanup, page/container auto-scroll, desktop drop, keyboard accessibility, hidden-row order
+PASS inline submitted PDF without waiting tabs; native downloads; MIME and failure fallbacks
+List state, full-refresh timestamp and packaging checks passed
+PASS manual finish stores bounded result details across background restart
+PASS progress survives background restart and rejects other tabs and invalid counters
+PASS heartbeats cannot keep stalled preparation or progress alive
+PASS owner navigation and close events release the shared lease
+PASS initial random phase persists across reloads and tabs
+PASS simultaneous auto claims grant exactly one lease
+PASS background restart preserves live lease and jitters expired recovery
+PASS long overdue reopen is staggered once and survives reload
+PASS persistent manual cooldown override allows repeated runs and retains cross-tab exclusion
+PASS manual claims bypass automatic phase but honor persisted cooldown
+PASS heartbeat and finish require the same token and owner tab
+PASS pagination continues in 5 to 10 minutes without advancing list freshness
+PASS partial failures back off even when the list is overdue
+PASS cancellation preserves state and imposes a short shared pause
+PASS real temporary collection tab cannot trigger automatic work
+PASS invalid sender and unsafe or oversized state cannot mutate lease
+PASS storage failure reports no grant and the queue recovers
+PASS freshness TTL distinguishes upcoming, overdue and hidden tasks
+PASS background messages share manual and auto locks with TAB_COURSE
+PASS legacy TAB_COURSE acquires lease and writes cooldown only after success
+PASS duplicate TAB_COURSE messages with one valid token start only one tab
+PASS TAB_COURSE saves actual task before successful finish and excludes its tab
+PASS failed task save prevents successful manual cooldown
+PASS TAB_COURSE stops on lost lease without fetching another task
+PASS TAB_COURSE stops on authentication redirect and schedules backoff
+PASS coverage advances only after successful complete acquisition and save
+PASS partial pagination never advances the last completed calendar timestamp
+27/27 refresh coordinator checks passed
+PASS Moodle 4.0 instance schema uses isolated authenticated read-only AJAX and canonical detail URLs
+PASS sesskey comes from DOM or JSON bootstrap without executing page-world code
+PASS fresh first calendar baseline caches fingerprints without refetching cached details
+PASS two bounded pages resume the same fixed window and deduplicate multiple events for one task
+PASS different stable events for the same task do not alternate fingerprints or oscillate detail fetches
+PASS failed pending details survive cached fingerprints and retry backoff until a successful save
+PASS manual or open-page refresh satisfies queued work while a newly changed event advances neededAt
+PASS calendar rejects wrong module IDs and external action URLs without trusting event status
+PASS details obey urgent, overdue, complete and hidden TTLs and reserve an oldest eligible task slot
+PASS daily discovery visits only one active course and finds undated tasks outside the timeline
+PASS automatic multipage discovery resumes one section per batch before marking the course fresh
+PASS failed automatic section remains pending without advancing course freshness
+PASS login, rate limits and server errors stop the sweep immediately with a backoff reason
+PASS a stuck pagination cursor is bounded and reports a temporary error
+PASS visibility or lease cancellation prevents subsequent requests and saves without penalizing pending entries
+PASS external abort and stalled fetches clean up request timers and retain pending work
+PASS detail saves use StorageUtil preference merges and never infer completion from calendar absence
+PASS in-flight collector state exposes completed calendar progress for unload persistence
+PASS time budget stops additional requests and saves while retaining unfinished details
+PASS persisted state stays bounded and drops unknown fields including session keys
+20/20 automatic collector checks passed
+PASS hidden, unauthenticated, login, auth, syllabus and framed pages never claim
+PASS busy and initial phase replies sleep until the persisted nextAt
+PASS temporary collection tabs do not start automatic retries
+PASS visible collection sends current course observations and persists result once
+PASS deleted-course DOM filters are not included in observed courses
+PASS hiding aborts collection, removes timers and releases the lease once
+PASS late grants after hiding are released without any network collection
+PASS beforeunload and pagehide use one best-effort finish even while run is pending
+PASS suspension preserves the live cursor and pending work before run resolves
+PASS ownership is rechecked between steps and lost leases abort further work
+PASS claim transport failures retry after bounded backoff without event storms
+PASS collector and finish failures release once and do not spin
+PASS heartbeat failure cancels collector and sends an error outcome
+PASS own storage writes are ignored; other lease extensions only move the wake timer
+PASS stale status replies cannot replace a newer lease wake with an immediate claim
+PASS schedule changes during status lookup coalesce into one fresh lookup
+PASS page reload respects the background's persisted schedule
+PASS stop and restart reattach once and preserve the next scheduled wake
+PASS real coordinator initializes phase then persists controller progress
+19/19 automatic controller checks passed.
+PASS packaging: tracked working-copy files only; ignored/untracked files excluded; missing/symlink files and overwrites rejected
+Verified 56 manifest references and 47 JavaScript files.

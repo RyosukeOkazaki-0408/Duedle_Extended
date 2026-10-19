@@ -202,6 +202,22 @@
         equal(state.quiz_list[0].point, 0);
     });
 
+    test("unknown deadlines lead the list while known deadlines stay in ascending order", async () => {
+        const env = mockStorage({
+            assign_list: [
+                { group: 'assign_list', assignId: 1, due: '2099-02-01T00:00:00Z' },
+                { group: 'assign_list', assignId: 2 },
+                { group: 'assign_list', assignId: 3, due: '2020-01-01T00:00:00Z' },
+                { group: 'assign_list', assignId: 4, due: 'unreadable' }
+            ],
+            quiz_list: [
+                { group: 'quiz_list', quizId: 5, due: null },
+                { group: 'quiz_list', quizId: 6, due: '2099-01-01T00:00:00Z' }
+            ]
+        });
+        equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId), [2, 4, 5, 3, 6, 1]);
+    });
+
     test("a storage write failure rejects and does not poison later saves", async () => {
         const { state, api, StorageUtil } = mockStorage();
         const set = api.set;
@@ -347,12 +363,12 @@
                 if (selector.includes("errorcode") && options.denied) return {};
                 return null;
             },
-            querySelectorAll() {
-                return links.map(href => ({ getAttribute(name) { return name === "href" ? href : null; } }));
+            querySelectorAll(selector) {
+                return selector.includes('a[href') ? links.map(href => ({ getAttribute(name) { return name === "href" ? href : null; } })) : [];
             }
         };
     }
-    function collectorEnvironment(routes, onProgress) {
+    function collectorEnvironment(routes, onProgress, concurrency = 2, api = false) {
         const storage = mockStorage();
         const timers = mockTimers();
         const bindings = scrapeBindings();
@@ -360,8 +376,11 @@
         const { ScrapeQuiz } = production("src/storage/class/scrape/ScrapeQuiz.js", ["ScrapeQuiz"], bindings);
         const { CourseCollector } = production("src/storage/class/CourseCollector.js", ["CourseCollector"], {
             URL: URLClass, AbortController: TestAbortController, setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
-            ScrapeAssign, ScrapeQuiz, StorageUtil: storage.StorageUtil
+            ScrapeAssign, ScrapeQuiz, StorageUtil: storage.StorageUtil,
+            AutoRefreshCollector: { findSesskey: () => api ? 'testsession' : null }
         });
+        // Exercise both the production worker limit and serial comparisons.
+        CourseCollector.courseConcurrency = concurrency;
         const requests = [];
         const collector = new CourseCollector({
             async fetch(url, options) {
@@ -370,13 +389,17 @@
                 if (!response) throw new Error("Unexpected request: " + url);
                 if (response.error) throw response.error;
                 if (response.hang) {
-                    return new Promise((resolve, reject) => options.signal.addEventListener("abort", () => reject(new Error("Aborted request"))));
+                    return new Promise((resolve, reject) => {
+                        if (options.signal.aborted) reject(new Error("Aborted request"));
+                        else options.signal.addEventListener("abort", () => reject(new Error("Aborted request")));
+                    });
                 }
                 return {
                     ok: response.ok !== false,
                     status: response.status || 200,
                     url: response.url || url,
-                    async text() { return url.slice(moodle.length); }
+                    headers: { get(name) { return name === 'Date' ? response.date || null : null; } },
+                    async text() { return response.payload === undefined ? url.slice(moodle.length) : JSON.stringify(response.payload); }
                 };
             },
             parse(html) { return routes[html].doc; },
@@ -384,6 +407,246 @@
         });
         return { ...storage, timers, collector, CourseCollector, requests };
     }
+
+    const stateRoute = 'lib/ajax/service.php?sesskey=testsession&info=core_courseformat_get_state&nosessionupdate=true';
+    const updatesRoute = 'lib/ajax/service.php?sesskey=testsession&info=core_course_get_updates_since&nosessionupdate=true';
+    function apiState(courseId = 1) {
+        return { course: { id: String(courseId) }, section: [{ id: '100', visible: true, cmlist: ['10', '20', '21'] }],
+            cm: [10, 20, 21].map(id => ({ id: String(id), sectionid: '100', visible: true,
+                uservisible: id !== 21, accessvisible: false,
+                url: moodle + `mod/${id === 10 ? 'assign' : 'quiz'}/view.php?id=${id}` })) };
+    }
+    function deltaEnvironment(updates = { instances: [], warnings: [] }) {
+        const date = 'Sun, 18 Oct 2026 00:00:00 GMT';
+        const env = collectorEnvironment({
+            [stateRoute]: { date, payload: [{ data: JSON.stringify(apiState()) }] },
+            [updatesRoute]: { payload: [{ data: updates }] },
+            'mod/assign/view.php?id=10': { doc: taskDocument('assign') },
+            'mod/quiz/view.php?id=20': { doc: taskDocument('quiz') }
+        }, null, 1, true);
+        const since = Math.floor(Date.parse(date) / 1000) - 3600;
+        env.state.courseAvailability = { 1: { complete: true, detailsCheckedSince: since,
+            items: { 'assign:10': true, 'quiz:20': true, 'quiz:21': true } } };
+        env.state.assign_list = [{ group: 'assign_list', courseId: 1, assignId: 10, fetchedAt: 123, status: 'incomplete', show: false }];
+        env.state.quiz_list = [{ group: 'quiz_list', courseId: 1, quizId: 20, fetchedAt: 123, status: 'complete' }];
+        return { ...env, since };
+    }
+    test('API inventory rejects subsequently discovered tasks absent from the course', async () => {
+        const env = deltaEnvironment();
+        env.state.courseAvailability[1].items['quiz:99'] = true;
+        await env.collector.run([1]);
+        for (const id of [98, 99]) {
+            const task = { group: 'quiz_list', courseId: 1, quizId: id, status: 'incomplete' };
+            assert(!env.StorageUtil.taskAvailable(task, env.state.courseAvailability), 'Unlisted task must stay excluded');
+            await env.StorageUtil.saveData('quiz_list', 'quizId', task);
+            assert(!env.state.quiz_list.some(item => item.quizId === id));
+        }
+    });
+    test('unknown detail readings retry even when the previous complete display is retained', async () => {
+        const env = deltaEnvironment();
+        await env.StorageUtil.saveData('quiz_list', 'quizId', {
+            group: 'quiz_list', courseId: 1, quizId: 20, fetchedAt: 456, status: 'unknown'
+        });
+        equal(env.state.quiz_list[0].status, 'complete');
+        const result = await env.collector.run([1]);
+        equal(result.saved, 1, 'Unknown acquisition must be retried');
+        assert(env.requests.some(request => request.url.endsWith('quiz/view.php?id=20')));
+        await env.StorageUtil.saveData('quiz_list', 'quizId', {
+            group: 'quiz_list', courseId: 1, quizId: 20, fetchedAt: 789, status: 'complete'
+        });
+        equal((await env.collector.run([1])).skipped, 2, 'A known reading clears retry state');
+    });
+    test('a page observing a released task invalidates the previous detail baseline', async () => {
+        const env = deltaEnvironment();
+        env.state.courseAvailability[1].items['quiz:20'] = false;
+        await env.StorageUtil.setCourseAvailability(1, [{ type: 'quiz', id: 20, available: true }]);
+        const result = await env.collector.run([1]);
+        assert(result.saved >= 1);
+        assert(env.requests.some(request => request.url.endsWith('quiz/view.php?id=20')));
+    });
+    test('unchanged tasks skip details while availability and server checkpoints are refreshed', async () => {
+        const env = deltaEnvironment();
+        const before = clone(env.state.assign_list);
+        const result = await env.collector.run([1]);
+        equal({ saved: result.saved, skipped: result.skipped, failed: result.failed }, { saved: 0, skipped: 2, failed: 0 });
+        equal(env.requests.length, 2);
+        equal(env.state.assign_list, before, 'Skipped detail freshness and user preferences stay unchanged');
+        equal(env.state.courseAvailability[1].items['quiz:21'], false, 'Availability is always checked');
+        assert(env.state.courseAvailability[1].detailsCheckedSince > env.since);
+        assert(env.state.courseAvailability[1].detailsCheckedSince < Date.parse('Sun, 18 Oct 2026 00:00:00 GMT') / 1000);
+        equal(JSON.parse(env.requests[1].options.body)[0].args, { courseid: 1, since: env.since });
+        equal(env.collector.timings.skippedTasks, 2);
+        assert(env.collector.timings.requests[1].path.endsWith('info=core_course_get_updates_since'));
+        assert(!JSON.stringify(env.collector.timings).includes('testsession'));
+    });
+    test('only changed available tasks are fetched; unavailable update reports never enable a task', async () => {
+        const env = deltaEnvironment({ instances: [10, 21].map(id => ({ contextlevel: 'module', id,
+            updates: [{ name: 'submissions', itemids: [123] }] })), warnings: [] });
+        const result = await env.collector.run([1]);
+        equal(result.saved, 1);
+        equal(result.skipped, 1);
+        equal(env.requests.length, 3);
+        assert(env.requests[2].url.endsWith('assign/view.php?id=10'));
+        equal(env.state.assign_list[0].show, false);
+    });
+    test('first run performs full details and establishes a checkpoint for the next run', async () => {
+        const env = deltaEnvironment();
+        delete env.state.courseAvailability[1].detailsCheckedSince;
+        const first = await env.collector.run([1]);
+        equal(first.saved, 2);
+        assert(env.requests.every(request => !request.url.includes('get_updates_since')));
+        // The fixture freezes HTTP Date; leave room for per-request latency rounding.
+        env.state.courseAvailability[1].detailsCheckedSince -= 2;
+        const second = await env.collector.run([1]);
+        // The parser fixture may produce unknown statuses; make the cache known
+        // below in the other tests. First-run behavior must never assume a baseline.
+        assert(second.courses === 1 && env.requests.some(request => request.url.includes('get_updates_since')));
+    });
+    test('new, newly released, unknown and time-transitioned tasks are read despite no updates', async () => {
+        for (const prepare of [
+            env => env.state.assign_list = [],
+            env => env.state.courseAvailability[1].items['assign:10'] = false,
+            env => env.state.assign_list[0].status = 'unknown',
+            env => env.state.assign_list[0].status = 'unvisited',
+            env => env.state.assign_list[0].status = 'unexpected',
+            env => env.state.assign_list[0].fetchedAt = 0,
+            env => env.state.assign_list[0].due = new Date((env.since + 5) * 1000).toISOString()
+        ]) {
+            const env = deltaEnvironment(); prepare(env);
+            const result = await env.collector.run([1]);
+            equal(result.saved, 1);
+            equal(result.skipped, 1);
+            equal(env.requests.length, 3);
+        }
+    });
+    test('warning, malformed, unsupported and transport failures use full details instead', async () => {
+        for (const response of [
+            { payload: [{ data: { instances: [], warnings: [{ warningcode: 'missingmodule' }] } }] },
+            { payload: [{ data: { instances: 'broken', warnings: [] } }] },
+            { payload: [{ error: true, exception: { errorcode: 'invalidrecord' } }] },
+            { error: new Error('Network failed') }
+        ]) {
+            const env = deltaEnvironment();
+            const fetch = env.collector.fetch;
+            env.collector.fetch = async (url, options) => {
+                if (!url.includes('core_course_get_updates_since')) return fetch(url, options);
+                env.requests.push({ url, options });
+                if (response.error instanceof Error) throw response.error;
+                return { ok: true, status: 200, url, text: async () => JSON.stringify(response.payload) };
+            };
+            const result = await env.collector.run([1]);
+            equal(result.saved, 2);
+            equal(result.skipped, 0);
+        }
+    });
+    test('missing server time and clock rollback disable differential reads', async () => {
+        for (const mode of ['missing', 'future']) {
+            const env = deltaEnvironment();
+            if (mode === 'future') env.state.courseAvailability[1].detailsCheckedSince += 86400;
+            else {
+                const fetch = env.collector.fetch;
+                env.collector.fetch = async (...args) => { const response = await fetch(...args); delete response.headers; return response; };
+            }
+            equal((await env.collector.run([1])).saved, 2);
+            assert(env.requests.every(request => !request.url.includes('get_updates_since')));
+        }
+    });
+    test('partial detail failures do not advance the previous checkpoint', async () => {
+        const env = deltaEnvironment({ instances: [{ contextlevel: 'module', id: 10, updates: [{ name: 'configuration' }] }], warnings: [] });
+        const fetch = env.collector.fetch;
+        env.collector.fetch = async (url, options) => {
+            if (url.endsWith('assign/view.php?id=10')) throw new Error('Task failed');
+            return fetch(url, options);
+        };
+        equal((await env.collector.run([1])).failed, 1);
+        equal(env.state.courseAvailability[1].detailsCheckedSince, env.since);
+    });
+    test('course state replaces course/index HTML and excludes restricted and omitted cached tasks', async () => {
+        const env = collectorEnvironment({
+            [stateRoute]: { payload: [{ data: JSON.stringify(apiState()) }] },
+            'mod/assign/view.php?id=10': { doc: taskDocument('assign') },
+            'mod/quiz/view.php?id=20': { doc: taskDocument('quiz') }
+        }, null, 2, true);
+        env.state.quiz_list = [{ group: 'quiz_list', quizId: 99, courseId: 1 }];
+        const result = await env.collector.run([1]);
+        equal(result.saved, 2);
+        equal(env.requests.length, 3);
+        equal(env.state.courseAvailability[1].items['quiz:21'], false);
+        equal(env.state.courseAvailability[1].items['quiz:99'], false);
+        assert(!JSON.stringify(env.collector.timings).includes('testsession'));
+        assert(!JSON.stringify(env.collector.timings).includes('sesskey'));
+        equal(JSON.parse(env.requests[0].options.body)[0].args, { courseid: 1 });
+        equal(env.requests[0].options.method, 'POST');
+        equal(env.timers.count(), 0);
+    });
+    test('course state validates schema, IDs, parent availability and current-user permission', () => {
+        const { CourseCollector } = collectorEnvironment({});
+        const state = apiState();
+        state.section[0].visible = false;
+        assert(CourseCollector.stateAvailability(state, 1).every(item => !item.available));
+        for (const change of [
+            state => state.course.id = '2',
+            state => delete state.cm[0].uservisible,
+            state => state.cm[0].url = 'https://example.com/mod/assign/view.php?id=10',
+            state => state.cm[0].url = moodle + 'mod/assign/view.php?id=999',
+            state => state.section[0].cmlist.push('999'),
+            state => state.cm.push(state.cm[0])
+        ]) {
+            const invalid = apiState(); change(invalid);
+            let failed = false;
+            try { CourseCollector.stateAvailability(invalid, 1); } catch { failed = true; }
+            assert(failed, 'Unknown or inconsistent state must fall back to HTML');
+        }
+    });
+    test('normal URL-less activities do not force a whole course back to HTML', async () => {
+        const state = apiState();
+        for (const [index, url] of [undefined, null, ''].entries()) {
+            const id = String(30 + index);
+            state.cm.push({ id, sectionid: '100', visible: true, uservisible: true, url });
+            state.section[0].cmlist.push(id);
+        }
+        const env = collectorEnvironment({
+            [stateRoute]: { payload: [{ data: JSON.stringify(state) }] },
+            'mod/assign/view.php?id=10': { doc: taskDocument('assign') },
+            'mod/quiz/view.php?id=20': { doc: taskDocument('quiz') }
+        }, null, 1, true);
+        equal((await env.collector.run([1])).saved, 2);
+        equal(env.requests.length, 3, 'No root HTML or index requests for normal URL-less modules');
+        assert(!env.collector.timings.courses[0].stateFallback);
+    });
+    test('unsupported, malformed or mismatched API responses fall back to HTML', async () => {
+        for (const payload of [[{ error: true, exception: { errorcode: 'invalidrecord' } }],
+            [{ data: '{broken' }], [{ data: apiState(2) }]]) {
+            const env = collectorEnvironment({ [stateRoute]: { payload },
+                'course/view.php?id=1': { doc: courseDocument([]) } }, null, 2, true);
+            equal((await env.collector.run([1])).courses, 1);
+            equal(env.requests.length, 2);
+            assert(typeof env.collector.timings.courses[0].stateFallback === 'string');
+            assert(!JSON.stringify(env.collector.timings).includes('testsession'));
+        }
+    });
+    test('API authentication and rate/server failures stop without HTML retry', async () => {
+        for (const response of [{ payload: [{ error: true, exception: { errorcode: 'invalidsesskey' } }] },
+            { ok: false, status: 429 }, { ok: false, status: 503 }]) {
+            const env = collectorEnvironment({ [stateRoute]: response }, null, 2, true);
+            await rejects(() => env.collector.run([1]));
+            equal(env.requests.length, 1);
+            equal(env.timers.count(), 0);
+        }
+    });
+    test('two course API requests share the worker limit and cancel without HTML retries', async () => {
+        const env = collectorEnvironment({ [stateRoute]: { hang: true } }, null, 2, true);
+        const controller = new TestAbortController();
+        env.collector.signal = controller.signal;
+        const pending = env.collector.run([1, 2, 3]);
+        for (let attempt = 0; attempt < 100 && env.requests.length < 2; attempt++) await flushPromises();
+        equal(env.requests.length, 2);
+        equal(env.collector.timings.peakRequests, 2);
+        controller.abort();
+        await rejects(() => pending, /中断/);
+        equal(env.requests.length, 2);
+        equal(env.timers.count(), 0);
+    });
 
     test("collector normalizes course IDs and collects each activity once", async () => {
         const progress = [];
@@ -426,6 +689,61 @@
             "/moodle40a/mod/assign/view.php"
         ]);
         equal(env.CourseCollector.getItems(doc, moodle + "course/view.php?id=1"), [{ type: "assign", id: 71 }, { type: "quiz", id: 71 }]);
+    });
+
+    test("availability hides cached tasks without deleting user preferences and blocks direct saves", async () => {
+        const hidden = { group: "quiz_list", quizId: 22, courseId: 1, status: "qualify", show: false, fetchedAt: 10 };
+        const env = mockStorage({ assign_list: [
+            { group: "assign_list", assignId: 11, courseId: 1, show: true },
+            { group: "assign_list", assignId: 12, courseId: 1, show: true },
+            { group: "assign_list", assignId: 13, courseId: 2, show: true }
+        ], quiz_list: [hidden] });
+        await env.StorageUtil.setCourseAvailability(1, [{ type: "quiz", id: 22, available: false }]);
+        assert(!env.StorageUtil.taskAvailable({ group: "quiz_list", quizId: 22 }, env.state.courseAvailability), "Old records without a course ID still respect explicit module restrictions");
+        equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId).sort(), [11, 12, 13]);
+        await env.StorageUtil.saveData("quiz_list", "quizId", { ...hidden, show: true, status: "incomplete", fetchedAt: 20 });
+        equal(env.state.quiz_list, [hidden]);
+        await env.StorageUtil.saveData("quiz_list", "quizId", { group: "quiz_list", quizId: 22, fetchedAt: 30 });
+        equal(env.state.quiz_list, [hidden], "A missing course ID cannot bypass a known restriction");
+        await env.StorageUtil.setCourseAvailability(1, [{ type: "assign", id: 11, available: true }], true);
+        equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId).sort(), [11, 12, 13], "A missing link cannot hide an otherwise available cached task");
+        equal(env.state.assign_list.length, 3, "Unavailable records are retained for later release");
+        await env.StorageUtil.saveData("assign_list", "assignId", { group: "assign_list", assignId: 99, courseId: 1 });
+        equal(env.state.assign_list.length, 4, "An unlisted URL is not an explicit denial");
+        await env.StorageUtil.setCourseAvailability(1, [{ type: "quiz", id: 22, available: true }]);
+        equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId).sort(), [11, 12, 13, 22, 99]);
+        equal(env.state.quiz_list, [hidden], "Release preserves the user's hidden/completion settings");
+    });
+
+    test("verified enrolment removes departed-course tasks, preserves preferences and supports rejoining", async () => {
+        const old = { group: "quiz_list", quizId: 71, courseId: 9, show: false, status: "qualify" };
+        const env = mockStorage({ quiz_list: [old, { group: "quiz_list", quizId: 72 }],
+            assign_list: [{ group: "assign_list", assignId: 31, courseId: 4 }], courseIds: [4],
+            courseAvailability: { 9: { items: { "quiz:72": true } } } });
+        equal((await env.StorageUtil.getAllData()).length, 3, "Legacy/partial course IDs must not remove saved tasks");
+        await env.api.set({ enrolledCourseIds: [4] });
+        equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId), [31],
+            "Both task course IDs and older module-to-course observations respect confirmed membership");
+        equal((await env.StorageUtil.getAllData({ includeUnavailable: true })).length, 3);
+        equal(env.state.quiz_list[0], old, "Exclusion does not erase personal settings");
+        await env.StorageUtil.setCourseAvailability(9, [{ type: "quiz", id: 71, available: true }]);
+        equal((await env.StorageUtil.getAllData()).length, 1, "An accessible old URL cannot restore membership");
+        await env.api.set({ enrolledCourseIds: [] });
+        equal(await env.StorageUtil.getAllData(), [], "A confirmed empty membership is authoritative");
+        await env.api.set({ enrolledCourseIds: [4, 9] });
+        equal((await env.StorageUtil.getAllData()).find(item => item.quizId === 71), old,
+            "Rejoining restores the task and its preferences");
+    });
+
+    test("legacy empty complete snapshots do not hide or prevent updating normal cached tasks", async () => {
+        const task = { group: "assign_list", assignId: 11, courseId: 1, show: true, status: "incomplete" };
+        const env = mockStorage({ assign_list: [task], quiz_list: [],
+            courseAvailability: { 1: { items: {}, complete: true } } });
+        equal(await env.StorageUtil.getAllData(), [task], "Existing snapshots recover without clearing personal data");
+        await env.StorageUtil.saveData("assign_list", "assignId", { ...task, assignName: "Updated" });
+        equal((await env.StorageUtil.getAllData())[0].assignName, "Updated");
+        await env.StorageUtil.setCourseAvailability(1, [], true);
+        equal((await env.StorageUtil.getAllData()).length, 1, "An empty scan must not empty the task list");
     });
 
     test("multipage courses visit same-course sections once and collect their activities", async () => {
@@ -490,9 +808,9 @@
     test("collector rejects login redirects, external redirects and login forms", async () => {
         for (const response of [{ url: moodle + "login/index.php" },
             { url: "https://sso.example.com/login" }, { doc: courseDocument([], { login: true }) }]) {
-            const env = collectorEnvironment({ "course/view.php?id=1": response });
+            const env = collectorEnvironment({ "course/view.php?id=1": response, "course/view.php?id=2": { hang: true } });
             await rejects(() => env.collector.run([1, 2, 3]), /ログイン/);
-            equal(env.requests.length, 1, "Authentication failure stops the sweep immediately");
+            equal(env.requests.length, 2, "Authentication failure stops both active courses without starting the third");
             equal(env.writes.length, 0);
             equal(env.timers.count(), 0);
         }
@@ -500,24 +818,191 @@
 
     test("collector stops immediately on access, rate-limit and server failures", async () => {
         for (const status of [401, 403, 429, 503]) {
-            const env = collectorEnvironment({ "course/view.php?id=1": { ok: false, status } });
-            await rejects(() => env.collector.run([1, 2]), /HTTP/);
-            equal(env.requests.length, 1);
+            const env = collectorEnvironment({ "course/view.php?id=1": { ok: false, status }, "course/view.php?id=2": { hang: true } });
+            await rejects(() => env.collector.run([1, 2, 3]), /HTTP/);
+            equal(env.requests.length, 2);
             equal(env.writes.length, 0);
             equal(env.timers.count(), 0);
         }
+    });
+
+    test("two different courses overlap, refill independently, and keep all requests bounded to two", async () => {
+        const paths = ["mod/assign/view.php?id=91", "mod/quiz/view.php?id=92", "mod/assign/view.php?id=93", "mod/quiz/view.php?id=94"];
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([moodle + paths[0], moodle + "course/view.php?id=1&section=1"]) },
+            "course/view.php?id=1&section=1": { doc: courseDocument([moodle + paths[1]]) },
+            "course/view.php?id=2": { doc: courseDocument([moodle + paths[2]]) },
+            "course/view.php?id=3": { doc: courseDocument([moodle + paths[3]]) },
+            ...Object.fromEntries(paths.map(path => [path, { doc: taskDocument(path.includes("quiz") ? "quiz" : "assign") }]))
+        });
+        const releases = new Map(), started = [];
+        let active = 0, peak = 0;
+        const fetch = env.collector.fetch;
+        env.collector.fetch = (url, options) => {
+            const response = fetch(url, options);
+            const key = url.slice(moodle.length);
+            started.push(key);
+            peak = Math.max(peak, ++active);
+            return new Promise(resolve => releases.set(key, () => { active--; resolve(response); }));
+        };
+        const waitFor = async predicate => {
+            for (let attempt = 0; attempt < 100 && !predicate(); attempt++) await flushPromises();
+            assert(predicate(), "Expected collection progress");
+        };
+        const running = env.collector.run([1, 2, 3]);
+        await waitFor(() => releases.has("course/view.php?id=2"));
+        equal(started, ["course/view.php?id=1", "course/view.php?id=2"], "Different course pages start together");
+        releases.get("course/view.php?id=1")();
+        await waitFor(() => releases.has(paths[0]));
+        releases.get("course/view.php?id=2")();
+        await waitFor(() => releases.has(paths[2]));
+        releases.get(paths[2])();
+        await waitFor(() => releases.has("course/view.php?id=3"));
+        assert(!releases.has(paths[1]), "Details within a course remain sequential");
+        releases.get("course/view.php?id=3")();
+        await waitFor(() => releases.has(paths[3]));
+        releases.get(paths[3])();
+        releases.get(paths[0])();
+        await waitFor(() => releases.has("course/view.php?id=1&section=1"));
+        releases.get("course/view.php?id=1&section=1")();
+        await waitFor(() => releases.has(paths[1]));
+        releases.get(paths[1])();
+        const result = await running;
+        equal([result.courses, result.saved, result.failed], [3, 4, 0]);
+        equal(peak, 2, "Concurrency never exceeds two");
+        equal(env.collector.timings.peakRequests, 2, "Diagnostics measure actual in-flight requests");
+        equal(env.collector.timings.requests.length, 8);
+        equal(env.requests.length, 8, "Every course, section and detail is requested exactly once");
+        equal(new Set(started).size, 8, "Neither worker duplicates another worker's requests");
+        equal(env.state.assign_list.map(task => task.assignId).sort(), [91, 93]);
+        equal(env.state.quiz_list.map(task => task.quizId).sort(), [92, 94]);
+        equal(Object.keys(env.state.courseAvailability).sort(), ["1", "2", "3"], "Parallel courses cannot overwrite each other's availability");
+        equal(env.state.assign_list.find(task => task.assignId === 93).courseId, 2);
+        equal(env.timers.count(), 0);
+    });
+
+    test("one-worker comparison visits each course and task once without overlap", async () => {
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([moodle + "mod/assign/view.php?id=91"]) },
+            "course/view.php?id=2": { doc: courseDocument([moodle + "mod/quiz/view.php?id=92"]) },
+            "mod/assign/view.php?id=91": { doc: taskDocument("assign") },
+            "mod/quiz/view.php?id=92": { doc: taskDocument("quiz") }
+        }, undefined, 1);
+        const result = await env.collector.run([1, 2]);
+        equal([result.courses, result.saved, result.failed], [2, 2, 0]);
+        equal(env.requests.map(request => request.url.slice(moodle.length)), [
+            "course/view.php?id=1", "mod/assign/view.php?id=91", "course/view.php?id=2", "mod/quiz/view.php?id=92"
+        ]);
+        equal(env.collector.timings.version, "courses-1-v1");
+        equal(env.collector.timings.concurrency, 1);
+        equal(env.collector.timings.peakRequests, 1);
+        equal(env.collector.timings.networkOverlapMs, 0);
+    });
+
+    test("refresh timing separates headers, body, parsing and storage without adding requests", async () => {
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([moodle + "mod/assign/view.php?id=91"]) },
+            "mod/assign/view.php?id=91": { doc: taskDocument("assign") }
+        });
+        let clock = 0;
+        env.collector.now = () => clock;
+        env.collector.onProgress = () => { clock++; };
+        const fetch = env.collector.fetch, parse = env.collector.parse, save = env.StorageUtil.saveData;
+        env.collector.fetch = async (url, options) => {
+            clock += 5;
+            const response = await fetch(url, options);
+            return { ...response, text: async () => { clock += 3; return response.text(); } };
+        };
+        env.collector.parse = html => { clock += 2; return parse(html); };
+        env.StorageUtil.saveData = async (...args) => { clock += 7; return save.apply(env.StorageUtil, args); };
+        const result = await env.collector.run([1]);
+        const timing = env.collector.timings;
+        equal(result.saved, 1);
+        equal(env.requests.length, 2);
+        equal(timing.totalMs, 30);
+        equal(timing.networkActiveMs, 16);
+        equal(timing.networkOverlapMs, 0);
+        equal(timing.storageMs, 7);
+        equal(timing.progressMs, 2);
+        equal(timing.peakRequests, 1);
+        assert(timing.requests.every(request => request.headersMs === 5 && request.bodyMs === 3 && request.parseMs === 2));
+        assert(timing.requests.every(request => request.courseId === 1 && !request.failed));
+        assert(!JSON.stringify(timing).includes("sesskey"));
+        equal(env.collector.profiling, false);
+    });
+
+    test("a terminal failure aborts the other course and prevents another course or task save", async () => {
+        for (const failure of [{ ok: false, status: 401 }, { ok: false, status: 429 }, { ok: false, status: 503 },
+            { url: moodle + "login/index.php" }]) {
+            const env = collectorEnvironment({
+                "course/view.php?id=1": { doc: courseDocument([moodle + "mod/assign/view.php?id=91"]) },
+                "course/view.php?id=2": { doc: courseDocument([moodle + "mod/assign/view.php?id=92"]) },
+                "mod/assign/view.php?id=91": { hang: true },
+                "mod/assign/view.php?id=92": failure,
+                "mod/assign/view.php?id=93": { doc: taskDocument("assign") }
+            });
+            await rejects(() => env.collector.run([1, 2, 3]), /HTTP|ログイン/);
+            equal(env.requests.length, 4, "Only two course pages and their first tasks were requested");
+            assert(env.requests.find(request => request.url.endsWith("id=91")).options.signal.aborted, "The other course's pending detail is aborted");
+            equal(env.writes.filter(write => "assign_list" in write || "quiz_list" in write).length, 0);
+            equal(env.timers.count(), 0);
+        }
+    });
+
+    test("a different account in either parallel response prevents all task saves", async () => {
+        const foreign = taskDocument("quiz");
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([moodle + "mod/assign/view.php?id=91"]) },
+            "course/view.php?id=2": { doc: courseDocument([moodle + "mod/quiz/view.php?id=92"]) },
+            "mod/assign/view.php?id=91": { hang: true }, "mod/quiz/view.php?id=92": { doc: foreign }
+        });
+        const previous = globalThis.duedleAssertAccountDocument;
+        globalThis.duedleAssertAccountDocument = doc => {
+            if (doc === foreign) throw Object.assign(new Error("Account changed"), { code: "AUTH_REQUIRED" });
+        };
+        try {
+            await rejects(() => env.collector.run([1, 2, 3]), /Account changed/);
+            assert(env.requests.find(request => request.url.endsWith("id=91")).options.signal.aborted);
+            equal(env.writes.filter(write => "assign_list" in write || "quiz_list" in write).length, 0);
+            equal(env.timers.count(), 0);
+        } finally {
+            if (previous) globalThis.duedleAssertAccountDocument = previous;
+            else delete globalThis.duedleAssertAccountDocument;
+        }
+    });
+
+    test("external cancellation stops both courses without starting another course", async () => {
+        const env = collectorEnvironment({
+            "course/view.php?id=1": { doc: courseDocument([moodle + "mod/assign/view.php?id=91"]) },
+            "course/view.php?id=2": { doc: courseDocument([moodle + "mod/assign/view.php?id=92"]) },
+            "mod/assign/view.php?id=91": { hang: true }, "mod/assign/view.php?id=92": { hang: true },
+            "mod/assign/view.php?id=93": { doc: taskDocument("assign") }
+        });
+        const controller = new TestAbortController();
+        env.collector.signal = controller.signal;
+        const running = env.collector.run([1, 2, 3]);
+        for (let attempt = 0; attempt < 100 && env.requests.length < 4; attempt++) await flushPromises();
+        equal(env.requests.length, 4);
+        controller.abort();
+        await rejects(() => running, /中断/);
+        assert(env.requests.slice(2).every(request => request.options.signal.aborted));
+        equal(env.requests.length, 4);
+        equal(controller.signal.listenerCount(), 0);
+        equal(env.timers.count(), 0);
     });
 
     test("collector stops fetching after the owner loses permission to continue", async () => {
         let allowed = true;
         const env = collectorEnvironment({
             "course/view.php?id=1": { doc: courseDocument([
-                "/moodle40a/mod/assign/view.php?id=91", "/moodle40a/mod/assign/view.php?id=92"
+                "/moodle40a/mod/assign/view.php?id=91", "/moodle40a/mod/assign/view.php?id=92", "/moodle40a/mod/assign/view.php?id=93"
             ]) },
-            "mod/assign/view.php?id=91": { doc: taskDocument("assign") }
+            "mod/assign/view.php?id=91": { doc: taskDocument("assign") },
+            "mod/assign/view.php?id=92": { doc: taskDocument("assign") },
+            "mod/assign/view.php?id=93": { doc: taskDocument("assign") }
         }, progress => { if (progress.saved) allowed = false; });
         env.collector.shouldContinue = async () => allowed;
-        await rejects(() => env.collector.run([1, 2]), /中断/);
+        await rejects(() => env.collector.run([1]), /中断/);
         equal(env.requests.map(request => request.url), [moodle + "course/view.php?id=1", moodle + "mod/assign/view.php?id=91"]);
         equal(env.state.assign_list.map(item => item.assignId), [91]);
         equal(env.timers.count(), 0);
@@ -535,7 +1020,7 @@
         env.collector.shouldContinue = async () => allowed;
         await rejects(() => env.collector.run([1]), /中断/);
         equal(env.requests.length, 2);
-        equal(env.writes.length, 0);
+        equal(env.writes.filter(write => "assign_list" in write || "quiz_list" in write).length, 0);
         equal(env.timers.count(), 0);
     });
 
@@ -543,8 +1028,8 @@
         const env = collectorEnvironment({ "course/view.php?id=1": { hang: true } });
         const controller = new TestAbortController();
         env.collector.signal = controller.signal;
-        const pending = env.collector.run([1, 2]);
-        await flushPromises();
+        const pending = env.collector.run([1]);
+        for (let attempt = 0; attempt < 100 && !env.requests.length; attempt++) await flushPromises();
         equal(controller.signal.listenerCount(), 1);
         controller.abort();
         await rejects(() => pending, /中断/);
@@ -563,7 +1048,7 @@
     test("collector aborts stalled fetches and clears the timeout", async () => {
         const env = collectorEnvironment({ "course/view.php?id=1": { hang: true } });
         const running = env.collector.run([1]);
-        await flushPromises();
+        for (let attempt = 0; attempt < 100 && !env.requests.length; attempt++) await flushPromises();
         env.timers.advance(20000);
         const result = await running;
         equal(result.failed, 1);
@@ -838,15 +1323,27 @@
         equal([...classes].sort(), ["activity", "complete"]);
     });
 
-    test("deadline-specific filters exclude tasks without a deadline", async () => {
-        for (const selectedDue of ["today", "week", "overdue", "dueweek", "progressing"]) {
-            const env = await displayEnvironment({ selectedDue, selectedStatus: "all" });
-            await env.displaybox([{ group: "assign_list", assignId: 101, assignName: "Undated", courseName: "Course", show: true, due: null }]);
-            equal(env.children.length, 0, selectedDue + " must not include undated tasks");
+    test("deadline filters retain unknown deadlines without bypassing other filters", async () => {
+        const now = Date.now();
+        const task = (id, due, extra = {}) => ({ group: 'assign_list', assignId: id,
+            assignName: 'Task ' + id, courseName: 'Course', show: true, status: 'incomplete', due, ...extra });
+        const items = [task(101, null), task(102, undefined, { group: 'quiz_list', quizId: 102 }), task(103, ''),
+            task(201, new Date(now + 3600000).toISOString()),
+            task(202, new Date(now - 3600000).toISOString()),
+            task(203, new Date(now + 30 * 86400000).toISOString())];
+        const expected = {
+            all: [101, 102, 103, 201, 202, 203], today: [101, 102, 103, 201],
+            week: [101, 102, 103, 201], overdue: [101, 102, 103, 202],
+            dueweek: [101, 102, 103, 202], progressing: [101, 102, 103, 201, 203]
+        };
+        for (const [selectedDue, ids] of Object.entries(expected)) {
+            const env = await displayEnvironment({ selectedDue, selectedStatus: 'all' });
+            await env.displaybox(items);
+            equal(env.children.map(item => item.assignId || item.quizId), ids, selectedDue);
         }
-        const all = await displayEnvironment({ selectedDue: "all", selectedStatus: "all" });
-        await all.displaybox([{ group: "assign_list", assignId: 101, assignName: "Undated", courseName: "Course", show: true, due: null }]);
-        equal(all.children.length, 1);
+        const scoped = await displayEnvironment({ selectedDue: 'week', selectedStatus: 'ex-complete', selectedShow: 'normal' });
+        await scoped.displaybox([task(101, null), task(104, null, { status: 'complete' }), task(105, null, { show: false })]);
+        equal(scoped.children.map(item => item.assignId), [101], 'Completion and user visibility choices remain effective');
     });
 
     test("dashboard rendering tolerates events with no date or link", async () => {

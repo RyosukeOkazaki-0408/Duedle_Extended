@@ -62,6 +62,7 @@ function expireCompletionNotice() {
 }
 let settledToken = null;
 let observedRefresh = null;
+let navigationNoticeShown = false;
 let refreshUiRevision = 0;
 const collectionhint = document.querySelector("#collectionhint");
 function setCollectionStatus(text) {
@@ -222,7 +223,9 @@ refreshActions.addEventListener("pointerdown", event => {
         try {
             const saved = await ext.storage.local.get("manualCooldownDisabled");
             if (globalThis.duedleAccountActive === false) return;
-            await ext.storage.local.set({ manualCooldownDisabled: saved.manualCooldownDisabled !== true });
+            const reply = await ext.runtime.sendMessage({ type: "SET_MANUAL_COOLDOWN",
+                disabled: saved.manualCooldownDisabled !== true });
+            if (!reply?.ok) throw new Error(reply?.error || "更新モードを変更できませんでした");
             refreshUiRevision++;
             await updateCooldownButton();
         } catch (error) { console.error(error); }
@@ -271,6 +274,14 @@ scrapebutton.addEventListener("click", async () => {
     let verifying;
     let outcome = "error";
     let summary = { courses: 0, saved: 0, failed: 0, message: "" };
+    const now = () => globalThis.performance?.now?.() ?? Date.now();
+    const timingStarted = now(), phases = {};
+    let collector;
+    const measure = async (phase, operation) => {
+        const started = now();
+        try { return await operation(); }
+        finally { phases[phase] = now() - started; }
+    };
     const verifyLease = async (force = false) => {
         if (!owned || !token) return false;
         if (!force && Date.now() - lastVerified < 20000) return true;
@@ -286,7 +297,7 @@ scrapebutton.addEventListener("click", async () => {
     };
     try {
         await globalThis.duedlePageReady;
-        const claim = await ext.runtime.sendMessage({ type: "REFRESH_CLAIM", mode: "manual", pageId: globalThis.duedlePageId });
+        const claim = await measure("claimMs", () => ext.runtime.sendMessage({ type: "REFRESH_CLAIM", mode: "manual", pageId: globalThis.duedlePageId }));
         if (!claim?.ok) throw new Error(claim?.error || "課題情報を更新できませんでした");
         if (!claim.granted) {
             collectionstatus.textContent = claim.reason === "cooldown"
@@ -295,21 +306,24 @@ scrapebutton.addEventListener("click", async () => {
             return;
         }
         token = claim.token;
+        collectionstatus.removeAttribute("data-duedle-timing");
         manualToken = token;
         manualAbort = new AbortController();
         lastVerified = Date.now();
         heartbeatTimer = setInterval(() => verifyLease(true).catch(console.error), 30000);
-        const { scrapeMode = "scrape" } = await ext.storage.sync.get("scrapeMode");
+        const { scrapeMode = "scrape" } = await measure("settingsMs", () => ext.storage.sync.get("scrapeMode"));
         collectionstatus.textContent = "登録コースを確認中…";
-        const enrolled = await new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal }).enrolledCourseIds();
-        await ext.storage.local.set({ courseIds: enrolled });
+        const enrolled = await measure("courseListMs", () => new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal }).enrolledCourseIds());
+        await measure("courseListSaveMs", () => ext.storage.local.set({ courseIds: enrolled }));
         let result;
-        if (scrapeMode === "tab") {
+        if (!enrolled.length) {
+            result = { courses: 0, saved: 0, failed: 0, errors: [] };
+        } else if (scrapeMode === "tab") {
             const response = await ext.runtime.sendMessage({ type: "TAB_COURSE", refreshToken: token });
             if (!response?.ok) throw new Error(response?.error || "課題情報を更新できませんでした");
             result = response.result;
         } else {
-            const collector = new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal, onProgress: async progress => {
+            collector = new CourseCollector({ shouldContinue: verifyLease, signal: manualAbort.signal, onProgress: async progress => {
                 const reply = await ext.runtime.sendMessage({ type: "REFRESH_PROGRESS", token,
                     progress: { phase: "courses", completed: progress.courses, total: progress.totalCourses, saved: progress.saved } });
                 if (!reply?.ok || !reply.owned) throw Object.assign(new Error("更新が中断されました。再度お試しください。"), { code: "REFRESH_CANCELLED" });
@@ -318,7 +332,7 @@ scrapebutton.addEventListener("click", async () => {
                 setCollectionStatus(TaskListState.progressLabel({ phase: "courses", completed: progress.courses,
                     total: progress.totalCourses, saved: progress.saved }));
             } });
-            result = await collector.run(enrolled);
+            result = await measure("collectionMs", () => collector.run(enrolled));
         }
         outcome = result.failed === 0 ? "success" : "partial";
         summary = { courses: result.courses, saved: result.saved, failed: result.failed,
@@ -335,9 +349,9 @@ scrapebutton.addEventListener("click", async () => {
         refreshUiRevision++;
         if (token) {
             try {
-                const finished = await ext.runtime.sendMessage({
+                const finished = await measure("finishMs", () => ext.runtime.sendMessage({
                     type: "REFRESH_FINISH", token, outcome, fullSweep: true, reason: collectionErrorReason, summary
-                });
+                }));
                 if (!finished?.ok) throw new Error(finished?.error || "更新結果を保存できませんでした。次回の更新で再試行します。");
                 if (finished.owned) {
                     completionStatus = TaskListState.describe({ showOutcome: true,
@@ -357,10 +371,15 @@ scrapebutton.addEventListener("click", async () => {
         collectionhint.hidden = true;
         // Do not depend on storage.onChanged delivery to display the final result.
         // The saved finish must precede this read; rendering during the lease shows stale progress.
-        try { await rerender(); }
+        try { await measure("renderMs", () => rerender()); }
         catch (error) { setCollectionStatus(completionError || summary.message || error.message); }
         if (completionStatus || completionError) expireCompletionNotice();
-        await updateCooldownButton().catch(console.error);
+        await measure("cooldownUiMs", () => updateCooldownButton()).catch(console.error);
+        if (collector?.timings && globalThis.duedleAccountActive !== false) {
+            collectionstatus.setAttribute("data-duedle-timing", JSON.stringify({
+                version: 1, outcome, totalMs: now() - timingStarted, phases, collection: collector.timings
+            }));
+        }
         if (globalThis.duedleAccountActive === false) collectionstatus.textContent = "アカウントが変わりました。このページを再読み込みしてください。";
     }
 });
@@ -570,6 +589,12 @@ function rerender() {
     return renderChain;
 }
 async function renderList() {
+    const ready = await globalThis.duedlePageReady;
+    if (ready?.navigationInterrupted && !navigationNoticeShown) {
+        navigationNoticeShown = true;
+        completionStatus = "更新が中断されました。再度お試しください。";
+        expireCompletionNotice();
+    }
     const [alldata, stored] = await Promise.all([
         StorageUtil.getAllData(), ext.storage.local.get(["refreshHistory", "refreshCoordinator"]), menuReady
     ]);
@@ -614,6 +639,7 @@ document.addEventListener("duedle:account-changed", () => {
     display.replaceChildren();
     document.querySelector("#listupdated").textContent = "";
     scrapebutton.disabled = true;
+    collectionstatus.removeAttribute("data-duedle-timing");
     collectionstatus.textContent = "アカウントが変わりました。このページを再読み込みしてください。";
 });
 
@@ -644,7 +670,7 @@ ext.storage.onChanged?.addListener((changes, area) => {
     if (area === "sync" && changes.displayShow) applyMenuVisibility(changes.displayShow.newValue);
     if (area === "sync" && Object.keys(changes).some(key => key.startsWith("selected"))) queueRerender(0);
     if (area !== "local") return;
-    if (changes.assign_list || changes.quiz_list || changes.refreshHistory
+    if (changes.assign_list || changes.quiz_list || changes.courseAvailability || changes.enrolledCourseIds || changes.refreshHistory
         || changes.refreshCoordinator && !changes.refreshCoordinator.newValue?.lease) queueRerender();
     if (changes.refreshCoordinator) refreshBusy = Boolean(changes.refreshCoordinator.newValue?.lease);
     if (changes.refreshCoordinator?.newValue?.lease) {

@@ -1,4 +1,5 @@
 // Dependency-free account isolation checks, also runnable with macOS jsc.
+let accountChecksFinished = false, accountChecksFailure;
 (async () => {
     const node = typeof require === "function";
     const read = node ? path => require("fs").readFileSync(path, "utf8") : readFile;
@@ -46,7 +47,10 @@
     assert(values.assign_list.length === 0 && values.courseIds.length === 0, "Unowned legacy data must not appear for the first account");
     assert(values["duedleAccountData:legacy"].assign_list[0].file === "unowned.pdf", "Legacy cache remains recoverable");
     await session.run(a, sender(1), () => storage.set({ assign_list: [{ assignId: 1, file: "a-private.pdf" }], quiz_list: [{ quizId: 1, point: 90 }], courseIds: [1], history: [{ title: "A" }], scrapeCooldown: 99, refreshCoordinator: { lease: "old" } }));
+    await session.run(a, sender(1), () => storage.set({ courseAvailability: { 1: { items: { "quiz:1": false }, complete: true } }, enrolledCourseIds: [1] }));
     await session.register(b, sender(2));
+    assert(Object.keys(values.courseAvailability).length === 0, "Availability restrictions cannot leak to another account");
+    assert(values.enrolledCourseIds === null, "A new account has no confirmed membership snapshot");
     assert(values.assign_list.length === 0 && values.quiz_list.length === 0 && values.history.length === 0 && values.scrapeCooldown === null, "All personal data must change together");
     await denied(() => session.run(a, sender(1), () => storage.set({ assign_list: [{ file: "stale" }] })));
     await session.run(b, sender(2), () => storage.set({ assign_list: [{ assignId: 1, file: "b-private.pdf" }] }));
@@ -55,6 +59,8 @@
     await session.register(page(11, "a-new"), sender(1, "new-document"));
     assert(values.assign_list[0].file === "a-private.pdf" && values.quiz_list[0].point === 90 && values.courseIds[0] === 1 && values.scrapeCooldown === 99, "Returning to an account restores its own data");
     assert(values.refreshCoordinator === null, "Returning cannot revive an old lease");
+    assert(values.courseAvailability[1].items["quiz:1"] === false, "Returning restores the account's own availability restrictions");
+    assert(values.enrolledCourseIds.length === 1 && values.enrolledCourseIds[0] === 1, "Returning restores the account's own membership snapshot");
     await denied(() => session.run(a, sender(1), async () => {}));
     await denied(() => session.run(page(11, "a-new"), sender(1, "old-document"), async () => {}));
     await session.register(a, sender(1), true);
@@ -137,7 +143,13 @@
     }, contentDoc, url);
     await denied(() => failedReadAPI.storage.local.get("assign_list"));
     log("PASS account isolation: legacy quarantine, account restore, background restart, stale documents, logout, queued saves, failed writes and safe identity parsing");
-})().catch(error => {
+})().then(() => { accountChecksFinished = true; }, error => {
+    accountChecksFinished = true;
+    accountChecksFailure = error;
     if (typeof process !== "undefined") { console.error(error); process.exitCode = 1; }
-    else { print(error.stack || error); quit(1); }
 });
+if (typeof drainMicrotasks === "function") {
+    drainMicrotasks();
+    if (!accountChecksFinished) throw new Error("Account suite left pending asynchronous work");
+    if (accountChecksFailure) throw accountChecksFailure;
+}

@@ -228,6 +228,30 @@ const fs = require('node:fs');
             assert(bounds.left>=0 && bounds.right<=bounds.width && bounds.scroll<=bounds.client,'Final grade does not overflow at '+width);
         }
         await page.screenshot({path:'/private/tmp/duedle-drag-dark.png',fullPage:true});
+        // Login uses its own white panel and gradient outside Moodle's card rules.
+        await page.setContent(`<!doctype html><html><head><style>
+            #page {background:#f8f9fa;background-image:linear-gradient(to right,#f8f9fa,#dee2e6)}
+            .login-container {background-color:#fff;padding:3rem}
+            .login-identityprovider-btn {color:#212529;border:1px solid #dee2e6}
+            .login-container .divider {background-color:#dee2e6;width:1px;height:30px}
+            </style></head><body id="page-login-index" class="pagelayout-login"><div id="page"><main id="region-main"><div class="login-wrapper"><div class="login-container">
+            <h1>名古屋工業大学 Moodle にログインする</h1><form><input class="form-control" name="username"><input type="password" class="form-control" name="password"><button class="btn btn-primary">ログイン</button></form>
+            <h2 class="login-heading">あなたのアカウントを使用してログインします:</h2><a class="btn login-identityprovider-btn" href="#">OpenID Connect</a><div class="divider"></div>
+            </div></div></main></div></body></html>`);
+        for (const file of ['theme/dark.css','theme/light.css','theme/ios.css']) await page.addStyleTag({path:'src/'+file});
+        await page.addScriptTag({path:'src/theme/state.js'});
+        for (const ios of [false,true]) {
+            await page.evaluate(ios=>duedleApplyTheme(1,ios),ios);
+            assert.equal((await style('.login-container')).bg,ios?'rgb(28, 28, 30)':'rgb(38, 53, 65)');
+            assert.equal((await style('#page')).image,'none');
+            assert.notEqual((await style('.login-heading')).color,'rgb(33, 37, 41)');
+            assert.equal((await style('.login-identityprovider-btn')).color,ios?'rgb(242, 242, 247)':'rgb(221, 221, 223)');
+            await page.evaluate(ios=>duedleApplyTheme(2,ios),ios);
+            assert.equal((await style('.login-container')).bg,'rgb(255, 255, 255)');
+            assert.notEqual((await style('#page')).image,'none');
+        }
+        await page.evaluate(()=>duedleApplyTheme(1,true));
+        await page.screenshot({path:'/private/tmp/duedle-login-dark.png',fullPage:true});
         console.log('PASS theme components: course descriptions/restrictions, intro, review, arrows, color wells, scoped status colors, custom text contrast, repeated light/dark/honobono with iOS on/off, async palette race');
     } finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});

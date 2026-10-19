@@ -1,5 +1,6 @@
 // Integration checks for collection authorization and atomic browsing history.
 // Runs in Node.js and macOS JavaScriptCore without third-party packages.
+let accountCollectionFinished = false, accountCollectionFailure;
 (async () => {
     const node = typeof require === "function";
     const read = node ? path => require("fs").readFileSync(path, "utf8") : readFile;
@@ -63,12 +64,26 @@
         const { StorageUtil } = prod("src/storage/class/StorageUtil.js", ["StorageUtil"], { ext });
         const { RefreshCoordinator } = prod("src/storage/class/RefreshCoordinator.js", ["RefreshCoordinator"], { URL: URLType });
         const { CourseCollector } = prod("src/storage/class/CourseCollector.js", ["CourseCollector"], { URL: URLType });
-        prod("src/storage/service_worker.js", [], { ext, AccountSession, StorageUtil, RefreshCoordinator, CourseCollector,
-            URL: URLType, importScripts() {}, setTimeout(fn) { const id = {}; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); } });
+        const { accountSession } = prod("src/storage/service_worker.js", ["accountSession"], { ext, AccountSession, StorageUtil, RefreshCoordinator, CourseCollector,
+            URL: URLType, console: { error: log }, importScripts() {}, setTimeout(fn) { const id = {}; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); } });
         message = (request, from = sender(1)) => new Promise((resolve, reject) => {
             if (!ext.runtime.onMessage.emit({ ...owner, ...request }, from, resolve).includes(true)) reject(new Error("Unhandled message"));
         });
-        return { values, storage, message, ext, removed, navigated, timers };
+        return { values, storage, message, ext, removed, navigated, timers, settle: () => accountSession.serial(async () => {}) };
+    }
+    {
+        const env = background();
+        env.values.scrapeCooldown = '2026-10-18T00:00:00.000Z';
+        assert((await env.message({ type: "SET_MANUAL_COOLDOWN", disabled: true })).ok);
+        equal(env.values.scrapeCooldown, '2026-10-18T00:00:00.000Z');
+        assert((await env.message({ type: "SET_MANUAL_COOLDOWN", disabled: false })).ok);
+        equal(env.values.scrapeCooldown, null, "Leaving bypass resets cooldown once");
+        env.values.scrapeCooldown = '2026-10-18T01:00:00.000Z';
+        assert((await env.message({ type: "SET_MANUAL_COOLDOWN", disabled: false })).ok);
+        equal(env.values.scrapeCooldown, '2026-10-18T01:00:00.000Z', "Repeated normal-mode writes do not reset the next cooldown");
+        assert(!(await env.message({ type: "SET_MANUAL_COOLDOWN", disabled: 'false' })).ok);
+        assert(!(await env.message({ type: "SET_MANUAL_COOLDOWN", disabled: true, pageId: 'stale' })).ok);
+        equal(env.values.manualCooldownDisabled, false);
     }
     {
         const env = background();
@@ -97,6 +112,21 @@
     }
     {
         const env = background();
+        equal(env.values.enrolledCourseIds, undefined, "Legacy course IDs are not confirmed membership");
+        const before = copy(env.values.assign_list);
+        assert((await env.message({ type: "ACCOUNT_SET", values: { courseIds: [4, 4, 9] } })).ok);
+        equal(env.values.enrolledCourseIds, [4, 9], "Complete membership and collection targets commit together");
+        equal(env.values.courseIds, [4, 9]);
+        assert(!(await env.message({ type: "ACCOUNT_SET", values: { courseIds: [4, -1] } })).ok);
+        equal(env.values.enrolledCourseIds, [4, 9], "Rejected results preserve the last confirmed snapshot");
+        assert(!(await env.message({ type: "ACCOUNT_SET", pageId: "stale", values: { courseIds: [] } })).ok);
+        equal(env.values.enrolledCourseIds, [4, 9], "A stale page cannot empty membership");
+        assert((await env.message({ type: "ACCOUNT_SET", values: { courseIds: [] } })).ok);
+        equal(env.values.enrolledCourseIds, []);
+        equal(env.values.assign_list, before, "Membership reconciliation preserves raw saved tasks");
+    }
+    {
+        const env = background();
         const result = await env.message({ type: "TAB_COURSE" });
         assert(result.ok && result.result.saved === 1 && result.result.failed === 0, "Registered same-account detail saves normally");
         equal(env.values.assign_list[0].file, "current.pdf");
@@ -104,7 +134,7 @@
         assert(env.values.scrapeCooldown && env.values.refreshHistory.fullSweepAt, "Successful collection records its success only after saving");
         equal(env.removed, [77], "Only the created temporary tab is removed");
         equal(env.timers.size, 0, "Navigation timers are cleaned up");
-        await tick();
+        await env.settle();
         assert(!env.values.duedleCollectionTabs[77], "Closed collector tabs release their account ownership marker");
     }
     {
@@ -127,12 +157,12 @@
         equal(env.values.assign_list, [], "The new account receives no old account data");
         equal(env.values["duedleAccountData:11"].assign_list, before, "The previous account's saved data remains intact");
         equal(env.removed, [77], "Account switching still closes the created collector tab");
-        await tick();
+        await env.settle();
         assert(!env.values.duedleCollectionTabs[77], "Account switching does not leak collector markers");
         env.values.duedleCollectionTabs = { 88: "11" };
         env.values.refreshCoordinator = { temporaryTabId: 88, token: "interrupted" };
         env.ext.runtime.onStartup.emit();
-        await tick();
+        await env.settle();
         equal(env.values.duedleCollectionTabs, {}, "A full browser restart clears old session tab IDs");
         equal(env.values.refreshCoordinator.temporaryTabId, null, "Restart clears the legacy collector ID as well");
         assert((await env.message({ type: "ACCOUNT_READY", accountId: "33", pageId: "reused-tab" }, sender(88))).ok,
@@ -169,6 +199,74 @@
         assert(result.ok && result.result.saved === 1 && result.result.failed === 0, "CSE visits linked course sections");
         equal(env.navigated, [root + "course/view.php?id=7", first, second, root + "mod/assign/view.php?id=8"], "Repeated section links do not repeat requests");
     }
+    {
+        const env = background({ reply({ request, response }) {
+            if (request.type === "COLLECT_COURSE_ITEMS") response.availability = [{ type: "assign", id: 8, available: false }];
+            return response;
+        } });
+        const original = copy(env.values.assign_list);
+        const result = await env.message({ type: "TAB_COURSE" });
+        assert(result.ok && result.result.saved === 0, "CSE does not fetch tasks excluded by course availability");
+        equal(env.navigated, [root + "course/view.php?id=7"], "Unavailable task URLs are never opened");
+        equal(env.values.assign_list, original, "Excluded cached tasks retain user settings");
+        equal(env.values.courseAvailability[7], { items: { "assign:8": false }, complete: true }, "CSE persists a complete course snapshot");
+        assert(!(await env.message({ type: "SET_COURSE_AVAILABILITY", pageId: "old-page", courseId: 7, items: [] })).ok,
+            "Stale documents cannot overwrite course availability");
+        assert((await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [{ type: "assign", id: 8 }] })).ok,
+            "Registered documents can update observed availability");
+        equal(env.values.courseAvailability[7].items["assign:8"], true, "A newly released task is allowed");
+        assert((await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [], complete: true, detailsCheckedSince: 123 })).ok,
+            "Complete detail checks can persist an account-scoped checkpoint");
+        assert((await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [] })).ok);
+        equal(env.values.courseAvailability[7].detailsCheckedSince, 123, "Partial page observations preserve the checkpoint");
+        for (const checkpoint of [-1, 1.5, '123']) {
+            assert(!(await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [], complete: true, detailsCheckedSince: checkpoint })).ok,
+                "Invalid checkpoints are rejected");
+        }
+        assert(!(await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [], detailsCheckedSince: 999 })).ok,
+            "Partial scans cannot advance the checkpoint");
+        assert(!(await env.message({ type: "SET_COURSE_AVAILABILITY", pageId: 'old-page', courseId: 7, items: [], complete: true, detailsCheckedSince: 999 })).ok);
+        equal(env.values.courseAvailability[7].detailsCheckedSince, 123);
+        assert(!(await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [], inventoryComplete: true })).ok);
+        assert((await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [], complete: true, inventoryComplete: true })).ok);
+        equal(env.values.courseAvailability[7].inventoryComplete, true);
+        equal(env.values.courseAvailability[7].items, {}, "Authoritative inventories replace stale observations");
+        assert((await env.message({ type: "SET_COURSE_AVAILABILITY", courseId: 7, items: [{ type: "assign", id: 8 }] })).ok);
+        equal(env.values.courseAvailability[7].inventoryComplete, true, "Partial observations retain inventory authority");
+        equal(env.values.courseAvailability[7].detailsCheckedSince, null, "Releases require fresh detail checks");
+
+    }
+    for (const foreign of [false, true]) {
+        const env = background({ reply({ request, response }) {
+            if (request.type === "COLLECT_TASK") {
+                delete response.data;
+                response.unavailable = { type: "assign", id: 8, available: false };
+                if (foreign) response.accountId = "22";
+            }
+            return response;
+        } });
+        env.values.assign_list[0].courseId = 7;
+        const original = copy(env.values.assign_list);
+        const result = await env.message({ type: "TAB_COURSE" });
+        equal(env.values.assign_list, original, "Task-denial checks retain cached data and preferences");
+        if (foreign) {
+            equal(result.ok, false, "A foreign denial document stops collection");
+            assert(env.values.courseAvailability[7].items["assign:8"] !== false, "Unverified denials cannot hide tasks");
+        } else {
+            assert(result.ok && result.result.saved === 0 && result.result.failed === 0, "CSE recognizes task-level denials for tasks linked from the course");
+            equal(env.values.courseAvailability[7].items["assign:8"], false, "The final course snapshot cannot undo a task-level denial");
+        }
+    }
+    {
+        const env = background({ reply({ request, response }) {
+            if (request.type === "COLLECT_COURSE_ITEMS") response.items = [];
+            return response;
+        } });
+        env.values.assign_list[0].courseId = 7;
+        const result = await env.message({ type: "TAB_COURSE" });
+        assert(result.ok && result.result.saved === 0, "Saved tasks absent from the course do not expand collection");
+        equal(env.navigated, [root + "course/view.php?id=7"], "No individual cached task is opened to test access");
+    }
     for (const section of [root + "course/view.php?id=8&section=1", "https://example.invalid/course/view.php?id=7&section=1"]) {
         const env = background({ reply({ request, response }) {
             if (request.type === "COLLECT_COURSE_ITEMS") response.sections = [section];
@@ -199,7 +297,7 @@
         const data = { group: "assign_list", assignId: 8 };
         prod("src/storage/" + script, [], { ext: api, globalThis: globals, document: doc, location: { href: root + "course/view.php?id=7" }, URL: URLType,
             ScrapeAssign: { getData() { return data; } }, ScrapeQuiz: { getData() { return data; } },
-            CourseCollector: { getItems() { return []; }, getSectionURLs() { return []; } }, StorageUtil: { async saveData() {} }, console: quiet });
+            CourseCollector: { getItems() { return []; }, getTaskAvailability() { return []; }, async collectAvailability() { return []; }, getSectionURLs() { return []; } }, StorageUtil: { async saveData() {}, async markUnavailableDocument() { return null; }, async setCourseAvailability() {} }, console: quiet });
         const request = () => new Promise(resolve => {
             equal(handler({ type: script === "cs_scrapeTaskList.js" ? "COLLECT_COURSE_ITEMS" : "COLLECT_TASK" }, {}, resolve), true, "Collection keeps the asynchronous response channel open");
         });
@@ -226,8 +324,13 @@
         }
     }
     log("PASS collection/account integration: verified identity, delayed/failed registration, stale pages, temporary tabs, atomic history, section traversal and safe cleanup");
-})().catch(error => {
+})().then(() => { accountCollectionFinished = true; }, error => {
+    accountCollectionFinished = true;
+    accountCollectionFailure = error;
     if (typeof process !== "undefined") { console.error(error); process.exitCode = 1; }
-    else { print(error.stack || error); quit(1); }
 });
-if (typeof drainMicrotasks === "function") drainMicrotasks();
+if (typeof drainMicrotasks === "function") {
+    drainMicrotasks();
+    if (!accountCollectionFinished) throw new Error("Collection suite left pending asynchronous work");
+    if (accountCollectionFailure) throw accountCollectionFailure;
+}

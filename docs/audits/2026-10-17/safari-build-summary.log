@@ -1,0 +1,13 @@
+macos
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+2026-10-17 17:39:30.873 xcodebuild[5904:8368072]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+2026-10-17 17:39:40.339 appintentsmetadataprocessor[6306:8369936] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+2026-10-17 17:39:45.725 appintentsmetadataprocessor[6356:8370161] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+** BUILD SUCCEEDED **
+
+ios
+CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).
+2026-10-17 17:39:29.988 xcodebuild[5902:8367927]  iOSSimulator: [SimServiceContext sharedServiceContextForDeveloperDir:error:] returned nil (Error Domain=DVTCoreSimulatorAdditionsErrorDomain Code=3 "CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2)." UserInfo={NSLocalizedDescription=CoreSimulator is out of date. Current version (1171.7.0) is older than build version (1174.9.2).}). Simulator device support disabled.
+2026-10-17 17:39:36.059 appintentsmetadataprocessor[6224:8369482] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+2026-10-17 17:39:37.460 appintentsmetadataprocessor[6273:8369690] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+** BUILD SUCCEEDED **

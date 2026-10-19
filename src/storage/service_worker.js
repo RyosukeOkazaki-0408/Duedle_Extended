@@ -10,9 +10,9 @@ const accountSession = new AccountSession({ storage: ext.storage.local });
 let tabCollection = null;
 
 ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || !["SAVE_TASK", "SAVE_QUIZ_REVIEW_OVERVIEW", "EDIT_TASK", "TAB_COURSE", "GET_SETTINGS",
+  if (!msg || !["SAVE_TASK", "SAVE_QUIZ_REVIEW_OVERVIEW", "EDIT_TASK", "SET_COURSE_AVAILABILITY", "TAB_COURSE", "GET_SETTINGS",
     "REFRESH_CLAIM", "REFRESH_HEARTBEAT", "REFRESH_FINISH", "REFRESH_STATUS", "REFRESH_PROGRESS", "REFRESH_PAGE_READY",
-    "ACCOUNT_READY", "ACCOUNT_RESUME", "ACCOUNT_GET", "ACCOUNT_SET", "ACCOUNT_VERIFY", "ACCOUNT_APPEND_HISTORY"].includes(msg.type)) return false;
+    "SET_MANUAL_COOLDOWN", "ACCOUNT_READY", "ACCOUNT_RESUME", "ACCOUNT_GET", "ACCOUNT_SET", "ACCOUNT_VERIFY", "ACCOUNT_APPEND_HISTORY"].includes(msg.type)) return false;
   const operation = async () => {
     if (msg.type === "ACCOUNT_READY") return accountSession.register(msg, sender);
     if (msg.type === "ACCOUNT_RESUME") return accountSession.register(msg, sender, true);
@@ -31,6 +31,13 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     return accountSession.run(msg, sender, async () => {
     switch (msg.type) {
+      case "SET_MANUAL_COOLDOWN": {
+        if (typeof msg.disabled !== "boolean") throw new Error("更新モードが不正です");
+        const saved = await ext.storage.local.get("manualCooldownDisabled");
+        await ext.storage.local.set({ manualCooldownDisabled: msg.disabled,
+          ...(saved.manualCooldownDisabled === true && !msg.disabled ? { scrapeCooldown: null } : {}) });
+        return { ok: true };
+      }
       case "ACCOUNT_VERIFY":
         return { ok: true };
       case "ACCOUNT_APPEND_HISTORY": {
@@ -60,8 +67,10 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if ("courseIds" in msg.values) {
           if (!Array.isArray(msg.values.courseIds) || msg.values.courseIds.length > 10000) throw new Error("コース一覧が不正です");
           if (msg.values.courseIds.some(id => !Number.isSafeInteger(id) || id <= 0)) throw new Error("コース一覧が不正です");
-          // This is a complete enrolled-course snapshot, not browsing history.
+          // This is a complete visible-course snapshot, not browsing history.
           values.courseIds = [...new Set(msg.values.courseIds)];
+          // Keep a separate marker: legacy courseIds could be a partial UI list.
+          values.enrolledCourseIds = values.courseIds;
         }
         if ("history" in msg.values) {
           if (!Array.isArray(msg.values.history) || msg.values.history.length > 10) throw new Error("履歴が不正です");
@@ -77,6 +86,9 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case "SAVE_TASK":
         await StorageUtil.saveData(msg.table, msg.idproperty, msg.data);
+        return { ok: true };
+      case "SET_COURSE_AVAILABILITY":
+        await StorageUtil.setCourseAvailability(msg.courseId, msg.items, msg.complete ?? false, msg.detailsCheckedSince ?? null, msg.inventoryComplete ?? false);
         return { ok: true };
       case "SAVE_QUIZ_REVIEW_OVERVIEW":
         await StorageUtil.saveQuizReviewOverview(msg.data, msg.expectedFetchedAt);
@@ -184,6 +196,8 @@ async function runTabScraping(refreshToken, sender, context) {
       const url = `${MOODLE_ROOT}course/view.php?id=${courseId}`;
       const pages = [url];
       const queuedPages = new Set(pages);
+      const availability = new Map();
+      let complete = true;
       let opened = false;
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
         const pageURL = pages[pageIndex];
@@ -202,6 +216,13 @@ async function runTabScraping(refreshToken, sender, context) {
             throw new Error("コースの取得結果を確認できませんでした");
           }
           opened = true;
+          const observed = response.availability ?? response.items;
+          await collectedPageOperation(context, sender, response, tab.id, pageURL, () =>
+            StorageUtil.setCourseAvailability(courseId, observed));
+          for (const item of observed) {
+            const key = `${item.type}:${item.id}`;
+            availability.set(key, { ...item, available: item.available !== false && availability.get(key)?.available !== false });
+          }
           for (const section of response.sections) {
             const sectionURL = CourseCollector.sectionURL(section, pageURL, courseId);
             if (!sectionURL) throw new Error("コースのセクションURLが不正です");
@@ -210,8 +231,10 @@ async function runTabScraping(refreshToken, sender, context) {
             queuedPages.add(sectionURL);
             pages.push(sectionURL);
           }
-          for (const item of response.items) {
+          const candidates = [...response.items];
+          for (const item of candidates) {
             const key = `${item.type}:${item.id}`;
+            if (availability.get(key)?.available === false) continue;
             if (seen.has(key)) continue;
             seen.add(key);
             if (refreshToken) await requireTabLease(refreshToken, sender, context);
@@ -219,6 +242,15 @@ async function runTabScraping(refreshToken, sender, context) {
             try {
               await navigateTab(tab.id, taskURL);
               const detail = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_TASK" });
+              if (detail?.ok && detail.unavailable) {
+                const denied = detail.unavailable;
+                if (denied.type !== item.type || denied.id !== item.id || denied.available !== false) throw new Error("課題の取得結果が一致しません");
+                await collectedPageOperation(context, sender, detail, tab.id, taskURL, () =>
+                  StorageUtil.setCourseAvailability(courseId, [denied]));
+                availability.set(key, denied);
+                await publish();
+                continue;
+              }
               if (!detail?.ok || !detail.data) {
                 const error = tabCollectionError(detail?.error || "課題を読み取れませんでした");
                 if (detail?.code === "AUTH_REQUIRED") error.code = detail.code;
@@ -241,10 +273,15 @@ async function runTabScraping(refreshToken, sender, context) {
           }
         } catch (error) {
           if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
+          complete = false;
           result.failed++;
           result.errors.push({ url: pageURL, message: error.message });
         }
         await publish();
+      }
+      if (opened && complete) {
+        await accountSession.run(context, sender, () =>
+          StorageUtil.setCourseAvailability(courseId, [...availability.values()], true));
       }
       if (opened) result.courses++;
       await publish();

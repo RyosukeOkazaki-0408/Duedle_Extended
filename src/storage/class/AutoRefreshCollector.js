@@ -98,6 +98,7 @@ class AutoRefreshCollector {
     }
 
     static eventRef(event) {
+        if (event.visible === false || event.visible === 0 || event.uservisible === false || event.uservisible === 0) return null;
         // Moodle 4.0 exports the course-module ID as "instance" (not the activity DB ID).
         const item = this.taskRef(event.modulename, event.instance ?? event.cmid);
         if (!item) return null;
@@ -162,8 +163,12 @@ class AutoRefreshCollector {
                     && [...scan.pending, ...scan.visited].every(section => Number.isSafeInteger(section) && section >= 0)
                     && new Set([...scan.pending, ...scan.visited]).size === scan.pending.length + scan.visited.length
                     && scan.pending.length) {
+                    const items = Array.isArray(scan.items) && scan.items.length <= 10000
+                        && scan.items.every(item => this.constructor.taskRef(item?.type, item?.id) && typeof item.available === "boolean")
+                        ? scan.items : [];
                     state.courses[id].sectionScan = { startedAt: scan.startedAt,
-                        pending: [...scan.pending], visited: [...scan.visited] };
+                        pending: [...scan.pending], visited: [...scan.visited], items,
+                        hasRoot: Array.isArray(scan.items) && scan.hasRoot === true };
                 }
             });
         return state;
@@ -191,16 +196,23 @@ class AutoRefreshCollector {
         this.requests++;
         try {
             const response = await this.fetch(url, { ...options, credentials: "include", signal: controller.signal });
-            if (!response.ok) {
-                const status = Number(response.status);
-                const reason = [401, 403].includes(status) ? "auth" : status === 429 ? "rate-limit" : status >= 500 ? "temporary" : "invalid";
-                throw this.error(reason, `Moodleの情報を取得できませんでした (HTTP ${status})`, status);
-            }
             const finalURL = new URL(response.url || url);
             if (finalURL.origin !== new URL(AutoRefreshCollector.baseURL).origin || /\/(?:login|auth)\//.test(finalURL.pathname)) {
                 throw this.error("auth", "Moodleへのログインが必要です");
             }
-            const text = await response.text();
+            let text;
+            if (!response.ok) {
+                const status = Number(response.status);
+                const reason = [401, 403].includes(status) ? "auth" : status === 429 ? "rate-limit" : status >= 500 ? "temporary" : "invalid";
+                const type = new URL(url).pathname.match(/^\/moodle40a\/mod\/(assign|quiz)\/view\.php$/)?.[1];
+                let denied = null;
+                if (format !== 'json' && [403, 404].includes(status) && this.scrapers[type]?.unavailableTask) {
+                    text = await response.text();
+                    denied = this.scrapers[type].unavailableTask(this.parse(text), url);
+                }
+                if (!denied) throw this.error(reason, `Moodleの情報を取得できませんでした (HTTP ${status})`, status);
+            }
+            text ??= await response.text();
             await this.checkpoint();
             if (format === "json") {
                 try { return JSON.parse(text); }
@@ -266,13 +278,25 @@ class AutoRefreshCollector {
         entry.retryAt = this.now() + Math.min(AutoRefreshCollector.DAY, 300000 * 2 ** (entry.failures - 1));
     }
 
+    detailAvailable(item, cached, availability = this.availability) {
+        const courseId = item.courseId || cached?.courseId;
+        if (!cached && courseId && !availability?.[courseId]) return false;
+        return StorageUtil.taskAvailable({ group: item.type + "_list", courseId,
+            [item.type === "assign" ? "assignId" : "quizId"]: item.id }, availability, this.enrolledCourseIds);
+    }
+
     selectDetails(state, local) {
         const now = this.now();
         for (const [key, pending] of Object.entries(state.pending)) {
+            const task = { ...local.get(key), group: pending.type + "_list",
+                [pending.type === "assign" ? "assignId" : "quizId"]: pending.id,
+                courseId: pending.courseId || local.get(key)?.courseId };
+            if (!StorageUtil.taskAvailable(task, this.availability, this.enrolledCourseIds)) { delete state.pending[key]; continue; }
             const fetched = AutoRefreshCollector.fetchedTime(local.get(key)?.fetchedAt);
             if (fetched !== null && fetched <= now && fetched >= pending.neededAt) delete state.pending[key];
         }
         for (const task of local.values()) {
+            if (!StorageUtil.taskAvailable(task, this.availability, this.enrolledCourseIds)) continue;
             const type = task.group === "assign_list" ? "assign" : task.group === "quiz_list" ? "quiz" : null;
             const item = AutoRefreshCollector.taskRef(type, task.assignId || task.quizId);
             const courseId = AutoRefreshCollector.positiveId(task.courseId);
@@ -280,7 +304,8 @@ class AutoRefreshCollector {
             const key = item.type + ":" + item.id;
             if (!state.pending[key]) this.queue(state, { ...item, courseId, due: Date.parse(task.due) || null }, false);
         }
-        const eligible = Object.entries(state.pending).filter(([, item]) => item.retryAt <= now);
+        const eligible = Object.entries(state.pending).filter(([key, item]) => item.retryAt <= now
+            && this.detailAvailable(item, local.get(key)));
         const nearDue = item => Number.isFinite(item.due) ? Math.abs(item.due - now) : Infinity;
         eligible.sort((a, b) => Number(b[1].changed) - Number(a[1].changed)
             || nearDue(a[1]) - nearDue(b[1]) || a[1].addedAt - b[1].addedAt);
@@ -309,7 +334,9 @@ class AutoRefreshCollector {
         const stop = error => ["auth", "rate-limit", "temporary", "cancelled", "budget"].includes(error.reason);
         try {
             await this.checkpoint();
-            const tasks = await this.storage.getAllData();
+            const tasks = await this.storage.getAllData({ includeUnavailable: true });
+            this.availability = await this.storage.getCourseAvailability();
+            this.enrolledCourseIds = await this.storage.getEnrolledCourseIds?.() ?? null;
             const local = new Map((Array.isArray(tasks) ? tasks : []).map(task => [
                 (task.group === "assign_list" ? "assign" : "quiz") + ":" + (task.assignId || task.quizId), task
             ]));
@@ -340,6 +367,13 @@ class AutoRefreshCollector {
                         if (!cached || changed || baselineNewer) this.queue(state, item, true, !old || changed || !state.pending[key]);
                         state.events[id] = { key, fingerprint, seenAt: this.now() };
                         this.noteCourse(state, item.courseId);
+                        // An older full inventory cannot rule out a newly added activity.
+                        // Verify it through the existing bounded course-discovery pass.
+                        const inventory = this.availability?.[item.courseId];
+                        if ((!old || changed) && inventory?.inventoryComplete === true
+                            && inventory.items?.[key] !== true && state.courses[item.courseId]) {
+                            state.courses[item.courseId].discoveredAt = 0;
+                        }
                     }
                     if (data.events.length < 50) {
                         state.cursor = null;
@@ -356,8 +390,9 @@ class AutoRefreshCollector {
             if (listDue || result.listComplete || state.cursor) {
                 await this.onProgress({ phase: "list", completed: 1, total: 1, saved: result.saved });
             }
-            const discovery = Object.entries(state.courses).filter(([, course]) =>
-                this.now() - course.discoveredAt >= AutoRefreshCollector.DAY && course.retryAt <= this.now())
+            const discovery = Object.entries(state.courses).filter(([id, course]) =>
+                (!Array.isArray(this.enrolledCourseIds) || this.enrolledCourseIds.includes(Number(id)))
+                && (!this.availability?.[id] || this.now() - course.discoveredAt >= AutoRefreshCollector.DAY) && course.retryAt <= this.now())
                 .sort((a, b) => a[1].discoveredAt - b[1].discoveredAt || b[1].seenAt - a[1].seenAt)[0];
             if (discovery) {
                 await this.onProgress({ phase: "courses", completed: 0, total: 1, saved: result.saved });
@@ -370,7 +405,7 @@ class AutoRefreshCollector {
                     if (!doc.querySelector("h1") || doc.querySelector(".errorcode, .errormessage")) throw this.error("invalid", "コースの情報を読み取れませんでした");
                     // Keep the existing budget of one course page per batch.
                     // A multipage course is fresh only after every section is read.
-                    const scan = course.sectionScan || { startedAt: this.now(), pending: [], visited: [] };
+                    const scan = course.sectionScan || { startedAt: this.now(), pending: [], visited: [], items: [], hasRoot: true };
                     const visited = new Set(scan.visited);
                     if (section !== undefined) visited.add(section);
                     const pending = scan.pending.filter(value => value !== section);
@@ -381,12 +416,21 @@ class AutoRefreshCollector {
                     if (pending.length + visited.size >= CourseCollector.maxCoursePages) {
                         throw this.error("invalid", "コースのページ数が多すぎるため、全課題を確認できませんでした。");
                     }
-                    for (const item of CourseCollector.getItems(doc, url)) {
+                    const observed = await CourseCollector.collectAvailability(doc, url, url => this.fetchDocument(url));
+                    const observations = new Map(scan.items.map(item => [item.type + ":" + item.id, item]));
+                    for (const item of observed) {
+                        const key = item.type + ":" + item.id;
+                        observations.set(key, { ...item, available: item.available && observations.get(key)?.available !== false });
+                    }
+                    await this.storage.setCourseAvailability(Number(courseId), observed);
+                    for (const item of CourseCollector.getItems(doc, url).filter(item => observations.get(item.type + ":" + item.id)?.available !== false)) {
                         const key = item.type + ":" + item.id;
                         if (!local.has(key)) this.queue(state, { ...item, courseId: Number(courseId), due: null });
                     }
-                    if (pending.length) course.sectionScan = { startedAt: scan.startedAt, pending, visited: [...visited] };
+                    if (pending.length) course.sectionScan = { startedAt: scan.startedAt, pending,
+                        visited: [...visited], items: [...observations.values()], hasRoot: scan.hasRoot };
                     else {
+                        if (scan.hasRoot) await this.storage.setCourseAvailability(Number(courseId), [...observations.values()], true);
                         delete course.sectionScan;
                         course.discoveredAt = this.now();
                     }
@@ -400,24 +444,28 @@ class AutoRefreshCollector {
             }
 
             if (discovery) await this.onProgress({ phase: "courses", completed: 1, total: 1, saved: result.saved });
+            this.availability = await this.storage.getCourseAvailability();
             const details = this.selectDetails(state, local);
             let completed = 0;
             if (details.length) await this.onProgress({ phase: "details", completed, total: details.length, saved: result.saved });
             for (const [key, item] of details) {
                 const url = AutoRefreshCollector.baseURL + "mod/" + item.type + "/view.php?id=" + item.id;
                 try {
+                    if (!this.detailAvailable(item, local.get(key), await this.storage.getCourseAvailability())) continue;
                     const doc = await this.fetchDocument(url);
-                    const scraped = this.scrapers[item.type].getData(doc, url);
-                    const idproperty = item.type === "assign" ? "assignId" : "quizId";
-                    if (!scraped || scraped.group !== item.type + "_list" || Number(scraped[idproperty]) !== item.id) throw this.error("invalid", "課題の情報を読み取れませんでした");
-                    const data = { ...scraped, fetchedAt: this.now(),
-                        courseId: AutoRefreshCollector.positiveId(scraped.courseId) || item.courseId || null };
-                    await this.checkpoint();
-                    await this.storage.saveData(data.group, idproperty, data);
-                    result.saved++;
-                    const old = local.get(key);
-                    local.set(key, { ...old, ...data, show: old?.show ?? data.show,
-                        status: old?.status === "complete" && data.status === "unknown" ? old.status : data.status });
+                    if (!await this.storage.markUnavailableDocument(doc, url, this.scrapers[item.type])) {
+                        const scraped = this.scrapers[item.type].getData(doc, url);
+                        const idproperty = item.type === "assign" ? "assignId" : "quizId";
+                        if (!scraped || scraped.group !== item.type + "_list" || Number(scraped[idproperty]) !== item.id) throw this.error("invalid", "課題の情報を読み取れませんでした");
+                        const data = { ...scraped, fetchedAt: this.now(),
+                            courseId: AutoRefreshCollector.positiveId(scraped.courseId) || item.courseId || null };
+                        await this.checkpoint();
+                        await this.storage.saveData(data.group, idproperty, data);
+                        result.saved++;
+                        const old = local.get(key);
+                        local.set(key, { ...old, ...data, show: old?.show ?? data.show,
+                            status: old?.status === "complete" && data.status === "unknown" ? old.status : data.status });
+                    }
                     delete state.pending[key];
                 } catch (error) {
                     if (!["cancelled", "budget"].includes(error.reason)) this.failedEntry(item);
@@ -434,7 +482,9 @@ class AutoRefreshCollector {
         result.state = this.normalizeState(state);
         this.state = result.state;
         result.moreWork = !!result.state.cursor || Object.keys(result.state.pending).length > 0
-            || Object.values(result.state.courses).some(course => this.now() - course.discoveredAt >= AutoRefreshCollector.DAY);
+            || Object.entries(result.state.courses).some(([id, course]) =>
+                (!Array.isArray(this.enrolledCourseIds) || this.enrolledCourseIds.includes(Number(id)))
+                && this.now() - course.discoveredAt >= AutoRefreshCollector.DAY);
         return result;
     }
 }

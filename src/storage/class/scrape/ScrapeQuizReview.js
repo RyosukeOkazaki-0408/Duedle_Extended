@@ -1,6 +1,7 @@
 class ScrapeQuizReview extends Scrape {
     // This is a single attempt, never an aggregate grade or a task snapshot.
     static getData(doc = document, pageURL = doc.URL) {
+        if (this.hasTaskDenial(doc)) return null;
         let url;
         try { url = new URL(pageURL); } catch { return null; }
         if (url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/mod/quiz/review.php") return null;
