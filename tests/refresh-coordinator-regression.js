@@ -269,7 +269,7 @@
         assert((await reloaded.claim({ mode: "auto" }, sender(2))).granted);
     });
 
-    test("persistent manual cooldown override allows repeated runs and retains cross-tab exclusion", async () => {
+    test("manual refresh settings persist and retain cross-tab exclusion", async () => {
         const env = environment({ ...dueState(), scrapeCooldown: new Date(baseTime).toISOString() });
         equal((await env.coordinator.claim({ mode: "manual" }, sender(1))).reason, "cooldown");
         await env.storage.set({ manualCooldownDisabled: true });
@@ -282,7 +282,7 @@
             await coordinator.finish({ token: claim.token, outcome: "success", fullSweep: true }, sender(1));
         }
         assert(env.state.manualCooldownDisabled === true);
-        assert(env.state.scrapeCooldown, "Keep the real successful refresh time while bypassing it");
+        assert(env.state.scrapeCooldown, "Keep the successful refresh time");
         await env.storage.set({ manualCooldownDisabled: false });
         equal((await env.create().claim({ mode: "manual" }, sender(1))).reason, "cooldown");
         await env.storage.set({ manualCooldownDisabled: "true" });

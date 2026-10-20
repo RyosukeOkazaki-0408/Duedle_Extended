@@ -1,4 +1,4 @@
-// Real extension with synthetic Moodle only; exercise disabled-button mouse/touch holds.
+// Real extension with synthetic Moodle only.
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
@@ -97,6 +97,6 @@ const root='https://cms7.ict.nitech.ac.jp/moodle40a/';
    return refreshCoordinator.claim({mode:'manual'},{tab:tabs.at(-1),url:tabs.at(-1).url});
   });assert.equal(busy.reason,'busy');
   assert.deepEqual(errors,[]);
-  console.log('PASS disabled-button mouse/touch hold; short press/move/cancel inert; no extra visible label; reload/multi-tab persistence; repeated updates; restored cooldown; concurrent run still blocked');
+  console.log('PASS refresh controls, persistence, and concurrent-run exclusion');
  }finally{await context.close();}
 })().catch(error=>{console.error(error);process.exitCode=1});

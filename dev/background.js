@@ -36,7 +36,6 @@ debugNative.runtime.onMessage.addListener((message, realSender, respond) => {
             if (message.action === 'scenario') debugClock.scenario = message.value;
             if (message.action === 'advance') debugClock.offset += Number(message.value) || 0;
             await debugNative.storage.local.set({ [DEBUG_PREFIX + 'config']: debugClock });
-            // Bypass only the requested wait, keeping the production claim and lease checks.
             if (message.action === 'manual') await ext.storage.local.set({ scrapeCooldown: null });
             if (message.action === 'auto') {
                 const { state } = await coordinator.load();

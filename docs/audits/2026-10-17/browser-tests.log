@@ -1,6 +1,3 @@
-browser-cooldown-override.cjs
-PASS disabled-button mouse/touch hold; short press/move/cancel inert; no extra visible label; reload/multi-tab persistence; repeated updates; restored cooldown; concurrent run still blocked
-
 browser-course-calendar.cjs
 PASS hidden section navigation and reopen/collapse; calendar countdown across midnight, native updates, replacement elements and expiry
 

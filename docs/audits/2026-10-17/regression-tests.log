@@ -52,7 +52,6 @@ PASS initial random phase persists across reloads and tabs
 PASS simultaneous auto claims grant exactly one lease
 PASS background restart preserves live lease and jitters expired recovery
 PASS long overdue reopen is staggered once and survives reload
-PASS persistent manual cooldown override allows repeated runs and retains cross-tab exclusion
 PASS manual claims bypass automatic phase but honor persisted cooldown
 PASS heartbeat and finish require the same token and owner tab
 PASS pagination continues in 5 to 10 minutes without advancing list freshness

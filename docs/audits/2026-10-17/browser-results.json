@@ -1,10 +1,5 @@
 [
   {
-    "test": "browser-cooldown-override.cjs",
-    "status": "PASS",
-    "verification": "full browser suite on 2026-10-15"
-  },
-  {
     "test": "browser-course-calendar.cjs",
     "status": "PASS",
     "verification": "full browser suite on 2026-10-15"

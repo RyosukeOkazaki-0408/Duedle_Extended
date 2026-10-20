@@ -1,13 +1,13 @@
 # Duedle 開発・保守ガイド
 
 > [!NOTE]
-> このドキュメントはAI（ChatGPT）の支援で整理しています。2026年10月13日時点のソース構成と実装を説明するもので、実機動作やセキュリティを保証するものではありません。実装を変更した際は、関連する説明も更新してください。
+> このドキュメントはAI（ChatGPT）の支援で整理しています。2026年10月20日時点のソース構成と実装を説明するもので、実機動作やセキュリティを保証するものではありません。実装を変更した際は、関連する説明も更新してください。
 
 ## この文書の役割
 
 Duedleは、名古屋工業大学のMoodleで課題・小テストの確認とコースの閲覧を補助するManifest V3のブラウザ拡張機能です。対象は `https://cms7.ict.nitech.ac.jp/moodle40a/` です。
 
-この文書はソースから導入する開発者・保守担当者向けです。利用者向けの導入案内は[README](readme.md)、操作説明は同梱の[使い方ガイド](src/common/help.html)を参照してください。配布状況と問い合わせ先もREADMEで案内します。
+この文書はソースから導入する開発者・保守担当者向けです。利用者向けの[導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)と[使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)はGitHub Pagesで公開しており、拡張機能なしでも閲覧できます。概要・配布状況・問い合わせ先は[README](readme.md)で案内します。
 
 ## 主な機能と範囲
 
@@ -75,7 +75,8 @@ python3 scripts/prepare_debug.py
 | `src/qol/` | ファイルリンクと提出ファイルのプレビュー |
 | `src/login_screen/`・`src/syllabus/` | ログイン画面・シラバス向けの表示調整 |
 | `dev/` | ダミーデータ、通信・ストレージの代替、デバッグ操作UI |
-| `scripts/` | 構文・回帰チェック、Safariリソース配置、デバッグ版生成 |
+| `scripts/` | 構文・回帰チェック、Safariリソース配置、デバッグ版生成、Pages公開用ファイル生成 |
+| `.github/workflows/pages.yml` | 利用者向けガイドのGitHub Pages公開 |
 | `tests/` | 回帰テストと合成ページを使うブラウザテスト |
 | `safari/Duedle/` | SafariホストアプリとXcodeプロジェクト |
 | `docs/` | 機能別の設計・検証手順、過去の作業記録 |
@@ -101,7 +102,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 
 ### 更新の間隔と成功時刻
 
-手動更新では、全件成功後に3時間のクールダウンを設けます。自動更新はログイン済みMoodleを表示している間に動き、締切一覧を55〜75分ごとに確認します。自動更新の詳細再取得の目安は次のとおりです。
+通常の手動更新では、全件成功後に3時間のクールダウンを設けます。自動更新はログイン済みMoodleを表示している間に動き、締切一覧を55〜75分ごとに確認します。自動更新の詳細再取得の目安は次のとおりです。
 
 | 保存済み課題の状態 | 前回の詳細取得からの間隔 |
 | --- | --- |
@@ -138,11 +139,15 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 
 課題の状態は `complete`・`incomplete`・`unknown`・`warning`・`expired`、小テストではさらに `qualify`・`stuck` を扱います。`incomplete`・`warning`・`expired` は期限で再評価し、期限が3日以内なら `warning`、期限後なら `expired` として表示します。`unknown`・`qualify`・`stuck` はこの再評価の対象外です。現行スクレイパーは提出日時の `submit` フィールドを生成していません。
 
+表示上は `complete` と `qualify` を「完了」にまとめ、状態フィルターの「完了以外」からは両方を除外します。状態フィルターの「期限切れ」は `expired` と `stuck` を含みます。色設定もそれぞれ共通ですが、カードの `stuck` は「行き詰まり」と表示します。色設定は完了・未完了・期限切れ・要注意・不明・未訪問の6項目です。内部の状態値は維持し、旧フィルター値 `qualify`・`stuck` は統合先へ読み替えます。
+
 再取得時も既存の `show` を保持します。非表示の変更や手動の状態変更には `StorageUtil.editData()` を使い、複数タブから配列全体を上書きしないでください。
+
+コース・課題の閲覧可否は、利用者が選ぶ `show` とは別に扱います。`enrolledCourseIds` は登録コース一覧、`courseAvailability` はコースごとの活動の閲覧可否を保持します。登録外のコースや利用不可と確認できた活動は一覧から除外します。完全な活動一覧を取得できた場合に限り、一覧に存在しない活動も利用不可として扱います。不完全なHTMLだけを根拠に、見つからない活動を一律に除外しません。保存済みの課題データや `show` は消去しません。
 
 ### アカウントの切替
 
-`AccountSession` は現在のMoodleユーザーIDとタブ・ページを関連付け、個人データへのメッセージ操作を検証します。切替対象は課題、小テスト、コースID、履歴、更新の履歴・予定、クールダウンです。
+`AccountSession` は現在のMoodleユーザーIDとタブ・ページを関連付け、個人データへのメッセージ操作を検証します。切替対象は課題、小テスト、コースID、登録コース一覧、活動の閲覧可否、履歴、更新の履歴・予定、クールダウンです。
 
 別アカウントやログアウト状態への切替時は、前アカウントの情報を `duedleAccountData:<ユーザーID>` へ退避します。所有者が分からない旧データは `duedleAccountData:legacy` に保持します。同じユーザーで再開すると退避データを復元します。ログアウトや切替は端末上の保存データの消去ではありません。専用のアカウントデータ削除UIはありません。
 
@@ -154,7 +159,8 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 | --- | --- | --- |
 | `storage.local` | `thememode`、`themeDefault`、`iosAppearance` | カラーモード、初期値、iOS風外観 |
 | `storage.local` | `history` | 最近開いたコースページのタイトルとURL。最大10件 |
-| `storage.local` | `courseIds`、`refreshCoordinator`、`refreshHistory`、`scrapeCooldown` | 収集対象、更新予定・排他制御、成功時刻、手動更新制限 |
+| `storage.local` | `courseIds`、`enrolledCourseIds`、`courseAvailability` | 収集対象、登録コース一覧、コースごとの活動の閲覧可否 |
+| `storage.local` | `refreshCoordinator`、`refreshHistory`、`scrapeCooldown` | 更新予定・排他制御、成功時刻、手動更新制限 |
 | `storage.local` | `duedleAccount`、`duedleAccountTabs`、`duedleAccountData:*` | 現在のアカウント、ページ登録、退避データ |
 | `storage.local` | `duedleCollectionTabs` | 一時収集タブの所有アカウント。アカウント切替時も保持し、タブ終了・ブラウザ起動時に除去 |
 | `storage.sync` | `selectedType`、`selectedStatus`、`selectedDue`、`selectedShow` | 一覧の絞り込み。状態の初期値は `ex-complete`（完了以外）、保存済みの選択は維持 |
@@ -206,6 +212,22 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 
 合成ページでの成功と実Moodleでの成功は区別してください。Safariを配布する場合は共有リソースを生成し直してビルドし、対象端末で操作を確認します。チェック結果には実行したコマンド、環境、未確認事項を記録します。
 
+## 利用者向けガイドの公開・保守
+
+本文は `src/common/help.html` と `src/common/install.html`、スタイルと動作は `help.css`・`help.js` を編集します。画像・動画・字幕も `src/common/help*` に置き、同梱版と公開版の編集元を共通にします。
+
+```sh
+python3 scripts/prepare_pages.py
+```
+
+公開用ファイルは `build/pages/` に生成されます。対象は `src/common/help*`、`install.html`、`support-config.js` です。サイトの入口となる `index.html` は `help.html` と同じ内容で生成します。生成先は直接編集しません。
+
+`.github/workflows/pages.yml` は、上記のソース・生成スクリプト・ワークフロー自体の変更を `main` にpushすると公開します。READMEやこのガイドだけの変更ではPagesの再公開は実行されません。必要な場合はActionsの「Publish guides to GitHub Pages」から手動実行できます。公開先は[GitHub Pages](https://ryosukeokazaki-0408.github.io/Duedle_Extended/)です。
+
+問い合わせ先を変更するときは `src/common/support-config.js` の `contactFormUrl` とREADMEのフォームリンクを更新します。設定メニューと使い方ページはこの設定を参照します。Safari同梱版へ反映するには、従来どおりリソース生成と再ビルドが必要です。
+
+公開後は使い方・導入方法・問い合わせへの移動、画像・動画・字幕の読込を拡張機能なしのブラウザで確認します。同梱版のブラウザテストだけでは公開版の配信成功を確認できません。
+
 ## GitHub公開・配布時の確認
 
 公開するソース、Git履歴、配布ZIPは別々に確認します。`.gitignore` はすでに追跡したファイルや過去コミットから情報を消去するものではありません。
@@ -220,7 +242,9 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 
 ## 関連文書
 
-- [README・利用者向け導入案内](readme.md)
+- [README・概要と配布状況](readme.md)
+- [利用者向け導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)
+- [利用者向け使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)
 - [自動更新の仕様](docs/auto-refresh.md)
 - [オフラインの開発用環境](docs/debug.md)
 - [Safari版のビルド・検証](docs/safari.md)

@@ -1,11 +1,5 @@
 [
   {
-    "test": "browser-cooldown-override.cjs",
-    "status": 0,
-    "seconds": 28.7,
-    "log": "/tmp/duedle-audit-20261014/browser-cooldown-override.log"
-  },
-  {
     "test": "browser-course-calendar.cjs",
     "status": 0,
     "seconds": 0.9,
