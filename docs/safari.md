@@ -66,7 +66,7 @@ python3 scripts/prepare_safari.py --resources-only
 
 課題データの保存はバックグラウンドへ集約し、複数ページで同時に保存しても互いの課題・表示設定を上書きしないようにしています。設定や履歴は各ブラウザの拡張機能ストレージに保存されます。Chromeのデータ移行やSafari端末間の同期機能は追加していません。
 
-Safariの背景ページはManifest V3の非永続ページです。`offscreen` は不要になり、Safari用のmanifestは `storage`・`tabs` の権限だけを宣言します。OS締切通知は今回の方針変更で削除しました。
+Safariの背景ページはManifest V3の非永続ページです。Safari用のmanifestは `storage` 権限と対象Moodleのホスト権限を宣言します。別タブ収集には対象サイトへの権限を使い、全サイトのURL・タイトルを読み取る `tabs` 権限は宣言しません。`offscreen` は不要で、OS締切通知も提供しません。
 
 ## 検証
 

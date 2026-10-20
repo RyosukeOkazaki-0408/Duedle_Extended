@@ -32,7 +32,10 @@ const fixture='<!doctype html><html><head><meta name="viewport" content="width=d
   await viewer.waitForFunction(()=>document.querySelector('#collectionstatus').textContent.includes('中断'));
   await viewer.waitForFunction(()=>!document.querySelector('#scrapebutton').disabled);
   await owner.waitForFunction(()=>document.querySelector('#scrapebutton') && !document.querySelector('#scrapebutton').disabled);
-  assert.equal(await owner.locator('#collectionstatus').textContent(),'','Reloading the owner does not replay its saved cancellation');
+  await owner.waitForFunction(()=>document.querySelector('#collectionstatus').textContent==='更新が中断されました。再度お試しください。');
+  await owner.reload();
+  await owner.waitForFunction(()=>document.querySelector('#scrapebutton') && !document.querySelector('#scrapebutton').disabled);
+  assert.equal(await owner.locator('#collectionstatus').textContent(),'','The navigation interruption is shown only once');
   release?.(); release=null;
   assert(!(await worker.evaluate(async()=> (await chrome.storage.local.get('scrapeCooldown')).scrapeCooldown)));
   for (const progress of [null,{phase:'courses',completed:3,total:14,saved:8,at:Date.now()-90001}]) {

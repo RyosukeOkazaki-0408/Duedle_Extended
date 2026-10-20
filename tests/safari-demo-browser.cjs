@@ -41,6 +41,12 @@ const path = require('node:path');
             }
             await page.locator(`#duedle-theme-menu button[data-mode="${mode}"]`).click();
         };
+        // The demo starts with iOS appearance enabled. Check that default, then
+        // start the toggle checks below from an explicit OFF state.
+        await page.waitForFunction(() => document.body.classList.contains('iosmode'));
+        await chooseTheme('ios-toggle');
+        await page.waitForFunction(() => !document.body.classList.contains('iosmode'));
+        await page.keyboard.press('Escape');
         for (const width of [425, 1000]) {
             await page.setViewportSize({ width, height: 760 });
             await chooseTheme('3');

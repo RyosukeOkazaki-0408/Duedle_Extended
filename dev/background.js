@@ -12,6 +12,10 @@ debugNative.runtime.onMessage.addListener((message, realSender, respond) => {
         case 'GET_SETTINGS': return { ok: true, themeDefault: 2 };
         case 'SAVE_TASK': await StorageUtil.saveData(message.table, message.idproperty, message.data); return { ok: true };
         case 'EDIT_TASK': await StorageUtil.editData(message.table, message.idproperty, message.id, message.property, message.value); return { ok: true };
+        case 'SET_COURSE_AVAILABILITY':
+            await StorageUtil.setCourseAvailability(message.courseId, message.items, message.complete,
+                message.detailsCheckedSince, message.inventoryComplete);
+            return { ok: true };
         case 'REFRESH_STATUS': return coordinator.status(sender);
         case 'REFRESH_CLAIM': return coordinator.claim(message, sender);
         case 'REFRESH_HEARTBEAT': return coordinator.heartbeat(message.token, sender);
