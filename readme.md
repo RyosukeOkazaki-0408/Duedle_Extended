@@ -58,3 +58,5 @@ Duedleは、Ryosuke Okazakiを含む5人のチームで共同開発したプロ�
 [MIT License](LICENSE)。
 
 この拡張機能の使用により生じたいかなる損害についても、開発者は一切の責任を負いません。
+
+[プライバシーポリシー](https://ryosukeokazaki-0408.github.io/Duedle_Extended/privacy.html)

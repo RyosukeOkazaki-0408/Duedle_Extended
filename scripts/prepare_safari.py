@@ -16,8 +16,6 @@ SOURCE = ROOT / "src"
 SAFARI = ROOT / "safari"
 RESOURCES = SAFARI / "build" / "extension"
 PROJECT = SAFARI / "Duedle" / "Duedle.xcodeproj"
-DEMO_SOURCE = SAFARI / "demo"
-DEMO_RESOURCES = SAFARI / "build" / "demo"
 
 
 def stage_resources() -> None:
@@ -56,23 +54,6 @@ def stage_resources() -> None:
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-
-
-def stage_demo_resources() -> None:
-    """Bundle the isolated demo with the current UI assets from src."""
-    page = (DEMO_SOURCE / "index.html").read_text(encoding="utf-8")
-    assets = set(re.findall(r'(?:src|href)="assets/([^"]+)"', page))
-    for name in assets:
-        path = Path(name)
-        if path.is_absolute() or ".." in path.parts or not (SOURCE / path).is_file():
-            raise SystemExit("Invalid demo asset: " + name)
-    if DEMO_RESOURCES.exists():
-        shutil.rmtree(DEMO_RESOURCES)
-    shutil.copytree(DEMO_SOURCE, DEMO_RESOURCES, ignore=shutil.ignore_patterns(".DS_Store"))
-    for name in sorted(assets):
-        destination = DEMO_RESOURCES / "assets" / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(SOURCE / name, destination)
 
 
 def create_project() -> None:
@@ -171,7 +152,6 @@ def main() -> None:
     )
     args = parser.parse_args()
     stage_resources()
-    stage_demo_resources()
     if not args.resources_only and (args.regenerate_project or not PROJECT.exists()):
         create_project()
     elif not args.resources_only and PROJECT.exists():

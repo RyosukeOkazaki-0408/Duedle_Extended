@@ -49,8 +49,6 @@
 		77A44919307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
 		77A4491A307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
 		77A4491B307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
-		69A0A66EE974D979EA0013FF /* demo in Resources */ = {isa = PBXBuildFile; fileRef = 958B2794F8894DF5669E3B17 /* demo */; };
-		771F30DDA0E3249BBEA7F8BD /* demo in Resources */ = {isa = PBXBuildFile; fileRef = 958B2794F8894DF5669E3B17 /* demo */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,8 +121,6 @@
 		77A44903307A730A00E482F7 /* document_start */ = {isa = PBXFileReference; lastKnownFileType = folder; name = document_start; path = ../../build/extension/document_start; sourceTree = "<group>"; };
 		77A44904307A730A00E482F7 /* qol */ = {isa = PBXFileReference; lastKnownFileType = folder; name = qol; path = ../../build/extension/qol; sourceTree = "<group>"; };
 		77A44905307A730A00E482F7 /* cource */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cource; path = ../../build/extension/cource; sourceTree = "<group>"; };
-		958B2794F8894DF5669E3B17 /* demo */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../build/demo; sourceTree = SOURCE_ROOT; };
-		B49EC72965DF698000E9E1B3 /* Demo source */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Demo source"; path = ../demo; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,7 +151,6 @@
 			isa = PBXGroup;
 			children = (
 				77A4489F307A730900E482F7 /* Shared (App) */,
-				B49EC72965DF698000E9E1B3 /* Demo source */,
 				77A448A8307A730A00E482F7 /* Shared (Extension) */,
 				77A448B0307A730A00E482F7 /* iOS (App) */,
 				77A448C1307A730A00E482F7 /* macOS (App) */,
@@ -386,7 +381,6 @@
 				77A448DE307A730A00E482F7 /* Icon.png in Resources */,
 				77A448B7307A730A00E482F7 /* LaunchScreen.storyboard in Resources */,
 				77A448DC307A730A00E482F7 /* Main.html in Resources */,
-				69A0A66EE974D979EA0013FF /* demo in Resources */,
 				77A448E2307A730A00E482F7 /* Script.js in Resources */,
 				77A448E6307A730A00E482F7 /* Assets.xcassets in Resources */,
 				77A448BA307A730A00E482F7 /* Main.storyboard in Resources */,
@@ -402,7 +396,6 @@
 				77A448E3307A730A00E482F7 /* Script.js in Resources */,
 				77A448E7307A730A00E482F7 /* Assets.xcassets in Resources */,
 				77A448DD307A730A00E482F7 /* Main.html in Resources */,
-				771F30DDA0E3249BBEA7F8BD /* demo in Resources */,
 			);
 		};
 		77A448CA307A730A00E482F7 /* Resources */ = {

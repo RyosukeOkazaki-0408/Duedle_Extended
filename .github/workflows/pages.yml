@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/common/help*'
       - 'src/common/install.html'
+      - 'src/common/privacy.html'
       - 'src/common/support-config.js'
       - 'scripts/prepare_pages.py'
       - '.github/workflows/pages.yml'

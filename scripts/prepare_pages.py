@@ -14,7 +14,7 @@ def main():
     OUTPUT.mkdir(parents=True)
     # Keep the extension sources as the single place to edit the public guides.
     for source in sorted(SOURCE.glob('help*')) + [
-        SOURCE / 'install.html', SOURCE / 'support-config.js'
+        SOURCE / 'install.html', SOURCE / 'privacy.html', SOURCE / 'support-config.js'
     ]:
         shutil.copy2(source, OUTPUT / source.name)
     shutil.copy2(SOURCE / 'help.html', OUTPUT / 'index.html')

@@ -240,6 +240,7 @@
     {
       "resources": [
         "common/help.html",
+        "common/privacy.html",
         "common/help.css",
         "common/help.js",
         "common/support-config.js"

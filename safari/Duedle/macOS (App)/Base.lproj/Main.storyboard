@@ -52,13 +52,7 @@
                             <menuItem title="Help" id="wpr-3q-Mcd">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Help" systemMenu="help" id="F2S-fz-NVQ">
-                                    <items>
-                                        <menuItem title="デモを試す" id="DdD-em-o01">
-                                            <connections>
-                                                <action selector="openReviewDemo:" target="Voe-Tx-rLC" id="DdD-em-o02"/>
-                                            </connections>
-                                        </menuItem>
-                                    </items>
+                                    <items/>
                                 </menu>
                             </menuItem>
                         </items>
