@@ -1,14 +1,17 @@
 {
   "images" : [
     {
+      "filename" : "Duedle_LargeIcon_1x.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "Duedle_LargeIcon_2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "Duedle_LargeIcon_3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
