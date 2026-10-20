@@ -23,7 +23,7 @@
 
 iPhone・iPadではSafariを使ってください。スマホ版ChromeではDuedleを利用できません。
 
-## 使い方
+## 使い方・導入方法
 
 Moodle右上の **「Duedle設定」→「使い方」** から、操作ガイドを開けます。課題の更新、非表示にした課題の戻し方、表示設定、困ったときの対処を説明しています。
 
@@ -36,32 +36,6 @@ Moodle右上の **「Duedle設定」→「使い方」** から、操作ガイ�
 操作ガイドと導入ガイドは拡張機能にも同梱しています。「使い方」の冒頭にある「端末ごとの導入方法」から、導入ガイドを開けます。
 
 カラーモードは4つから1つを選び、iOS風モードは別にON/OFFできます。ダークモードでは問題文・課題説明の配色も調整しますが、画像や図そのものの色は変更しません。
-
-## 導入
-
-### Google Chrome
-
-Windows・MacのChromeでは、Chromeウェブストアからインストールできます。
-
-1. パソコンのChromeで、[DuedleのChromeウェブストアページ](https://chromewebstore.google.com/detail/duedle/bbepilmbnkgbjnpecphajobphmgopmjm?hl=ja)を開きます。
-2. 「Chromeに追加」を押し、確認画面で「拡張機能を追加」を押します。
-3. [名工大Moodle](https://cms7.ict.nitech.ac.jp/moodle40a/)へログインします。すでに開いていたMoodleのページは再読み込みしてください。
-4. 左上に「Duedle: Extended」が表示されていれば、導入は完了です。
-
-「Chromeから削除」と表示される場合は、すでにインストールされています。Duedleが表示されない場合は、Chromeの「拡張機能」→「拡張機能を管理」でDuedleがONになっているか確認してください。
-
-「Chromeに追加」を押せない場合は、パソコンのChromeで開いているか確認してください。学校のパソコンでは、拡張機能の追加が制限されている場合があります。
-
-### Safari（Mac・iPhone・iPad）
-
-Safari版はApp Storeでの配布を準備しています。公開後、入手リンクを掲載します。以下はアプリを入手してからの手順です。
-
-1. Duedleアプリをインストールし、一度開きます。
-2. iPhone・iPadでは「設定」→「アプリ」→「Safari」→「機能拡張」→「Duedle」で「機能拡張を許可」をONにします。「アプリ」がない場合は「設定」から直接「Safari」を開いてください。MacではSafariの「設定」→「機能拡張」でDuedleにチェックを入れます。
-3. Safariで名工大Moodleにログインし、iPhone・iPadではアドレス欄のページメニュー、MacではツールバーのDuedleアイコンから、`cms7.ict.nitech.ac.jp` へのアクセスを許可します。期間を聞かれた場合は「常に許可」を選びます。
-4. 左上に「Duedle: Extended」が表示されていれば、導入は完了です。
-
-設定にDuedleが出てこない場合は、アプリがインストールされているか確認し、一度開いてからSafariの機能拡張の設定を開き直してください。
 
 ## 更新とデータ保存
 
