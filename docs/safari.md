@@ -96,6 +96,72 @@ xcodebuild -project safari/Duedle/Duedle.xcodeproj -scheme 'Duedle (iOS)' -confi
 - 提出PDFの表示とダウンロード、非対応形式の元リンクへの移動
 - 小テストの概要・レビューでの成績反映
 
-App Store / TestFlightへは公開していません。配布時は署名・審査情報・App Store用アイコンの設定が必要です。
+2026-10-21現在、ユーザーによる `1.3.0 (1)` のApp Store ConnectへのアップロードとTestFlight配布は完了しています。以下の修正版の署名付きArchive・Validation・アップロードは未実施です。
 
 Apple公式：[Safari Web Extensions](https://developer.apple.com/documentation/safariservices/safari-web-extensions)、[Safari用のパッケージング](https://developer.apple.com/documentation/safariservices/packaging-a-web-extension-for-safari)。
+
+## 2026-10-21: macOS設定ボタンと拡張機能アイコンの調査
+
+### アイコンの原因と修正（確定）
+
+`src/icons/` と `safari/build/extension/icons/` には16・32・48・128pxのPNGがあり、manifestのパス・ファイル名の大文字小文字も一致していました。しかしXcodeプロジェクトには `icons` のフォルダー参照と両拡張機能ターゲットのCopy Bundle Resourcesへの登録がありませんでした。他のフォルダーは登録されており、今回の欠落はアイコンに限られます。
+
+既存の次のArchive（いずれも `1.3.0 (1)`）でも、manifestが参照する4枚すべてのアイコンが存在しないことを確認しました。
+
+- `~/Library/Developer/Xcode/Archives/2026-10-21/Duedle (macOS) 2026-10-21, 1.12.xcarchive`
+- `~/Library/Developer/Xcode/Archives/2026-10-21/Duedle (iOS) 2026-10-21, 1.29.xcarchive`
+
+修正は既存プロジェクトに `../../build/extension/icons` のフォルダー参照を加え、両拡張機能ターゲットのCopy Bundle Resourcesに登録するものです。階層を保持して `icons/icon*.png` をコピーします。画像・manifestのアイコン設定・アプリアイコンは変更していません。
+
+### Archiveへ入るmanifest
+
+両拡張機能ターゲットとも `safari/build/extension/manifest.json` を参照します。`src/manifest.json` はChrome用の元ファイルで、Xcodeが直接コピーするファイルではありません。ビルドフェーズにmanifest変換スクリプトはなく、事前の `prepare_safari.py --resources-only` で生成されたものがコピーされます。
+
+生成処理はChromeの `background.service_worker` をSafari用の `background.page: storage/background.html` と `persistent: false` に変換し、`$schema` を除きます。アイコンのパスや画像は変換しません。既存macOS Archiveには `persistent` がなく、後のiOS Archiveには `false` がありました。現在のプロジェクトでターゲットごとに別のmanifestを参照しているわけではありません。現在の生成結果と既存iOS Archiveのmanifestはバイト単位でも一致しました。
+
+### 設定ボタンの調査と対応（根本原因は未確定）
+
+既存macOS Archiveの `Base.lproj/Main.html` を実際のWKWebViewで読み込み、外部 `Script.js` の読み込み、ボタンのクリック、`controller` メッセージハンドラーへの `open-preferences` 到達を確認しました。相対パス・CSPがボタンのJavaScriptを妨げる問題は、このテストでは再現していません。Bundle IdentifierもArchiveの拡張機能Info.plistと一致しています。
+
+公式APIは引き続き `SFSafariApplication.showPreferencesForExtension` を使用します。[AppleのAPI仕様](https://developer.apple.com/documentation/safariservices/sfsafariapplication/showpreferencesforextension(withidentifier:completionhandler:))では、呼び出し元アプリ内の拡張機能Identifierを渡し、失敗はcompletion handlerのerrorで受け取ります。元の実装はerrorを受けてもそのままreturnするため、エラーが発生すると画面・ログに理由が出ません。
+
+修正では、設定APIの失敗時にメインスレッドでエラーのdomain・code・説明と手動設定の案内をアラート表示し、アプリを閉じずに残します。同じ情報をConsoleにも記録します。起動時の拡張機能状態取得エラーも記録します。正常終了時の既存動作は維持しています。メッセージの強制キャストも安全な型判定に変更しました。これらはmacOSに限定されます。
+
+**TestFlightアプリ内での実際のAPIエラーは未取得であり、設定画面が開かない根本原因の特定・解消は未完了です。** 画面操作ツールは権限不足で使用できませんでした。単独のSwiftテストからは `SFErrorDomain (1)` が返りましたが、そのテスト実行ファイルには拡張機能が含まれないため、TestFlight版と同じ原因の証拠にはしていません。アイコン欠落と設定API失敗の因果関係も確定していません。
+
+### 変更ファイル
+
+| ファイル | 理由 |
+| --- | --- |
+| `safari/Duedle/Duedle.xcodeproj/project.pbxproj` | 両拡張機能にiconsフォルダーを同梱。全4ターゲットのDebug/ReleaseのBuild番号を2に統一 |
+| `safari/Duedle/Shared (App)/ViewController.swift` | macOSで設定API失敗時のアラート・ログ、状態取得エラーのログ、安全なメッセージ型判定 |
+| `tests/safari-bundle-regression.py` | Xcodeの両ターゲットのリソース登録、大小文字、PNG寸法・元画像との一致、実Archiveのmanifestと参照先を検証 |
+| `scripts/check_extension.py` | macOSで既存の検証コマンドから新しいリソース検証を実行 |
+| `docs/safari.md` | 調査結果・検証範囲・再配布手順を記録 |
+
+Bundle Identifier、署名・Team、アプリアイコン、既存機能、既存Scheme、ビルド元は変更していません。別プロジェクトへの切り替えや再生成は行っていません。
+
+### 検証結果
+
+- `python3 scripts/check_extension.py`: 成功。既存回帰テスト・JavaScript構文・ZIP検証、および新しい両ターゲットのリソース登録検証を通過。
+- 両OSの既存Schemeで署名なしRelease Archiveを作成: 成功。コンパイルエラーなし。AppIntents未使用によるメタデータ抽出省略の警告のみ。
+- 両新Archiveのmanifestは現在のSafari用生成結果と一致。全参照先の存在、アイコン4枚のパス・大小文字・寸法・元画像とのバイト一致を確認。
+- 両新Archiveのアプリ・拡張機能は `1.3.0 (2)`、Bundle Identifierは従来値。
+- 未確認: 署名付きValidation、TestFlight再配布後の設定ボタンの成功/失敗表示、Safari設定内のアイコン表示、iPhone/iPad実機の表示、ログイン済みMoodle上の動作。
+
+検証用Archiveは `/tmp/duedle-fix-macos.xcarchive` と `/tmp/duedle-fix-ios.xcarchive` です。これらは署名なしで、アップロード用ではありません。通常の提出には以下の既存Xcodeプロジェクトで作成する署名付きArchiveを使ってください。
+
+### TestFlightへ再配布する手順
+
+1. リポジトリ直下で `python3 scripts/prepare_safari.py --resources-only`、続いて `python3 scripts/check_extension.py` を実行します。`--regenerate-project` は使いません。
+2. 既存の `safari/Duedle/Duedle.xcodeproj` を開きます。Versionは `1.3.0`、アプリ・拡張機能のBuildは `2` に設定済みです。先に別のBuild 2をアップロードしている場合は、その番号を超える同じ番号を全4ターゲットに設定してください。既存の署名設定を使用します。
+3. `Duedle (macOS)` SchemeでProduct → Archive。iOS版も配布する場合は `Duedle (iOS)` と実機向けの汎用destinationを選んで別途Archiveします。
+4. Organizerの新しいArchiveを右クリック → Show in Finderで確認し、そのパスを以下の検証に渡します。両方のパスをまとめて渡すこともできます。
+
+   ```sh
+   python3 tests/safari-bundle-regression.py '/path/to/new-macOS.xcarchive' '/path/to/new-iOS.xcarchive'
+   ```
+
+5. Organizerで各新ArchiveをValidate App → Distribute App → App Store Connect → Upload。処理完了後、App Store ConnectのTestFlightで `1.3.0 (2)` をテスターに配布します。外部テスターでは必要に応じてBeta App Reviewを行います。[Appleのアップロード手順](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
+6. TestFlightから更新し、macOSのボタンが設定を開くか、失敗する場合にアラートが出るかを確認します。失敗時は表示されたdomain・code・説明とmacOS/Safariバージョンを記録します。Consoleではプロセス `Duedle` と `Duedle:` を手掛かりに検索できます。アラートが出ず無反応なら、アプリ内のWKWebView経路の追加調査が必要です。
+7. Safariの「設定」→「機能拡張」で画像パスのエラーが消えたこと、Duedleのオン/オフとMoodleへのアクセス許可、課題一覧・更新・プレビューを確認します。iPhone/iPadでも拡張機能の表示と基本機能を確認してください。

@@ -44,7 +44,12 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
         SFSafariExtensionManager.getStateOfSafariExtension(withIdentifier: extensionBundleIdentifier) { (state, error) in
             guard let state = state, error == nil else {
-                // Insert code to inform the user that something went wrong.
+                if let error = error {
+                    let nativeError = error as NSError
+                    NSLog("Duedle: extension state failed for %@: %@ (%ld), %@",
+                          extensionBundleIdentifier, nativeError.domain, nativeError.code,
+                          nativeError.localizedDescription)
+                }
                 return
             }
 
@@ -61,21 +66,42 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
 #if os(macOS)
-        if (message.body as! String != "open-preferences") {
+        guard message.body as? String == "open-preferences" else {
             return
         }
 
         SFSafariApplication.showPreferencesForExtension(withIdentifier: extensionBundleIdentifier) { error in
-            guard error == nil else {
-                // Insert code to inform the user that something went wrong.
-                return
-            }
-
             DispatchQueue.main.async {
+                if let error = error {
+                    self.showPreferencesError(error)
+                    return
+                }
                 NSApp.terminate(self)
             }
         }
 #endif
     }
+
+#if os(macOS)
+    private func showPreferencesError(_ error: Error) {
+        let nativeError = error as NSError
+        NSLog("Duedle: opening Safari extension settings failed for %@: %@ (%ld), %@",
+              extensionBundleIdentifier, nativeError.domain, nativeError.code,
+              nativeError.localizedDescription)
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Safariの機能拡張設定を開けませんでした"
+        alert.informativeText = "Safariを開き、「設定」→「機能拡張」でDuedleを選択してください。\n\n"
+            + "エラー: \(nativeError.domain) (\(nativeError.code))\n"
+            + nativeError.localizedDescription
+        alert.addButton(withTitle: "閉じる")
+        if let window = self.view.window {
+            alert.beginSheetModal(for: window)
+        } else {
+            alert.runModal()
+        }
+    }
+#endif
 
 }

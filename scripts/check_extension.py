@@ -29,6 +29,8 @@ def main() -> None:
                 and ("page" in background or "scripts" in background)
                 and background.get("persistent") is not False):
             raise SystemExit("Safari background pages require persistent: false for iOS/iPadOS validation.")
+        if sys.platform == "darwin":
+            subprocess.run([sys.executable, "tests/safari-bundle-regression.py"], cwd=ROOT, check=True)
 
     for output in (ROOT / "src", ROOT / "safari" / "build" / "extension"):
         if output.exists() and any(path.name in {"dev", "debug"} for path in output.rglob("*")):
