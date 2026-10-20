@@ -27,10 +27,10 @@ iPhone・iPadではSafariを使ってください。スマホ版ChromeではDued
 
 Moodle右上の **「Duedle設定」→「使い方」** から、操作ガイドを開けます。課題の更新、非表示にした課題の戻し方、表示設定、困ったときの対処を説明しています。
 
-Web版ガイドは公開準備中です。公開後は、拡張機能を入れていない方もブラウザから閲覧できます。
+拡張機能を入れていない方も、ブラウザから使い方・導入方法・問い合わせ先を閲覧できます。
 
-- [使い方（公開予定）](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)
-- [導入方法（公開予定）](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)
+- [使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)
+- [導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)
 - [お問い合わせ（Googleフォーム）](https://forms.gle/DkUKfGv2Eqx12jhC6) — 拡張機能の導入前でも利用できます。
 
 操作ガイドと導入ガイドは拡張機能にも同梱しています。「使い方」の冒頭にある「端末ごとの導入方法」から、導入ガイドを開けます。
