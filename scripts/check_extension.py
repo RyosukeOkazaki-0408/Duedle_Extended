@@ -22,6 +22,14 @@ def main() -> None:
     if missing:
         raise SystemExit("Missing manifest resources: " + ", ".join(missing))
 
+    safari_manifest = ROOT / "safari" / "build" / "extension" / "manifest.json"
+    if safari_manifest.is_file():
+        background = json.loads(safari_manifest.read_text(encoding="utf-8")).get("background", {})
+        if (not background.get("service_worker")
+                and ("page" in background or "scripts" in background)
+                and background.get("persistent") is not False):
+            raise SystemExit("Safari background pages require persistent: false for iOS/iPadOS validation.")
+
     for output in (ROOT / "src", ROOT / "safari" / "build" / "extension"):
         if output.exists() and any(path.name in {"dev", "debug"} for path in output.rglob("*")):
             raise SystemExit("Developer assets in production output: " + str(output))

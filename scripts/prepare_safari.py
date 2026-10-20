@@ -27,11 +27,12 @@ def stage_resources() -> None:
         for permission in manifest.get("permissions", [])
         if permission not in {"offscreen", "notifications"}
     ]
-    # Manifest V3 backgrounds are automatically nonpersistent in Safari.
+    # iOS/iPadOS App Store validation requires an explicit nonpersistent page.
     # The background page centralizes storage and tab-based collection.
     # Moodle refreshes run in a content script using the signed-in site's session.
     manifest["background"] = {
         "page": "storage/background.html",
+        "persistent": False,
     }
     referenced_files = [manifest["background"]["page"]]
     for content_script in manifest.get("content_scripts", []):

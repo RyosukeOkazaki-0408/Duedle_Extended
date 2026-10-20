@@ -68,6 +68,8 @@ python3 scripts/prepare_safari.py --resources-only
 
 Safariの背景ページはManifest V3の非永続ページです。Safari用のmanifestは `storage` 権限と対象Moodleのホスト権限を宣言します。別タブ収集には対象サイトへの権限を使い、全サイトのURL・タイトルを読み取る `tabs` 権限は宣言しません。`offscreen` は不要で、OS締切通知も提供しません。
 
+Safari用manifestはmacOS・iOSで共通です。生成処理で背景ページに `"persistent": false` を明示し、iOS / iPadOSのApp Store検証要件を満たします。生成先を直接編集せず、`scripts/prepare_safari.py` で管理してください。
+
 ## 検証
 
 依存パッケージなしでmanifest参照、全JavaScriptの構文、収集・保存・表示・通知処理の不在・タブ操作・タッチ操作・ファイルプレビュー・自動更新の回帰テストを実行できます。
