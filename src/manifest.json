@@ -63,6 +63,8 @@
         "./common/delete_underLink.js",
         "./common/navigation.js",
         "./common/support-config.js",
+        "./theme/state.js",
+        "./document_start/pre.js",
         "./theme/content.js",
         "./theme/main.js"
       ],

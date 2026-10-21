@@ -1,0 +1,164 @@
+[
+  {
+    "start": 0,
+    "end": 7,
+    "en": "Duedle for Safari on iPhone: Moodle at Nagoya Institute of Technology.",
+    "ja": "iPhoneのSafariで、名工大Moodle向け拡張機能Duedleを使用します。"
+  },
+  {
+    "start": 7,
+    "end": 13.6,
+    "en": "Open Safari’s extension controls and enable Duedle.",
+    "ja": "Safariの機能拡張の管理画面から、Duedleを有効にします。"
+  },
+  {
+    "start": 13.6,
+    "end": 23,
+    "en": "Assignments and quizzes appear together on the dashboard.",
+    "ja": "ダッシュボードに、課題と小テストの一覧が表示されます。"
+  },
+  {
+    "start": 23,
+    "end": 32,
+    "en": "Expand “Task settings” to access the list filters.",
+    "ja": "「課題の設定」を開くと、一覧の絞り込み条件が表示されます。"
+  },
+  {
+    "start": 32,
+    "end": 41,
+    "en": "Filter tasks by type and completion status.",
+    "ja": "種類や提出・完了の状態で、課題を絞り込めます。"
+  },
+  {
+    "start": 41,
+    "end": 49,
+    "en": "Filter by deadline or switch to hidden tasks.",
+    "ja": "期限での絞り込みや、非表示にした課題の確認もできます。"
+  },
+  {
+    "start": 49,
+    "end": 55,
+    "en": "Tap “Select tasks” to begin a bulk action.",
+    "ja": "「課題を選択」を押して、一括操作を開始します。"
+  },
+  {
+    "start": 55,
+    "end": 63,
+    "en": "Select cards while scrolling horizontally through the list.",
+    "ja": "一覧を横にスクロールしながら、対象の課題を選びます。"
+  },
+  {
+    "start": 63,
+    "end": 68,
+    "en": "Hide the selected tasks together.",
+    "ja": "選択した複数の課題を、まとめて非表示にします。"
+  },
+  {
+    "start": 68,
+    "end": 77,
+    "en": "Use the display filter to review hidden tasks.",
+    "ja": "表示フィルターを切り替え、非表示にした課題を確認します。"
+  },
+  {
+    "start": 77,
+    "end": 83,
+    "en": "Tap “Update tasks” to refresh course and task information.",
+    "ja": "「課題を更新」を押して、コースと課題の情報を更新します。"
+  },
+  {
+    "start": 83,
+    "end": 89,
+    "en": "Progress is shown while information is collected.",
+    "ja": "情報の取得中は、更新の進み具合が表示されます。"
+  },
+  {
+    "start": 89,
+    "end": 95,
+    "en": "The completion message confirms the update has finished.",
+    "ja": "更新が終了すると、完了メッセージが表示されます。"
+  },
+  {
+    "start": 95,
+    "end": 103,
+    "en": "Open Duedle settings to switch the color theme.",
+    "ja": "Duedle設定を開き、画面のカラーモードを切り替えます。"
+  },
+  {
+    "start": 103,
+    "end": 110,
+    "en": "Choose the soft-color theme or dark mode.",
+    "ja": "ほのぼのモードやダークモードを選択できます。"
+  },
+  {
+    "start": 110,
+    "end": 117,
+    "en": "The iOS-style appearance can be toggled independently.",
+    "ja": "iOS風モードは、カラーモードとは独立して切り替えられます。"
+  },
+  {
+    "start": 117,
+    "end": 124,
+    "en": "Open course ordering from the Duedle settings menu.",
+    "ja": "Duedle設定の「コースの並び替え」を開きます。"
+  },
+  {
+    "start": 124,
+    "end": 134,
+    "en": "Use the drag handles to change the course order.",
+    "ja": "ドラッグハンドルを使って、コースの表示順を変更します。"
+  },
+  {
+    "start": 134,
+    "end": 142,
+    "en": "Save the order using the button at the bottom.",
+    "ja": "画面下の「実行」ボタンで、表示順の変更を保存します。"
+  },
+  {
+    "start": 142,
+    "end": 152,
+    "en": "Return to the dashboard to view tasks and courses.",
+    "ja": "ダッシュボードへ戻り、課題一覧とコース概要を確認します。"
+  },
+  {
+    "start": 152,
+    "end": 160,
+    "en": "Course pages also show tasks for the current course.",
+    "ja": "コースページでは、そのコースの課題を確認できます。"
+  },
+  {
+    "start": 160,
+    "end": 165,
+    "en": "Course pages include section navigation and display settings.",
+    "ja": "コースページには、セクション一覧や表示設定も用意しています。"
+  },
+  {
+    "start": 165,
+    "end": 173,
+    "en": "The help page explains task filters and other controls.",
+    "ja": "「使い方」では、課題の絞り込みなどの操作方法を確認できます。"
+  },
+  {
+    "start": 173,
+    "end": 180,
+    "en": "Illustrations and demo videos show how the controls work.",
+    "ja": "画像やデモ動画付きで、操作の手順を案内しています。"
+  },
+  {
+    "start": 180,
+    "end": 187,
+    "en": "Open installation instructions for iPhone, iPad and Mac.",
+    "ja": "導入方法には、iPhone・iPad・Mac向けの手順を掲載しています。"
+  },
+  {
+    "start": 187,
+    "end": 194,
+    "en": "The guide explains enabling Duedle and granting site access.",
+    "ja": "Duedleの有効化や、Moodleへのアクセス許可の手順を確認できます。"
+  },
+  {
+    "start": 194,
+    "end": 200.133,
+    "en": "Return to Moodle and continue using Duedle.",
+    "ja": "Moodleへ戻り、Duedleを引き続き利用できます。"
+  }
+]

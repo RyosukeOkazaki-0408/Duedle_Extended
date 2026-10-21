@@ -1,0 +1,23 @@
+{
+  "durationSeconds": 200.133,
+  "dimensions": [
+    666,
+    1664
+  ],
+  "fps": 30,
+  "captionCues": 27,
+  "fullDecodeErrors": 0,
+  "visualChecks": [
+    "bilingual subtitles fit in added lower margin",
+    "profile image masked",
+    "extension management and settings controls remain visible",
+    "help content remains visible"
+  ],
+  "originalVideoOCR": {
+    "sampleRate": 2,
+    "samples": 404,
+    "nameOrStudentIdDetections": 0
+  },
+  "extensionSourceChanged": false,
+  "originalVideoChanged": false
+}

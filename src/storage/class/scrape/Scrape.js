@@ -65,15 +65,21 @@ class Scrape {
 
     static activityDate(kind, doc = document) {
         const rows = [...doc.querySelectorAll(".description-inner div")];
-        const startLabel = /^(?:開始(?:日時)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
-        const dueLabel = /^(?:終了|終了日時|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
+        const startLabel = /^(?:開始(?:日時|予定)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
+        const dueLabel = /^(?:終了(?:日時|予定)?|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
         const label = kind === "start" ? startLabel : dueLabel;
         let row = rows.find(item => label.test(item.textContent.trim()));
-        // Retain the historical positional fallback for unlabelled date blocks,
-        // but never reinterpret an explicitly labelled opening date as a deadline.
+        // Preserve positional dates only for blocks containing bare dates. An
+        // unfamiliar label or prose must not turn an opening time into a deadline.
         if (!row && !rows.some(item => startLabel.test(item.textContent.trim()) || dueLabel.test(item.textContent.trim()))) {
-            const second = doc.querySelector(".description-inner div:nth-child(2)");
-            row = second ? (kind === "start" ? rows[0] : second) : kind === "due" ? rows[0] : null;
+            const japaneseDate = String.raw`\d{4}年\s*\d{1,2}月\s*\d{1,2}日(?:\s*\([^)]*\))?\s*\d{1,2}:\d{2}`;
+            const englishDate = String.raw`(?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(?:\d{1,2}\s+[a-z]+\s+\d{4}|[a-z]+\s+\d{1,2},?\s+\d{4}),?\s+\d{1,2}:\d{2}(?:\s*[ap]m)?`;
+            // A wrapper can contain both date rows; textContent joins them.
+            const datesOnly = new RegExp(`^(?:(?:${japaneseDate}|${englishDate})\\s*){1,2}$`, "i");
+            if (rows.every(item => datesOnly.test(item.textContent.trim()))) {
+                const second = doc.querySelector(".description-inner div:nth-child(2)");
+                row = second ? (kind === "start" ? rows[0] : second) : kind === "due" ? rows[0] : null;
+            }
         }
         if (!row) return null;
         const timestamp = row.querySelector("time[datetime]")?.getAttribute("datetime");

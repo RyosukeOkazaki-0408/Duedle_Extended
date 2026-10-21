@@ -1,0 +1,22 @@
+{
+  "durationSeconds": 191.333,
+  "dimensions": [
+    1920,
+    1368
+  ],
+  "fps": 30,
+  "captionCues": 27,
+  "fullDecodeErrors": 0,
+  "visualChecks": [
+    "opening privacy mask and bilingual text",
+    "settings control remains visible",
+    "page-source transition removed"
+  ],
+  "originalHeaderOCR": {
+    "sampleRate": 10,
+    "samples": 1938,
+    "nameOrStudentIdDetectionsAfter16Seconds": 0
+  },
+  "extensionSourceChanged": false,
+  "disableWorkaroundVerifiedOnDevice": false
+}

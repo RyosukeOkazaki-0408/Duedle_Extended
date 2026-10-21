@@ -41,7 +41,7 @@ python3 scripts/prepare_safari.py --resources-only
 ## Macで確認する
 
 1. Schemeを `Duedle (macOS)` にして、署名用のTeamを設定します。
-2. Xcodeから実行します。DuedleアプリのボタンからSafariの機能拡張設定を開き、有効にします。
+2. Xcodeから実行します。Safariを開き、「設定」→「機能拡張」でDuedleを有効にします。
 3. SafariでMoodleへログインし、Duedleにサイトへのアクセスを許可します。
 
 アプリのBundle Identifierを変更した場合は、`Shared (App)/ViewController.swift` 内の `extensionBundleIdentifier` も拡張機能側に合わせます。プロジェクトには開発者アカウントや証明書を保存していません。
@@ -100,7 +100,9 @@ xcodebuild -project safari/Duedle/Duedle.xcodeproj -scheme 'Duedle (iOS)' -confi
 
 Apple公式：[Safari Web Extensions](https://developer.apple.com/documentation/safariservices/safari-web-extensions)、[Safari用のパッケージング](https://developer.apple.com/documentation/safariservices/packaging-a-web-extension-for-safari)。
 
-## 2026-10-21: macOS設定ボタンと拡張機能アイコンの調査
+## 2026-10-21: Build 2時点のmacOS設定ボタンと拡張機能アイコンの調査
+
+以下はBuild 2の調査記録です。最新の変更・配布対象は末尾のBuild 3を参照してください。
 
 ### アイコンの原因と修正（確定）
 
@@ -165,3 +167,28 @@ Bundle Identifier、署名・Team、アプリアイコン、既存機能、既�
 5. Organizerで各新ArchiveをValidate App → Distribute App → App Store Connect → Upload。処理完了後、App Store ConnectのTestFlightで `1.3.0 (2)` をテスターに配布します。外部テスターでは必要に応じてBeta App Reviewを行います。[Appleのアップロード手順](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
 6. TestFlightから更新し、macOSのボタンが設定を開くか、失敗する場合にアラートが出るかを確認します。失敗時は表示されたdomain・code・説明とmacOS/Safariバージョンを記録します。Consoleではプロセス `Duedle` と `Duedle:` を手掛かりに検索できます。アラートが出ず無反応なら、アプリ内のWKWebView経路の追加調査が必要です。
 7. Safariの「設定」→「機能拡張」で画像パスのエラーが消えたこと、Duedleのオン/オフとMoodleへのアクセス許可、課題一覧・更新・プレビューを確認します。iPhone/iPadでも拡張機能の表示と基本機能を確認してください。
+
+
+## Build 3: 設定案内と初回表示の修正
+
+macOSの「Safariの機能拡張設定を開く」は補助ボタンです。ユーザー提供のTestFlight画面で `SFErrorDomain (1)` の発生を確認し、ユーザーの「直すか消すか」という指定に基づき削除しました。画面にはSafariの「設定」→「機能拡張」でDuedleを有効にする案内を残します。HTMLのボタン、JavaScriptのイベント登録・ラベル変更、Swiftのメッセージハンドラー・設定API呼び出し・エラーアラートを削除しています。状態取得と有効/無効の案内は継続します。
+
+初回のみ「Duedle設定」とスマートフォン幅の「課題の設定」が出ない問題は、両方を生成する `theme/main.js` の初期化が `document_start` のヘルパーと非同期の設定取得に依存していました。ページを開いた後に拡張機能を有効化し、早期スクリプトが実行されなかった条件を合成ページで再現すると、両ボタンが生成されませんでした。設定取得が完了しない条件でも、従来はUIの初期化が止まります。
+
+`src/manifest.json` の通常のスクリプト実行にも既存の `theme/state.js` と `document_start/pre.js` を加えます。これらは重複実行を防ぐ既存ガードを持つため、通常の早期実行も維持します。`src/theme/main.js` は設定取得前にボタン・DOM監視・設定変更監視を登録し、設定値を取得できた時点で反映します。課題設定の新規作成時は閉じた状態とし、取得完了によってユーザーが開いたパネルを閉じ直しません。
+
+今回の初回表示修正はiOS・macOS・Chrome共通のソースに入っています。Safari用リソースを更新し、iOS/macOSのアプリ・拡張機能を `1.3.0 (3)` に揃えます。各OSに配布するには、対応する既存Schemeを個別にArchiveしてアップロードしてください。設定ボタン削除をMacへ届けるSchemeは `Duedle (macOS)` です。Projectの再生成は不要です。
+
+検証コマンド:
+
+```sh
+python3 scripts/prepare_safari.py --resources-only
+python3 scripts/check_extension.py
+# Playwrightを利用できる既存Node環境で実行
+node tests/browser-first-install.cjs
+node tests/browser-responsive.cjs
+```
+
+`browser-first-install.cjs` は設定が空・背景応答が保留・document_start未実行/実行済み・課題一覧の遅延追加を検証します。両ボタンの出現、課題設定の初期折りたたみ、設定メニューの開閉、非同期応答後の状態維持、画面幅変更時の配置復元を確認します。実機での権限付与直後の挙動はTestFlight再配布後に確認してください。
+
+Build 3の検証結果: 修正前のHEADでは合成ページの設定ボタン待機がタイムアウトし、修正後は早期スクリプト未実行・実行済みの両ケースを通過しました。既存 `browser-responsive.cjs` の9画面幅・設定メニュー・課題操作・テーマ保持、`check_extension.py` の回帰テストも成功しました。両OSの署名なしRelease Archiveが成功し、両Archive内のアイコン・manifest・最新版の案内画面・Build番号3を確認しました。macOS Archiveの案内画面はWKWebViewで実行し、ボタンがないこと、有効/無効/不明の表示、iOS向け案内、画像読み込みを確認しました。案内文の更新がbody全体に及ばないよう、Script.jsの対象を段落に限定しました。TestFlightへのアップロード・実機での最終確認は未実施です。

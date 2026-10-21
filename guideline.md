@@ -141,6 +141,8 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 
 表示上は `complete` と `qualify` を「完了」にまとめ、状態フィルターの「完了以外」からは両方を除外します。状態フィルターの「期限切れ」は `expired` と `stuck` を含みます。色設定もそれぞれ共通ですが、カードの `stuck` は「行き詰まり」と表示します。色設定は完了・未完了・期限切れ・要注意・不明・未訪問の6項目です。内部の状態値は維持し、旧フィルター値 `qualify`・`stuck` は統合先へ読み替えます。
 
+開始・期限は日付欄のラベルで区別し、「開始予定」「終了予定」も認識します。ラベルがない旧形式は、欄全体が日付のみの場合に限り従来の表示順で取得します。未知のラベルや説明文から期限を推測しません。期限を取得できない場合は `due: null` とし、期限による警告は出しません。以前誤って保存された期限は、修正版で課題詳細を再取得した際に置き換わります。
+
 再取得時も既存の `show` を保持します。非表示の変更や手動の状態変更には `StorageUtil.editData()` を使い、複数タブから配列全体を上書きしないでください。
 
 コース・課題の閲覧可否は、利用者が選ぶ `show` とは別に扱います。`enrolledCourseIds` は登録コース一覧、`courseAvailability` はコースごとの活動の閲覧可否を保持します。登録外のコースや利用不可と確認できた活動は一覧から除外します。完全な活動一覧を取得できた場合に限り、一覧に存在しない活動も利用不可として扱います。不完全なHTMLだけを根拠に、見つからない活動を一律に除外しません。保存済みの課題データや `show` は消去しません。
@@ -204,6 +206,8 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | モバイル表示・操作 | `node tests/browser-responsive.cjs` |
 | 非表示セクションへの移動・予定欄の残り時間 | `node tests/browser-course-calendar.cjs` |
 | 初回表示・設定保持 | `node tests/browser-production.cjs` |
+| 開始・期限の判定、期限警告、再取得後のカード | `node tests/browser-activity-dates.cjs` |
+| 小テストの日時・成績・レビュー取得 | `node tests/browser-quiz-parsing.cjs` |
 | ダミー環境での更新処理 | `node tests/browser-debug.cjs`（先にデバッグ版を生成） |
 | 更新の進捗・中断表示 | `node tests/browser-refresh-progress.cjs` |
 | タブ権限・別タブ収集・認証転送 | `node tests/browser-permissions.cjs` |

@@ -1,0 +1,66 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 666
+PlayResY: 1664
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: English,Helvetica,23,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,8,20,20,0,1
+Style: Japanese,Hiragino Sans,21,&H00E7E7E7,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,8,20,20,0,1
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:07.00,English,,0,0,0,,{\pos(333,1481)}Duedle for Safari on iPhone: Moodle at Nagoya\NInstitute of Technology.
+Dialogue: 0,0:00:00.00,0:00:07.00,Japanese,,0,0,0,,{\pos(333,1566)}iPhoneのSafariで、名工大Moodle向け拡張機\N能Duedleを使用します。
+Dialogue: 0,0:00:07.00,0:00:13.60,English,,0,0,0,,{\pos(333,1481)}Open Safari’s extension controls and enable Duedle.
+Dialogue: 0,0:00:07.00,0:00:13.60,Japanese,,0,0,0,,{\pos(333,1566)}Safariの機能拡張の管理画面から、Duedleを有効に\Nします。
+Dialogue: 0,0:00:13.60,0:00:23.00,English,,0,0,0,,{\pos(333,1481)}Assignments and quizzes appear together on the\Ndashboard.
+Dialogue: 0,0:00:13.60,0:00:23.00,Japanese,,0,0,0,,{\pos(333,1566)}ダッシュボードに、課題と小テストの一覧が表示されます。
+Dialogue: 0,0:00:23.00,0:00:32.00,English,,0,0,0,,{\pos(333,1481)}Expand “Task settings” to access the list filters.
+Dialogue: 0,0:00:23.00,0:00:32.00,Japanese,,0,0,0,,{\pos(333,1566)}「課題の設定」を開くと、一覧の絞り込み条件が表示されます。
+Dialogue: 0,0:00:32.00,0:00:41.00,English,,0,0,0,,{\pos(333,1481)}Filter tasks by type and completion status.
+Dialogue: 0,0:00:32.00,0:00:41.00,Japanese,,0,0,0,,{\pos(333,1566)}種類や提出・完了の状態で、課題を絞り込めます。
+Dialogue: 0,0:00:41.00,0:00:49.00,English,,0,0,0,,{\pos(333,1481)}Filter by deadline or switch to hidden tasks.
+Dialogue: 0,0:00:41.00,0:00:49.00,Japanese,,0,0,0,,{\pos(333,1566)}期限での絞り込みや、非表示にした課題の確認もできます。
+Dialogue: 0,0:00:49.00,0:00:55.00,English,,0,0,0,,{\pos(333,1481)}Tap “Select tasks” to begin a bulk action.
+Dialogue: 0,0:00:49.00,0:00:55.00,Japanese,,0,0,0,,{\pos(333,1566)}「課題を選択」を押して、一括操作を開始します。
+Dialogue: 0,0:00:55.00,0:01:03.00,English,,0,0,0,,{\pos(333,1481)}Select cards while scrolling horizontally through\Nthe list.
+Dialogue: 0,0:00:55.00,0:01:03.00,Japanese,,0,0,0,,{\pos(333,1566)}一覧を横にスクロールしながら、対象の課題を選びます。
+Dialogue: 0,0:01:03.00,0:01:08.00,English,,0,0,0,,{\pos(333,1481)}Hide the selected tasks together.
+Dialogue: 0,0:01:03.00,0:01:08.00,Japanese,,0,0,0,,{\pos(333,1566)}選択した複数の課題を、まとめて非表示にします。
+Dialogue: 0,0:01:08.00,0:01:17.00,English,,0,0,0,,{\pos(333,1481)}Use the display filter to review hidden tasks.
+Dialogue: 0,0:01:08.00,0:01:17.00,Japanese,,0,0,0,,{\pos(333,1566)}表示フィルターを切り替え、非表示にした課題を確認します。
+Dialogue: 0,0:01:17.00,0:01:23.00,English,,0,0,0,,{\pos(333,1481)}Tap “Update tasks” to refresh course and task\Ninformation.
+Dialogue: 0,0:01:17.00,0:01:23.00,Japanese,,0,0,0,,{\pos(333,1566)}「課題を更新」を押して、コースと課題の情報を更新します。
+Dialogue: 0,0:01:23.00,0:01:29.00,English,,0,0,0,,{\pos(333,1481)}Progress is shown while information is collected.
+Dialogue: 0,0:01:23.00,0:01:29.00,Japanese,,0,0,0,,{\pos(333,1566)}情報の取得中は、更新の進み具合が表示されます。
+Dialogue: 0,0:01:29.00,0:01:35.00,English,,0,0,0,,{\pos(333,1481)}The completion message confirms the update has\Nfinished.
+Dialogue: 0,0:01:29.00,0:01:35.00,Japanese,,0,0,0,,{\pos(333,1566)}更新が終了すると、完了メッセージが表示されます。
+Dialogue: 0,0:01:35.00,0:01:43.00,English,,0,0,0,,{\pos(333,1481)}Open Duedle settings to switch the color theme.
+Dialogue: 0,0:01:35.00,0:01:43.00,Japanese,,0,0,0,,{\pos(333,1566)}Duedle設定を開き、画面のカラーモードを切り替えます。
+Dialogue: 0,0:01:43.00,0:01:50.00,English,,0,0,0,,{\pos(333,1481)}Choose the soft-color theme or dark mode.
+Dialogue: 0,0:01:43.00,0:01:50.00,Japanese,,0,0,0,,{\pos(333,1566)}ほのぼのモードやダークモードを選択できます。
+Dialogue: 0,0:01:50.00,0:01:57.00,English,,0,0,0,,{\pos(333,1481)}The iOS-style appearance can be toggled\Nindependently.
+Dialogue: 0,0:01:50.00,0:01:57.00,Japanese,,0,0,0,,{\pos(333,1566)}iOS風モードは、カラーモードとは独立して切り替えられます。
+Dialogue: 0,0:01:57.00,0:02:04.00,English,,0,0,0,,{\pos(333,1481)}Open course ordering from the Duedle settings menu.
+Dialogue: 0,0:01:57.00,0:02:04.00,Japanese,,0,0,0,,{\pos(333,1566)}Duedle設定の「コースの並び替え」を開きます。
+Dialogue: 0,0:02:04.00,0:02:14.00,English,,0,0,0,,{\pos(333,1481)}Use the drag handles to change the course order.
+Dialogue: 0,0:02:04.00,0:02:14.00,Japanese,,0,0,0,,{\pos(333,1566)}ドラッグハンドルを使って、コースの表示順を変更します。
+Dialogue: 0,0:02:14.00,0:02:22.00,English,,0,0,0,,{\pos(333,1481)}Save the order using the button at the bottom.
+Dialogue: 0,0:02:14.00,0:02:22.00,Japanese,,0,0,0,,{\pos(333,1566)}画面下の「実行」ボタンで、表示順の変更を保存します。
+Dialogue: 0,0:02:22.00,0:02:32.00,English,,0,0,0,,{\pos(333,1481)}Return to the dashboard to view tasks and courses.
+Dialogue: 0,0:02:22.00,0:02:32.00,Japanese,,0,0,0,,{\pos(333,1566)}ダッシュボードへ戻り、課題一覧とコース概要を確認します。
+Dialogue: 0,0:02:32.00,0:02:40.00,English,,0,0,0,,{\pos(333,1481)}Course pages also show tasks for the current\Ncourse.
+Dialogue: 0,0:02:32.00,0:02:40.00,Japanese,,0,0,0,,{\pos(333,1566)}コースページでは、そのコースの課題を確認できます。
+Dialogue: 0,0:02:40.00,0:02:45.00,English,,0,0,0,,{\pos(333,1481)}Course pages include section navigation and display\Nsettings.
+Dialogue: 0,0:02:40.00,0:02:45.00,Japanese,,0,0,0,,{\pos(333,1566)}コースページには、セクション一覧や表示設定も用意しています。
+Dialogue: 0,0:02:45.00,0:02:53.00,English,,0,0,0,,{\pos(333,1481)}The help page explains task filters and other\Ncontrols.
+Dialogue: 0,0:02:45.00,0:02:53.00,Japanese,,0,0,0,,{\pos(333,1566)}「使い方」では、課題の絞り込みなどの操作方法を確認できます。
+Dialogue: 0,0:02:53.00,0:03:00.00,English,,0,0,0,,{\pos(333,1481)}Illustrations and demo videos show how the controls\Nwork.
+Dialogue: 0,0:02:53.00,0:03:00.00,Japanese,,0,0,0,,{\pos(333,1566)}画像やデモ動画付きで、操作の手順を案内しています。
+Dialogue: 0,0:03:00.00,0:03:07.00,English,,0,0,0,,{\pos(333,1481)}Open installation instructions for iPhone, iPad and\NMac.
+Dialogue: 0,0:03:00.00,0:03:07.00,Japanese,,0,0,0,,{\pos(333,1566)}導入方法には、iPhone・iPad・Mac向けの手順を掲\N載しています。
+Dialogue: 0,0:03:07.00,0:03:14.00,English,,0,0,0,,{\pos(333,1481)}The guide explains enabling Duedle and granting\Nsite access.
+Dialogue: 0,0:03:07.00,0:03:14.00,Japanese,,0,0,0,,{\pos(333,1566)}Duedleの有効化や、Moodleへのアクセス許可の手順\Nを確認できます。
+Dialogue: 0,0:03:14.00,0:03:20.13,English,,0,0,0,,{\pos(333,1481)}Return to Moodle and continue using Duedle.
+Dialogue: 0,0:03:14.00,0:03:20.13,Japanese,,0,0,0,,{\pos(333,1566)}Moodleへ戻り、Duedleを引き続き利用できます。

@@ -58,6 +58,7 @@ function installThemeSelector() {
     if (!settings) {
       settings = document.createElement("details");
       settings.id = "duedle-course-settings";
+      settings.open = false;
       settings.dataset.taskSettings = "true";
       const summary = document.createElement("summary");
       summary.textContent = "課題の設定";
@@ -370,9 +371,10 @@ async function reloadThemeSettings() {
   if (document.readyState === "loading") {
     await new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }));
   }
-  await reloadThemeSettings();
+  // Controls must also work during first-run background/settings initialization.
+  // The idle manifest entry supplies the idempotent early helpers when permission
+  // was granted after document_start on an already open Moodle page.
   themeSelectorReady = true;
-  await syncDarkmode();
   const observer = new MutationObserver(scheduleThemeSelector);
   observer.observe(document.documentElement, {
     childList: true, subtree: true, attributes: true,
@@ -385,6 +387,8 @@ async function reloadThemeSettings() {
     if (area !== "local" || (!changes.thememode && !changes.themeDefault && !changes.iosAppearance)) return;
     reloadThemeSettings().then(scheduleThemeSelector).catch(console.error);
   });
+  await reloadThemeSettings();
+  scheduleThemeSelector();
 })().catch(console.error);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncDarkmode);
 

@@ -36,6 +36,7 @@
 		77A4490A307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
 		77A4490B307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
 		77A4490C307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
+		77A4490D307A730A00E482F7 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* icons */; };
 		77A4490E307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
 		77A4490F307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
 		77A44910307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
@@ -46,11 +47,10 @@
 		77A44915307A730A00E482F7 /* common in Resources */ = {isa = PBXBuildFile; fileRef = 77A448FF307A730A00E482F7 /* common */; };
 		77A44916307A730A00E482F7 /* theme in Resources */ = {isa = PBXBuildFile; fileRef = 77A44900307A730A00E482F7 /* theme */; };
 		77A44917307A730A00E482F7 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 77A44901307A730A00E482F7 /* manifest.json */; };
+		77A44918307A730A00E482F7 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* icons */; };
 		77A44919307A730A00E482F7 /* document_start in Resources */ = {isa = PBXBuildFile; fileRef = 77A44903307A730A00E482F7 /* document_start */; };
 		77A4491A307A730A00E482F7 /* qol in Resources */ = {isa = PBXBuildFile; fileRef = 77A44904307A730A00E482F7 /* qol */; };
 		77A4491B307A730A00E482F7 /* cource in Resources */ = {isa = PBXBuildFile; fileRef = 77A44905307A730A00E482F7 /* cource */; };
-		77A4490D307A730A00E482F7 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* icons */; };
-		77A44918307A730A00E482F7 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 77A44902307A730A00E482F7 /* icons */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -120,10 +120,10 @@
 		77A448FF307A730A00E482F7 /* common */ = {isa = PBXFileReference; lastKnownFileType = folder; name = common; path = ../../build/extension/common; sourceTree = "<group>"; };
 		77A44900307A730A00E482F7 /* theme */ = {isa = PBXFileReference; lastKnownFileType = folder; name = theme; path = ../../build/extension/theme; sourceTree = "<group>"; };
 		77A44901307A730A00E482F7 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../build/extension/manifest.json; sourceTree = "<group>"; };
+		77A44902307A730A00E482F7 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = ../../build/extension/icons; sourceTree = "<group>"; };
 		77A44903307A730A00E482F7 /* document_start */ = {isa = PBXFileReference; lastKnownFileType = folder; name = document_start; path = ../../build/extension/document_start; sourceTree = "<group>"; };
 		77A44904307A730A00E482F7 /* qol */ = {isa = PBXFileReference; lastKnownFileType = folder; name = qol; path = ../../build/extension/qol; sourceTree = "<group>"; };
 		77A44905307A730A00E482F7 /* cource */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cource; path = ../../build/extension/cource; sourceTree = "<group>"; };
-		77A44902307A730A00E482F7 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = ../../build/extension/icons; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -637,7 +637,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
@@ -671,7 +671,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
@@ -708,7 +708,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
@@ -750,7 +750,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
@@ -791,7 +791,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				ENABLE_APP_SANDBOX = YES;
@@ -828,7 +828,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				ENABLE_APP_SANDBOX = YES;
@@ -868,7 +868,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				ENABLE_APP_SANDBOX = YES;
@@ -913,7 +913,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = V9H33S35H8;
 				ENABLE_APP_SANDBOX = YES;
