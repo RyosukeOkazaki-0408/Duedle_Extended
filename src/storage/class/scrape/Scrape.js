@@ -68,7 +68,10 @@ class Scrape {
         const startLabel = /^(?:開始(?:日時|予定)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
         const dueLabel = /^(?:終了(?:日時|予定)?|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
         const label = kind === "start" ? startLabel : dueLabel;
-        let row = rows.find(item => label.test(item.textContent.trim()));
+        // Match the labelled row itself, not its wrapper: the wrapper may also
+        // contain the other date's text or <time> element.
+        let row = rows.find(item => label.test(item.textContent.trim())
+            && ![...item.querySelectorAll("div")].some(child => label.test(child.textContent.trim())));
         // Preserve positional dates only for blocks containing bare dates. An
         // unfamiliar label or prose must not turn an opening time into a deadline.
         if (!row && !rows.some(item => startLabel.test(item.textContent.trim()) || dueLabel.test(item.textContent.trim()))) {
@@ -79,6 +82,9 @@ class Scrape {
             if (rows.every(item => datesOnly.test(item.textContent.trim()))) {
                 const second = doc.querySelector(".description-inner div:nth-child(2)");
                 row = second ? (kind === "start" ? rows[0] : second) : kind === "due" ? rows[0] : null;
+                // In the legacy bare-date layout, unwrap to the selected date
+                // before looking for <time>, without including its sibling.
+                while (row?.querySelector("div")) row = row.querySelector("div");
             }
         }
         if (!row) return null;
