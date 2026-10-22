@@ -152,10 +152,6 @@ body.darkmode .event.duedle-task-status a {
     margin-left: 10px;
 }
 
-body.darkmode {
-    color-scheme: light dark;
-}
-
 .event {
     border-radius: 5px;
     margin: 5px;

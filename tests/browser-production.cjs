@@ -61,12 +61,29 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
         assert.equal(await page.locator('#thememode_selection').getAttribute('value'),'1');
         await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
         assert.equal(await page.locator('#display').isVisible(),false);
+        // Exercise real storage/menu/media listeners, not only the theme helper.
+        for (const ios of [false,true]) {
+            if (ios) await chooseTheme('ios-toggle');
+            for (const mode of [0,1,2,3]) {
+                await chooseTheme(String(mode));
+                for (const scheme of ['dark','light']) {
+                    await page.emulateMedia({colorScheme:scheme});
+                    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+                    const expectedDark = mode === 1 || mode === 0 && scheme === 'dark';
+                    await page.waitForFunction(({dark,honobono,ios}) =>
+                        document.body.classList.contains('darkmode') === dark &&
+                        document.body.classList.contains('honobono') === honobono &&
+                        document.body.classList.contains('iosmode') === ios,
+                        {dark:expectedDark,honobono:mode === 3,ios});
+                }
+            }
+        }
         const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id));
         assert(worker);
         const permissions=await worker.evaluate(()=>chrome.runtime.getManifest().permissions);
         assert(!permissions.includes('notifications') && !permissions.includes('alarms'));
         assert.equal(requests,2,'Only the two synthetic document navigations occur');
         assert.deepEqual(errors,[]);
-        console.log('PASS production browser: new install is light on dark device, explicit dark and OFF survive reload, notification permissions absent, no automatic fetch on empty fixture');
+        console.log('PASS production browser: new install is light on dark device, theme/display settings survive reload, all four themes respect system changes with iOS on/off, notification permissions absent, no automatic fetch on empty fixture');
     } finally {await context.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

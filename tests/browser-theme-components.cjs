@@ -41,7 +41,56 @@ const fs = require('node:fs');
             unrelated.textContent = '別のバッジ';
             document.querySelector('#region-main').append(unrelated);
         });
-        for (const file of ['theme/dark.css','theme/light.css','theme/ios.css','storage/display/style.css','common/common.css']) await page.addStyleTag({path:'src/'+file});
+        // Moodle 4.0 YUI dialogs live outside #region-main. Native rules mirror
+        // theme/boost/scss/moodle/{core,filemanager}.scss; see core templates
+        // filemanager_{modal_generallayout,uploadform,fileselect,chooselicense}.
+        await page.addStyleTag({content:`
+            .moodle-dialogue-base .moodle-dialogue-wrap{background:#fff;border:1px solid #ccc}
+            .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd{border-bottom:1px solid #dee2e6}
+            .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd.yui3-widget-hd{color:initial;background:initial}
+            .moodle-dialogue-base .moodle-dialogue .moodle-dialogue-content .moodle-dialogue-ft.yui3-widget-ft{background:initial}
+            .moodle-dialogue-base .closebutton{color:#000;background:transparent}
+            .file-picker .fp-content{background:#fff}
+            .nav-pills .nav-link.active{background:#0f6cbf;color:#fff}
+            .btn-secondary{background:#ced4da;color:#1d2125;border:1px solid #ced4da}
+            .fp-viewbar:not(.disabled) a.checked{background:#b1bbc4;color:#1d2125}
+            .form-control{background:#fff;color:#495057;border:1px solid #8f959e}
+            .fp-select .fp-thumbnail{background:#fff;border:1px solid #ddd;box-shadow:inset 0 0 10px #ccc}
+            .fp-iconview .fp-filename-field .fp-filename{background:#fff}
+            .fp-iconview .fp-thumbnail{border:1px solid #fff}
+            .fp-iconview .fp-thumbnail:hover{background:#fff;border:1px solid #ddd;box-shadow:inset 0 0 10px #ccc}
+            .fp-iconview .fp-thumbnail img{border:1px solid #ddd;box-shadow:1px 1px 2px #ccc}
+            .aalink:focus,.aalink.focus,.arrow_link:focus,.arrow_link.focus,a:not([class]):focus,.activityinstance>a:focus{outline:2px solid transparent;color:#212529;background-color:#d3e8fa;box-shadow:0 -2px #d3e8fa,0 2px #343a40}
+            .yui3-skin-sam .yui3-datatable-header{background:#fff;color:#000;text-shadow:0 1px 1px #fff}
+            .yui3-skin-sam .yui3-datatable-even .yui3-datatable-cell{background-color:#fff}
+            .yui3-skin-sam .yui3-datatable-odd .yui3-datatable-cell{background-color:#edf5ff}
+            .filemanager .yui3-datatable-header{background:#fff!important;color:#555!important;border-bottom:1px solid #ccc!important}
+            .filemanager .yui3-datatable-even .yui3-datatable-cell{background-color:#fff!important}
+            .filemanager .yui3-datatable-odd .yui3-datatable-cell{background-color:#f6f6f6!important}
+            .filepicker-filelist .dndupload-target,.filemanager-container .dndupload-target{background:#fff;border:2px dashed #fb7979;box-shadow:0 0 0 10px #fff}
+            .filepicker-filelist.dndupload-over .dndupload-target,.filemanager-container.dndupload-over .dndupload-target{background:#fff;border:2px dashed #6c8cd3}
+        `});
+        await page.evaluate(() => {
+            const dialogs = document.createElement('div');
+            dialogs.className = 'moodle-dialogue-base';
+            const frame = (id, content) => `<section id="${id}" class="moodle-dialogue"><div class="moodle-dialogue-content moodle-dialogue-wrap"><header class="moodle-dialogue-hd yui3-widget-hd"><h5>ファイル</h5><button class="closebutton">×</button></header><div class="moodle-dialogue-bd">${content}</div><footer class="moodle-dialogue-ft yui3-widget-ft"></footer></div></section>`;
+            dialogs.innerHTML = frame('upload-dialog', `<div class="file-picker fp-generallayout"><div class="fp-repo-area nav nav-pills"><div class="fp-repo"><a href="#" class="nav-link">最近のファイル</a></div><div class="fp-repo"><a href="#" class="nav-link active">ファイルのアップロード</a></div></div><div class="fp-navbar card"><div class="fp-viewbar"><a href="#" class="btn btn-secondary checked">一覧</a></div></div><div class="fp-content card"><form class="fp-upload-form"><label>添付<input type="file"></label><label>名前<input class="form-control" value="提出.pdf"></label><div class="fp-setlicense"><label>ライセンス<select class="form-control"><option value="allrightsreserved">ライセンス未指定</option></select></label></div></form><button class="btn btn-primary">アップロード</button></div></div>`)
+                + frame('file-dialog', `<div class="filemanager fp-select"><button class="btn btn-secondary">ダウンロード</button><form><label>名称<input class="form-control" value="提出.pdf"></label><div class="fp-license"><label>ライセンス<select class="form-control"><option value="allrightsreserved">ライセンス未指定</option></select></label></div><div class="fp-path"><select class="form-control custom-select"><option>/</option></select></div><button type="button" class="btn btn-secondary">キャンセル</button></form><div class="fp-info"><hr><p class="fp-thumbnail">PDF</p><div class="fp-fileinfo">最終更新日時 <span>2026年10月22日</span></div></div></div>`);
+            document.body.append(dialogs);
+            const files = document.createElement('div');
+            files.id = 'submission-files';
+            files.className = 'filemanager';
+            files.innerHTML = '<div class="filemanager-toolbar"><button class="btn btn-secondary">フォルダ作成</button></div><div class="fp-iconview"><div class="fp-file"><a class="fp-thumbnail" href="#"><img width="64" height="64" alt="PDF" src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'64\' height=\'64\'%3E%3Crect fill=\'white\' width=\'64\' height=\'64\'/%3E%3C/svg%3E"></a><div class="fp-filename-field"><a class="fp-filename" href="#">提出.pdf</a></div></div></div>';
+            document.querySelector('#region-main').append(files);
+            document.body.classList.add('yui3-skin-sam');
+            const detailTable = '<table><thead><tr><th class="yui3-datatable-header">名称</th></tr></thead><tbody><tr class="yui3-datatable-even"><td class="yui3-datatable-cell">提出.pdf</td></tr><tr class="yui3-datatable-odd"><td class="yui3-datatable-cell">画像.png</td></tr></tbody></table>';
+            files.insertAdjacentHTML('beforeend', detailTable + '<div class="filemanager-container"><div id="drop-ready" class="dndupload-target">ドロップしてアップロード</div></div><div class="filemanager-container dndupload-over"><div id="drop-over" class="dndupload-target">ドロップしてアップロード</div></div>');
+            document.querySelector('#upload-dialog .fp-content').insertAdjacentHTML('beforeend', detailTable);
+            document.body.insertAdjacentHTML('beforeend', '<div class="filepicker-filelist dndupload-over"><div id="picker-drop" class="dndupload-target">ドロップしてアップロード</div></div><div id="focus-links"><button id="focus-start">開始</button><a id="focus-course" class="aalink coursename" href="#">コース名</a><a id="focus-plain" href="#">通常リンク</a><a id="focus-arrow" class="arrow_link" href="#">次へ</a><div class="activityinstance"><a id="focus-activity" href="#">活動</a></div><a id="focus-class" class="aalink focus" href="#">フォーカスクラス</a></div>');
+            document.querySelector('#focus-links').addEventListener('click', event => event.preventDefault());
+        });
+        const darkStyles = await page.addStyleTag({path:'src/theme/dark.css'});
+        for (const file of ['theme/light.css','theme/ios.css','storage/display/style.css','common/common.css']) await page.addStyleTag({path:'src/'+file});
         await page.addScriptTag({path:'src/theme/state.js'});
         await page.addScriptTag({path:'src/theme/content.js'});
         const filter = fs.readFileSync('src/storage/display/filter.js','utf8');
@@ -63,7 +112,22 @@ const fs = require('node:fs');
         const native = await style('#native-warning');
         const author = await style('#authored');
         const icon = await style('.activityiconcontainer');
+        const fileSelectors = ['#submission-files .fp-filename', '#submission-files .fp-thumbnail', '#submission-files .fp-thumbnail img', '#submission-files .btn-secondary'];
+        const fileImage = await page.locator('#submission-files img').getAttribute('src');
+        const tableSelectors = ['#submission-files .yui3-datatable-header', '#submission-files .yui3-datatable-even td', '#submission-files .yui3-datatable-odd td', '#upload-dialog .yui3-datatable-header', '#upload-dialog .yui3-datatable-even td', '#upload-dialog .yui3-datatable-odd td'];
+        const dropSelectors = ['#drop-ready', '#drop-over', '#picker-drop'];
+        const dialogSelectors = ['.moodle-dialogue-wrap', '.moodle-dialogue-hd', '.moodle-dialogue-bd', '.moodle-dialogue-ft', '.closebutton', '.fp-repo-area', '.fp-repo .nav-link', '.fp-repo .active', '.fp-content', '.fp-viewbar .checked', '#file-dialog .btn-secondary', '.fp-setlicense select', '.fp-license select', '.fp-path select', '#file-dialog .fp-thumbnail', '.fp-fileinfo', ...fileSelectors];
         for (const ios of [false,true]) {
+            const nativeDialogs = {};
+            for (const mode of [2,3]) {
+                await page.evaluate(({mode,ios}) => duedleApplyTheme(mode,ios), {mode,ios});
+                nativeDialogs[mode] = await Promise.all(dialogSelectors.map(style));
+            }
+            const nativeExtra = {};
+            for (const mode of [2,3]) {
+                await page.evaluate(({mode,ios}) => duedleApplyTheme(mode,ios), {mode,ios});
+                nativeExtra[mode] = await Promise.all([...tableSelectors, ...dropSelectors, '#focus-class'].map(style));
+            }
             for (const mode of [2,1,3,1,2,3,2]) {
                 await page.evaluate(({mode,ios}) => {duedleApplyTheme(mode,ios);applyColor('complete',mode===1?'#063906':'#90ee90')}, {mode,ios});
                 // MutationObserver restores author !important values after the class change.
@@ -74,6 +138,72 @@ const fs = require('node:fs');
                 });
                 assert(Math.abs(feedbackLayout.left)<1 && Math.abs(feedbackLayout.width)<1 && feedbackLayout.padding>=16,'Final grade aligns with the main content and has inner padding');
                 const description = await style('.availabilityinfo');
+                if (mode === 1) {
+                    assert.equal(await page.locator('body').evaluate(node => getComputedStyle(node).colorScheme), 'dark', 'Dashboard styles must not let OS light override explicit dark controls');
+                    const surface = ios ? 'rgb(28, 28, 30)' : 'rgb(38, 53, 65)';
+                    const text = ios ? 'rgb(242, 242, 247)' : 'rgb(221, 221, 223)';
+                    for (const selector of ['.moodle-dialogue-wrap', '.moodle-dialogue-hd', '.moodle-dialogue-bd', '.fp-repo-area', '.fp-content', '#file-dialog .fp-thumbnail']) {
+                        assert.equal((await style(selector)).bg, surface, selector + ' has a dark surface outside #region-main');
+                        assert.equal((await style(selector)).color, text);
+                    }
+                    assert.equal((await style('.fp-fileinfo')).color, text, 'File metadata remains readable');
+                    assert.equal((await style('#submission-files .fp-filename')).bg, surface, 'Submission filename tile has no white background');
+                    assert.equal((await style('#submission-files .fp-filename')).color, 'rgb(139, 197, 232)', 'Filename remains recognizable as a link');
+                    for (const selector of ['#submission-files .fp-thumbnail', '#submission-files img']) {
+                        assert.equal((await style(selector)).border, ios ? 'rgb(72, 72, 74)' : 'rgb(82, 97, 109)', 'Thumbnail frames use the dark separator');
+                        assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).boxShadow), 'none');
+                    }
+                    await page.locator('#submission-files .fp-thumbnail').hover();
+                    assert.equal((await style('#submission-files .fp-thumbnail')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)', 'Hover highlights the thumbnail on a dark surface');
+                    assert.equal((await style('#submission-files .fp-thumbnail')).border, ios ? 'rgb(100, 173, 255)' : 'rgb(139, 197, 232)', 'Hover has an accent border');
+                    await page.mouse.move(0, 0);
+                    assert.equal((await style('#submission-files .fp-thumbnail')).bg, surface, 'Leaving the thumbnail restores its resting surface');
+                    for (const selector of tableSelectors) {
+                        assert.equal((await style(selector)).bg, selector.includes('odd') ? ios ? 'rgb(44, 44, 46)' : 'rgb(46, 62, 74)' : surface, 'YUI detail tables use dark alternating rows');
+                        assert.equal((await style(selector)).color, text, 'YUI headers and cells have readable text');
+                    }
+                    for (const selector of dropSelectors) {
+                        assert.equal((await style(selector)).bg, surface, 'Ready and active drop targets stay dark');
+                        assert.equal((await style(selector)).color, text);
+                        assert(!await page.locator(selector).evaluate(el => getComputedStyle(el).boxShadow.includes('255, 255, 255')), 'Drop targets do not leave a white outer shadow');
+                    }
+                    assert.equal((await style('#submission-files .btn-secondary')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(46, 62, 74)', 'Submission toolbar buttons are dark outside dialogs');
+                    assert.equal((await style('.fp-select label')).color, text, 'File properties labels remain readable');
+                    for (const selector of ['.fp-setlicense select', '.fp-license select', '.fp-path select']) {
+                        assert.equal((await style(selector)).bg, 'rgb(38, 53, 65)', 'Plain form-control selects are dark too');
+                        assert.equal((await style(selector)).color, 'rgb(221, 221, 223)');
+                    }
+                    assert.notEqual((await style('.fp-repo .nav-link')).bg, (await style('.fp-repo .active')).bg, 'Selected repository is distinct');
+                    assert.notEqual((await style('.fp-viewbar .checked')).bg, (await style('#file-dialog .btn-secondary')).bg, 'Selected file view is distinct');
+                    // Reopening a dynamically created dialog must not require a theme toggle.
+                    await page.evaluate(() => {
+                        const dialog = document.querySelector('#file-dialog');
+                        dialog.replaceWith(dialog.cloneNode(true));
+                    });
+                    assert.equal((await style('#file-dialog .moodle-dialogue-wrap')).bg, surface);
+                } else {
+                    assert.deepEqual(await Promise.all(dialogSelectors.map(style)), nativeDialogs[mode], 'Light and honobono restore their file dialog colors');
+                    assert.deepEqual(await Promise.all([...tableSelectors, ...dropSelectors, '#focus-class'].map(style)), nativeExtra[mode], 'Detail tables, drop targets and focus restore their light palettes');
+                }
+                // Mouse clicks must stay readable, while Tab focus remains visible.
+                for (const selector of ['#focus-course', '#focus-plain', '#focus-arrow', '#focus-activity']) {
+                    await page.locator(selector).click();
+                    assert.equal((await style(selector)).bg, mode === 1 ? 'rgb(60, 78, 92)' : 'rgb(211, 232, 250)', 'Focused links use the current theme background');
+                    assert.equal((await style(selector)).color, mode === 1 ? 'rgb(255, 255, 255)' : 'rgb(33, 37, 41)', 'Focused link text remains readable');
+                    if (mode === 1) assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
+                }
+                await page.locator('#focus-start').focus();
+                await page.keyboard.press('Tab');
+                assert(await page.locator('#focus-course').evaluate(el => el === document.activeElement && el.matches(':focus-visible')), 'Tab focus is preserved');
+                if (mode === 1) {
+                    assert.equal((await style('#focus-class')).bg, 'rgb(60, 78, 92)', 'Moodle focus classes match actual focus');
+                    await page.locator('#submission-files .fp-thumbnail').focus();
+                    assert.equal((await style('#submission-files .fp-thumbnail')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)', 'Keyboard focus highlights thumbnails too');
+                }
+                await page.locator('#focus-start').focus();
+                assert.equal(await page.locator('.fp-license select').inputValue(), 'allrightsreserved');
+                assert.equal(await page.locator('#file-dialog input').inputValue(), '提出.pdf');
+                assert.equal(await page.locator('#submission-files img').getAttribute('src'), fileImage, 'File icon image stays intact');
                 for (const badge of await page.locator('.automatic-completion-conditions .badge').all()) {
                     assert.equal(await badge.evaluate(el => getComputedStyle(el).mixBlendMode), mode === 1 ? 'normal' : 'multiply', 'Only dark mode disables completion badge blending');
                 }
@@ -133,10 +263,84 @@ const fs = require('node:fs');
                     assert.equal(await page.locator(selector).evaluate(el=>getComputedStyle(el).textDecorationLine),'underline');
                 }
                 if (!ios && [1,3].includes(mode)) await page.screenshot({path:`/private/tmp/duedle-components-mode-${mode}.png`,fullPage:true});
-                assert.equal(await page.locator('select').inputValue(),'すべて');
+                assert.equal(await page.locator('#fieldfilter select').inputValue(),'すべて');
                 assert.equal(await page.locator('input[type=color]').inputValue(),'#063906');
             }
         }
+        // Compare every computed property, including pseudo-elements, rather than
+        // assuming that a light baseline with dark.css loaded is unaffected.
+        // Keep large snapshots in the browser and transfer only differences.
+        const snapshot = () => page.evaluate(() => {
+            globalThis.isolationSnapshots ??= new Map();
+            globalThis.isolationSnapshotId = (globalThis.isolationSnapshotId || 0) + 1;
+            isolationSnapshots.set(isolationSnapshotId, [...document.querySelectorAll('*')]
+                .filter(node => !node.matches('script, style, meta, head, title'))
+                .flatMap((node, index) => [null, '::before', '::after'].map(pseudo => {
+                    const style = getComputedStyle(node, pseudo);
+                    return {node:node.tagName + '#' + (node.id || index) + (pseudo || ''),
+                        values:Object.fromEntries([...style].map(property => [property, style.getPropertyValue(property)]))};
+                })));
+            return isolationSnapshotId;
+        });
+        const differences = (beforeId, afterId) => page.evaluate(({beforeId,afterId}) => {
+            const before = isolationSnapshots.get(beforeId), after = isolationSnapshots.get(afterId);
+            isolationSnapshots.delete(beforeId);
+            isolationSnapshots.delete(afterId);
+            return before.flatMap((entry, index) => Object.entries(entry.values).flatMap(([property, value]) =>
+                value === after[index]?.values[property] ? [] : [{node:entry.node, property, before:value, after:after[index]?.values[property]}])).slice(0, 5);
+        }, {beforeId,afterId});
+        let isolationCases = 0;
+        for (const width of [390,1280]) {
+            await page.setViewportSize({width,height:900});
+            for (const ios of [false,true]) {
+                const applyMode = async mode => {
+                    await page.evaluate(({mode,ios}) => {
+                        duedleApplyTheme(mode,ios);
+                        applyColor('complete', document.body.classList.contains('darkmode') ? '#063906' : '#90ee90');
+                    }, {mode,ios});
+                    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+                };
+                for (const mode of [2,3,0]) {
+                    await page.emulateMedia({colorScheme:'light'});
+                    await applyMode(mode);
+                    await page.mouse.move(0,0);
+                    await page.locator('#focus-start').focus();
+                    const baseline = await snapshot();
+                    await applyMode(1);
+                    await applyMode(mode);
+                    assert.deepEqual(await differences(baseline, await snapshot()), [], `Dark round-trip preserves every computed property: mode=${mode}, ios=${ios}, width=${width}`);
+                    for (const state of ['rest','click','hover','keyboard']) {
+                        await page.mouse.move(0,0);
+                        await page.locator('#focus-start').focus();
+                        if (state === 'click') await page.locator('#focus-course').click();
+                        if (state === 'hover') await page.locator('#submission-files .fp-thumbnail').hover();
+                        if (state === 'keyboard') { await page.locator('#focus-start').focus(); await page.keyboard.press('Tab'); }
+                        // Scrolling to a focused control must settle before the
+                        // comparison so it cannot invalidate the previous hover.
+                        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+                        const enabled = await snapshot();
+                        await darkStyles.evaluate(node => { node.sheet.disabled = true; });
+                        try {
+                            assert.deepEqual(await differences(enabled, await snapshot()), [], `dark.css has no effect outside dark mode: mode=${mode}, ios=${ios}, width=${width}, state=${state}`);
+                        } finally { await darkStyles.evaluate(node => { node.sheet.disabled = false; }); }
+                        isolationCases++;
+                    }
+                }
+                // System appearance only controls mode 0; explicit modes remain fixed.
+                for (const scheme of ['dark','light','dark','light']) {
+                    await page.emulateMedia({colorScheme:scheme});
+                    for (const mode of [0,1,2,3]) {
+                        await applyMode(mode);
+                        const classes = await page.locator('body').evaluate(node => ({dark:node.classList.contains('darkmode'),honobono:node.classList.contains('honobono')}));
+                        assert.deepEqual(classes, {dark:mode === 1 || mode === 0 && scheme === 'dark', honobono:mode === 3}, 'System appearance respects explicit theme choices');
+                    }
+                }
+            }
+        }
+        console.log(`PASS theme isolation: ${isolationCases} stylesheet comparisons, full computed styles/pseudo-elements, dark round-trips, explicit/system modes, iOS on/off, 390/1280px`);
+        await page.setViewportSize({width:1280,height:900});
+        await page.emulateMedia({colorScheme:'light'});
+        await page.evaluate(() => { duedleApplyTheme(2); applyColor('complete','#90ee90'); });
         // Page-owned inline colors can change before or during dark mode.
         // Restoring light mode must use those latest values and priorities.
         const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -252,6 +456,6 @@ const fs = require('node:fs');
         }
         await page.evaluate(()=>duedleApplyTheme(1,true));
         await page.screenshot({path:'/private/tmp/duedle-login-dark.png',fullPage:true});
-        console.log('PASS theme components: course descriptions/restrictions, intro, review, arrows, color wells, scoped status colors, custom text contrast, repeated light/dark/honobono with iOS on/off, async palette race');
+        console.log('PASS theme components: file upload/properties dialogs, course descriptions/restrictions, intro, review, arrows, color wells, scoped status colors, custom text contrast, repeated light/dark/honobono with iOS on/off, async palette race');
     } finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});
