@@ -25,7 +25,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
         const chooseTheme = async value => {
             if((await page.locator('#thememode_selection').getAttribute('aria-expanded'))!=='true') await page.locator('#thememode_selection').click();
             await page.locator('#duedle-theme-menu button[data-mode="'+value+'"]').click();
-            if(value==='ios-toggle') await page.keyboard.press('Escape');
+            await page.keyboard.press('Escape');
         };
   await page.waitForFunction(()=>document.querySelector('#statusSelect')?.value==='ex-complete');
   const worker=context.serviceWorkers().find(w=>w.url().includes(loaded.id)); assert(worker);

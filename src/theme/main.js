@@ -178,7 +178,6 @@ function installThemeMenu() {
       if (value === "ios-toggle") currentIosAppearance = !currentIosAppearance;
       else currentThemeMode = Number(value);
       updateThemeMenu(document.getElementById("thememode_selection"));
-      if (value !== "ios-toggle") closeThemeMenu(true);
       try {
         await ext.storage.local.set({ thememode: currentThemeMode, iosAppearance: currentIosAppearance });
         await syncDarkmode();

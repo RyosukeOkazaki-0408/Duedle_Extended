@@ -27,6 +27,25 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
     assert.equal(await page.locator('#page-footer a').count(), 1);
     assert.equal(await page.locator('#page-footer .footer-dark-inner > a').getAttribute('href'), 'mailto:support@example.invalid');
     assert.equal(await page.locator('#duedle-support-links').count(), 0);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.locator('#thememode_selection').click();
+      for (const mode of ['1', '2', '3', '0', 'ios-toggle', '2']) {
+        const item = page.locator(`#duedle-theme-menu button[data-mode="${mode}"]`);
+        await item.click();
+        await page.waitForFunction(value => value === 'ios-toggle'
+          ? document.body.classList.contains('iosmode') === (document.querySelector('[data-mode="ios-toggle"]').getAttribute('aria-checked') === 'true')
+          : document.querySelector('#thememode_selection').value === value, mode);
+        assert.equal(await page.locator('#duedle-theme-menu').isVisible(), true, 'Changing appearance keeps settings open');
+        assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'), 'true');
+        assert.equal(await item.evaluate(el => el === document.activeElement), true, 'Focus stays on selected setting');
+      }
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#duedle-theme-menu').isVisible(), false, 'Escape still closes settings');
+      await page.locator('#thememode_selection').click();
+      await page.locator('#region-main').click({ position: { x: 5, y: 5 }, force: true });
+      assert.equal(await page.locator('#duedle-theme-menu').isVisible(), false, 'Outside click still closes settings');
+    }
     await page.locator('#thememode_selection').click();
     assert.equal(await page.locator('#duedle-theme-menu a[role="menuitem"]').count(), 3);
     assert.equal(await page.locator('#duedle-theme-menu a[aria-checked]').count(), 0);
