@@ -140,9 +140,15 @@ body.iosmode:not(.honobono) #display {
 body.iosmode:not(.honobono) #display > :is(.assign, .quiz) {
     border-color: var(--ios-separator);
 }
-body.iosmode:not(.honobono) #display .taskbox a,
-body.iosmode:not(.honobono) .notionnavlink {
+/* Standard navigation links share the iOS accent. Controls, authored content
+   and focus states keep their own paired colors; status cards adjust contrast. */
+body.iosmode:not(.honobono) a:not(.btn, .nav-link, .dropdown-toggle, .dropdown-item, [role="button"], .focus, :focus, .moodleSkin *, .duedle-authored-content, .duedle-authored-content *),
+body.iosmode:not(.honobono) .activity-navigation a.btn-link {
     color: var(--ios-accent);
+}
+body.iosmode.darkmode .activity-navigation a.btn-link:hover,
+body.iosmode.darkmode .activity-navigation a.btn-link:focus-visible {
+    color: #ffffff;
 }
 body.iosmode:not(.honobono) input[type="checkbox"] {
     accent-color: var(--ios-accent);

@@ -706,10 +706,15 @@ const applyColor = (type, toColor) => {
     const light = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
     const luminance = light.reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
     const text = (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? "#000000" : "#ffffff";
-    const linkBase = text === "#000000" ? [0, 86, 179] : [139, 197, 232];
+    const iosLinks = document.body.classList.contains("iosmode") && !document.body.classList.contains("honobono");
+    const accent = iosLinks ? getComputedStyle(document.body).getPropertyValue("--ios-accent").trim() : "";
+    const linkBase = /^#[\da-f]{6}$/i.test(accent)
+        ? accent.slice(1).match(/../g).map(value => parseInt(value, 16))
+        : text === "#000000" ? [0, 86, 179] : [139, 197, 232];
     let link = linkBase;
-    for (let mix = 0; mix <= 1; mix += 0.05) {
-        link = linkBase.map(value => text === "#000000" ? value * (1 - mix) : value + (255 - value) * mix);
+    for (let step = 0; step <= 20; step++) {
+        const mix = step / 20;
+        link = linkBase.map(value => Math.round(text === "#000000" ? value * (1 - mix) : value + (255 - value) * mix));
         const brightness = link.reduce((sum, value, index) => {
             const channel = value / 255;
             return sum + (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][index];

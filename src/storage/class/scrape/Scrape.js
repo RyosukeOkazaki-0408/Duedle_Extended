@@ -65,8 +65,10 @@ class Scrape {
 
     static activityDate(kind, doc = document) {
         const rows = [...doc.querySelectorAll(".description-inner div")];
-        const startLabel = /^(?:開始(?:日時|予定)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
-        const dueLabel = /^(?:終了(?:日時|予定)?|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
+        // Moodle changes the label when the timestamp passes; both forms
+        // describe the same date and must survive a later detail refresh.
+        const startLabel = /^(?:開始(?:日時|予定|済み)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
+        const dueLabel = /^(?:終了(?:日時|予定|済み)?|期限|提出期限|締切|Closes?|Closed|Due date|Due)\s*[:：]/i;
         const label = kind === "start" ? startLabel : dueLabel;
         // Match the labelled row itself, not its wrapper: the wrapper may also
         // contain the other date's text or <time> element.

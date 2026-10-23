@@ -110,7 +110,7 @@
 /* The course title can be a blue font/span beside the linked course number. */
 body.darkmode .duedle-course-order td:last-child,
 body.darkmode .duedle-course-order td:last-child * {
-  color: #8bc5e8 !important;
+  color: var(--ios-accent, #8bc5e8) !important;
 }
 
 .darkmode .duedle-course-drag-preview {

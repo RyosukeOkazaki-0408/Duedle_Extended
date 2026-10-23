@@ -16,6 +16,7 @@ const fs = require('node:fs');
             .activityiconcontainer{background:#e65ca5;color:white;width:50px}
             .badge{display:inline-block;padding:8px;border-radius:20px}.alert-success{color:#1e4620;background:#d1e2d2}.alert-danger{color:#721c24;background:#f8d7da}.badge-light{color:#212529;background:#e9ecef}
             .path-mod .automatic-completion-conditions .badge{mix-blend-mode:multiply}
+            .btn-link{color:#0f6cbf}.btn-link:hover{color:#0b4b85}
             </style></head><body id="page-mod-quiz-view" class="path-mod-quiz"><main id="region-main"><div class="course-content">
             <div id="course-task" class="activity-item" data-activityname="同じ課題名"><div class="activitytitle modtype_assign"><div class="activityiconcontainer">icon</div><div class="activityname"><a href="/moodle40a/mod/assign/view.php?id=101">同じ課題名</a></div></div><div class="description"><div class="course-description-item"><div class="description-inner"><p><strong id="red" style="color:red">赤い締切</strong></p><table id="authored" style="background:white;color:black!important"><tr><td>教員の表</td></tr></table></div></div><div class="course-description-item availabilityinfo">未達成の利用条件 <a href="#">課題</a></div></div></div>
             <div class="assign"><div id="other-task" class="activity-item" data-activityname="同じ課題名"><div class="activityname"><a href="/moodle40a/mod/assign/view.php?id=102">同じ課題名</a></div><div class="description"><a href="/moodle40a/mod/assign/view.php?id=101">別の課題への参照</a></div></div></div>
@@ -88,6 +89,8 @@ const fs = require('node:fs');
             document.querySelector('#upload-dialog .fp-content').insertAdjacentHTML('beforeend', detailTable);
             document.body.insertAdjacentHTML('beforeend', '<div class="filepicker-filelist dndupload-over"><div id="picker-drop" class="dndupload-target">ドロップしてアップロード</div></div><div id="focus-links"><button id="focus-start">開始</button><a id="focus-course" class="aalink coursename" href="#">コース名</a><a id="focus-plain" href="#">通常リンク</a><a id="focus-arrow" class="arrow_link" href="#">次へ</a><div class="activityinstance"><a id="focus-activity" href="#">活動</a></div><a id="focus-class" class="aalink focus" href="#">フォーカスクラス</a></div>');
             document.querySelector('#focus-links').addEventListener('click', event => event.preventDefault());
+            document.querySelector('#region-main').insertAdjacentHTML('beforeend', '<div class="activity-navigation"><a class="btn btn-link" id="previous-activity" href="#">◀ 前の活動</a><a class="btn btn-link" id="next-activity" href="#">次の活動 ▶</a></div><a id="unrelated-btn-link" class="btn btn-link" href="#">その他のボタン</a>');
+            document.body.insertAdjacentHTML('beforeend', '<nav class="breadcrumb"><a id="breadcrumb-link" href="#">コース</a></nav><div class="block_navigation"><a id="sidebar-link" href="#">マイコース</a></div><a id="section-link" class="notionnavlink" href="#">セクション</a><div class="duedle-history-list"><a id="history-link" href="#">履歴</a></div>');
         });
         const darkStyles = await page.addStyleTag({path:'src/theme/dark.css'});
         for (const file of ['theme/light.css','theme/ios.css','storage/display/style.css','common/common.css']) await page.addStyleTag({path:'src/'+file});
@@ -148,7 +151,7 @@ const fs = require('node:fs');
                     }
                     assert.equal((await style('.fp-fileinfo')).color, text, 'File metadata remains readable');
                     assert.equal((await style('#submission-files .fp-filename')).bg, surface, 'Submission filename tile has no white background');
-                    assert.equal((await style('#submission-files .fp-filename')).color, 'rgb(139, 197, 232)', 'Filename remains recognizable as a link');
+                    assert.equal((await style('#submission-files .fp-filename')).color, ios ? 'rgb(100, 173, 255)' : 'rgb(139, 197, 232)', 'Filename follows the common link palette');
                     for (const selector of ['#submission-files .fp-thumbnail', '#submission-files img']) {
                         assert.equal((await style(selector)).border, ios ? 'rgb(72, 72, 74)' : 'rgb(82, 97, 109)', 'Thumbnail frames use the dark separator');
                         assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).boxShadow), 'none');
@@ -201,6 +204,19 @@ const fs = require('node:fs');
                     assert.equal((await style('#submission-files .fp-thumbnail')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)', 'Keyboard focus highlights thumbnails too');
                 }
                 await page.locator('#focus-start').focus();
+                for (const selector of ['#previous-activity','#next-activity']) {
+                    const color = mode === 1 ? ios ? 'rgb(100, 173, 255)' : 'rgb(139, 197, 232)' : ios && mode !== 3 ? 'rgb(0, 104, 217)' : 'rgb(15, 108, 191)';
+                    assert.equal((await style(selector)).color, color, 'Activity navigation follows the selected link palette');
+                    if (ios && mode !== 3) for (const link of ['#breadcrumb-link','#sidebar-link','#section-link','#history-link']) {
+                        assert.equal((await style(link)).color, color, 'Breadcrumbs, sidebar, sections, history and activity navigation share the iOS accent');
+                    }
+                    if (mode === 1) {
+                        await page.locator(selector).hover();
+                        assert.equal((await style(selector)).color,'rgb(255, 255, 255)');
+                        await page.mouse.move(0,0);
+                    }
+                }
+                assert.equal((await style('#unrelated-btn-link')).color,'rgb(15, 108, 191)','Activity navigation styles do not leak into unrelated buttons');
                 assert.equal(await page.locator('.fp-license select').inputValue(), 'allrightsreserved');
                 assert.equal(await page.locator('#file-dialog input').inputValue(), '提出.pdf');
                 assert.equal(await page.locator('#submission-files img').getAttribute('src'), fileImage, 'File icon image stays intact');
@@ -230,7 +246,7 @@ const fs = require('node:fs');
                     assert.notEqual((await style('#course-blue')).color,'rgb(0, 0, 255)');
                     assert.notEqual((await style('#course-yellow')).bg,'rgb(255, 255, 0)');
                     assert.equal((await style('.event')).bg,'rgb(6, 57, 6)');
-                    assert.equal((await style('.event a')).color,'rgb(139, 197, 232)');
+                    assert.equal((await style('.event a')).color,ios ? 'rgb(100, 173, 255)' : 'rgb(139, 197, 232)');
                     assert.equal(description.color,'rgb(221, 221, 223)');
                     assert.equal(intro.bg,'rgba(0, 0, 0, 0)');
                     for (const selector of ['#quiz-header', '#assign-header']) {
@@ -267,6 +283,28 @@ const fs = require('node:fs');
                 assert.equal(await page.locator('input[type=color]').inputValue(),'#063906');
             }
         }
+        // Every status link starts from the theme accent, then adjusts only as
+        // needed for the actual card background, including near-midpoint gray.
+        const paletteFailures = await page.evaluate(() => {
+            const luminance = color => color.match(/[\d.]+/g).slice(0,3).map(Number).reduce((sum,value,index) => {
+                const s=value/255;
+                return sum+[.2126,.7152,.0722][index]*(s<=.04045?s/12.92:((s+.055)/1.055)**2.4);
+            },0);
+            const failures=[];
+            for (const ios of [false,true]) for (const mode of [1,2,3]) {
+                duedleApplyTheme(mode,ios);
+                for (const background of ['#000000','#ffffff','#063906','#90ee90','#821f1f','#ffff00','#777777']) {
+                    applyColor('complete',background);
+                    const card=document.querySelector('#display > .assign');
+                    const a=luminance(getComputedStyle(card).backgroundColor),b=luminance(getComputedStyle(card.querySelector('a')).color);
+                    const contrast=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+                    if (contrast<4.5) failures.push({ios,mode,background,contrast});
+                }
+            }
+            duedleApplyTheme(2);applyColor('complete','#90ee90');
+            return failures;
+        });
+        assert.deepEqual(paletteFailures,[],'All 42 theme/status-background cases retain link contrast >= 4.5:1');
         // Compare every computed property, including pseudo-elements, rather than
         // assuming that a light baseline with dark.css loaded is unaffected.
         // Keep large snapshots in the browser and transfer only differences.

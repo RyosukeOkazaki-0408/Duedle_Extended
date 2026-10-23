@@ -45,6 +45,9 @@ const path = require('node:path');
                 ['scheduled opening only', [`<strong>開始予定:</strong> ${opening}`], startISO, null],
                 ['scheduled closing only', [`終了予定： ${closing}`], null, dueISO],
                 ['scheduled pair', [`開始予定: ${opening}`, `終了予定: ${closing}`], startISO, dueISO],
+                ['opened and closed labels', [`開始済み: ${opening}`, `終了済み: ${closing}`], startISO, dueISO],
+                ['opened only', [`開始済み： ${opening}`], startISO, null],
+                ['closed only', [`<strong>終了済み:</strong> ${closing}`], null, dueISO],
                 ['reversed labels', [`提出期限: ${closing}`, `開始予定: ${opening}`], startISO, dueISO],
                 ['ordinary Japanese', [`開始: ${opening}`, `終了: ${closing}`], startISO, dueISO],
                 ['datetime labels', [`開始日時: ${opening}`, `終了日時: ${closing}`], startISO, dueISO],
@@ -104,6 +107,22 @@ const path = require('node:path');
                     'complete', `submitted with ${status} deadline`);
             }
             const now = Date.now();
+            const past = '2026年10月20日 23:59';
+            const closedHTML = dates([`開始済み: 2026年10月19日 00:00`, `終了済み: ${past}`], true);
+            const closed = assign(closedHTML);
+            equal(closed.status, 'expired', 'closed pending assignment expires');
+            equal(closed.due, '2026-10-20T14:59:00.000Z', 'closed deadline is retained');
+            equal(assign(closedHTML, '<span class="submissionstatussubmitted">提出済み</span>').status,
+                'complete', 'closed submitted assignment stays complete');
+            equal(assign(closedHTML, 'unrecognized state').status, 'unknown', 'closure alone cannot prove non-submission');
+            const closedQuiz = ScrapeQuiz.getData(documentFor(closedHTML + '<div class="quizattempt"></div>'), root + 'mod/quiz/view.php?id=103');
+            equal(closedQuiz.status, 'expired', 'closed unattempted quiz expires');
+            const repaired = StorageUtil.mergeTask([{ ...closed, status: 'unknown', due: null, show: false }], 'assignId', closed)[0];
+            equal([repaired.status, repaired.due, repaired.show, repaired.needsDetailRetry],
+                ['expired', closed.due, false, undefined], 'unknown cache repaired by closed detail');
+            const reopened = assign(dates([`開始済み: 2026年10月19日 00:00`, `終了予定: ${closing}`], true));
+            equal(StorageUtil.mergeTask([repaired], 'assignId', reopened)[0].status,
+                'incomplete', 'extended deadline restores incomplete status');
             for (const [offset, status] of [[-1, 'expired'], [0, 'warning'], [3 * 86400000, 'warning'], [3 * 86400000 + 1, 'incomplete']]) {
                 equal(Scrape.statusAt('incomplete', new Date(now + offset), now), status, `warning boundary ${offset}`);
             }

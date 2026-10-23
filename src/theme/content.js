@@ -128,6 +128,8 @@
         const link = palette.getPropertyValue("--ios-accent").trim() || "#8bc5e8";
         const css = `html[data-duedle-editor-dark] { color-scheme: dark; background-color: ${surface}; }
             html[data-duedle-editor-dark] body { background-color: ${surface}; color: ${text}; caret-color: ${text}; }
+            html[data-duedle-editor-dark] td, html[data-duedle-editor-dark] th, html[data-duedle-editor-dark] pre { color: inherit; }
+            html[data-duedle-editor-dark] .mceSelected { background-color: #3c4e5c !important; color: ${text}; }
             html[data-duedle-editor-dark] a { color: ${link}; }`;
         if (!style) {
             style = doc.createElement("style");

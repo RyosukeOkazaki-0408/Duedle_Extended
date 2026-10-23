@@ -521,6 +521,17 @@
         // below in the other tests. First-run behavior must never assume a baseline.
         assert(second.courses === 1 && env.requests.some(request => request.url.includes('get_updates_since')));
     });
+    test('configuration changes refresh both task types even when old deadlines are past', async () => {
+        const env = deltaEnvironment({ instances: [10, 20].map(id => ({ contextlevel: 'module', id,
+            updates: [{ name: 'configuration' }] })), warnings: [] });
+        for (const task of [...env.state.assign_list, ...env.state.quiz_list]) {
+            task.due = new Date((env.since - 86400) * 1000).toISOString();
+        }
+        const result = await env.collector.run([1]);
+        equal({ saved: result.saved, skipped: result.skipped }, { saved: 2, skipped: 0 });
+        assert(env.requests.some(request => request.url.endsWith('assign/view.php?id=10')));
+        assert(env.requests.some(request => request.url.endsWith('quiz/view.php?id=20')));
+    });
     test('new, newly released, unknown and time-transitioned tasks are read despite no updates', async () => {
         for (const prepare of [
             env => env.state.assign_list = [],
@@ -529,7 +540,8 @@
             env => env.state.assign_list[0].status = 'unvisited',
             env => env.state.assign_list[0].status = 'unexpected',
             env => env.state.assign_list[0].fetchedAt = 0,
-            env => env.state.assign_list[0].due = new Date((env.since + 5) * 1000).toISOString()
+            env => env.state.assign_list[0].due = new Date((env.since + 5) * 1000).toISOString(),
+            env => env.state.assign_list[0].start = new Date((env.since + 5) * 1000).toISOString()
         ]) {
             const env = deltaEnvironment(); prepare(env);
             const result = await env.collector.run([1]);

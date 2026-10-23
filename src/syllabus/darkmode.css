@@ -10,7 +10,7 @@ body.darkmode {
   color: #dddddf;
 }
 body.darkmode a {
-  color: #f0f0f2;
+  color: var(--ios-accent, #f0f0f2);
 }
 
 /* Use CSS so system appearance changes restore the original syllabus colors. */
