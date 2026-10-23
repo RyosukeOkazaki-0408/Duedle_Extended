@@ -230,6 +230,51 @@ body.darkmode .que .comment {
     color: #f4dfbc;
     border-color: #8e754f;
 }
+/* The final 17 seconds have Moodle's own paired warning colors. */
+body.darkmode #quiz-timer-wrapper #quiz-timer:not(.timeleft0, .timeleft1, .timeleft2, .timeleft3, .timeleft4, .timeleft5, .timeleft6, .timeleft7, .timeleft8, .timeleft9, .timeleft10, .timeleft11, .timeleft12, .timeleft13, .timeleft14, .timeleft15, .timeleft16) {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+}
+/* TinyMCE's toolbar belongs to the UI; its answer lives in an iframe. */
+body.darkmode .moodleSkin table.mceLayout,
+body.darkmode .moodleSkin .mceToolbar,
+body.darkmode .moodleSkin .mceToolbar td,
+body.darkmode .moodleSkin .mceStatusbar,
+body.darkmode .moodleSkin .mceIframeContainer,
+body.darkmode .moodleSkin .mceListBox .mceText,
+body.darkmode .moodleSkin .mceMenu table,
+body.darkmode .moodleSkin .mceMenu td,
+body.darkmode .moodleSkin .mceMenuItemTitle a {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
+}
+body.darkmode .moodleSkin a.mceButton,
+body.darkmode .moodleSkin .mceText {
+    color: var(--ios-text, #dddddf);
+}
+/* The monochrome toolbar uses sprite images rather than text glyphs. */
+body.darkmode .moodleSkin .mceIcon {
+    filter: brightness(0) invert(1);
+}
+body.darkmode .moodleSkin a.mceButtonEnabled:hover,
+body.darkmode .moodleSkin a.mceButtonEnabled:focus-visible,
+body.darkmode .moodleSkin a.mceButtonActive,
+body.darkmode .moodleSkin a.mceButtonSelected,
+body.darkmode .moodleSkin table.mceListBoxEnabled:hover .mceText,
+body.darkmode .moodleSkin .mceMenu .mceMenuItemEnabled a:hover,
+body.darkmode .moodleSkin .mceMenu .mceMenuItemActive {
+    background-color: var(--ios-control, #3c4e5c);
+    background-image: none;
+    color: #ffffff;
+}
+body.darkmode .moodleSkin .mceMenuItemDisabled .mceText {
+    color: #b6c1cb;
+}
+body.darkmode .moodleSkin a.mceButton:focus-visible {
+    outline: 2px solid var(--ios-accent, #8bc5e8);
+    outline-offset: -2px;
+}
 body.darkmode .que .correct:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .que .correctness .icon.text-success:not(.duedle-authored-content, .duedle-authored-content *) {
     color: #96db88 !important;

@@ -179,6 +179,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
   提出画面のファイル選択・ファイル情報は `#region-main` の外に追加されるYUIダイアログです。`.moodle-dialogue-wrap` とリポジトリメニューを対象にし、ライセンス欄の `select.form-control`、iOS風ON/OFF、ダイアログの再表示も確認します。
   ファイル一覧の詳細表、ドラッグ中の領域、サムネイルのホバー／キーボードフォーカスと、コースリンクをクリックした後の配色も確認します。フォーカスの位置が分かる表示は維持します。
   ダーク時の `color-scheme: dark` を課題一覧のCSSなどで `light dark` に上書きしないでください。モード分離はダークCSSの有効／無効比較と、OS配色変更時の明示設定の維持も検証します。
+  TinyMCEの解答欄は別フレームです。`theme/content.js` がエディタの同一オリジンフレームのheadとhtml要素だけに表示用スタイルを設定します。解答本文のHTMLやbody属性は変更せず、ライト復帰・遅延初期化・再読込も検証します。残り時間は通常時を暗色化し、最後の17秒の警告色を維持します。
 - **取得・解析**: MoodleのDOM、権限、表示言語、活動の種類による差を考慮します。不明な状態を完了と断定せず、ログイン切れや部分失敗でも取得済みの情報を保持します。
 - **保存・非同期処理**: アカウント検証、`StorageUtil` の書き込み窓口、`RefreshCoordinator` の排他制御を利用します。画面移動、複数タブ、アカウント切替中の古い処理にも対応します。
 - **入力の扱い**: Moodleのタイトル・ファイル名・API応答も外部入力です。文字列の表示は `textContent` を基本とし、URLは用途に応じてスキーム・ホスト・パス・IDを検証します。
@@ -204,6 +205,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 変更対象 | 主な確認コマンド |
 | --- | --- |
 | テーマ・Moodle部品の配色 | `node tests/browser-theme-components.cjs` |
+| 小テストのTinyMCE解答欄・タイマー | `node tests/browser-quiz-editor-theme.cjs` |
 | 設定メニュー・使い方ガイド | `node tests/browser-support.cjs` |
 | アカウント切替・DOM表示 | `node tests/browser-review-fixes.cjs` |
 | モバイル表示・操作 | `node tests/browser-responsive.cjs` |

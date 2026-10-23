@@ -61,7 +61,8 @@
     };
     const adapt = root => {
         const nodes = [root, ...root.querySelectorAll("*")]
-            .filter(node => node.style && !node.matches("img, svg, svg *, canvas, video, iframe, picture, source"));
+            .filter(node => node.style && !node.matches("img, svg, svg *, canvas, video, iframe, picture, source")
+                && !node.closest(".mceEditor, .moodleSkin"));
         // Remember page edits, but never adopt our own adapted inline values.
         for (const node of nodes) {
             const current = inlineColors(node), previous = applied.get(node);
@@ -105,15 +106,62 @@
             if (![...roots].some(other => other !== root && other.contains(root))) adapt(root);
         }
     };
+    // TinyMCE 3 edits a separate same-origin document. Theme its head/root only:
+    // body content is the answer HTML and must never receive our classes/styles.
+    const editorFrames = ".mceIframeContainer iframe";
+    const registeredEditors = new WeakSet();
+    const syncEditor = frame => {
+        if (!frame.isConnected) return;
+        let doc;
+        try { doc = frame.contentDocument; } catch { return; }
+        if (!doc?.head || !doc.documentElement) return;
+        const dark = document.body.classList.contains("darkmode");
+        let style = doc.getElementById("duedle-editor-theme");
+        if (!dark) {
+            style?.remove();
+            doc.documentElement.removeAttribute("data-duedle-editor-dark");
+            return;
+        }
+        const palette = getComputedStyle(document.body);
+        const surface = palette.getPropertyValue("--ios-surface").trim() || "#263541";
+        const text = palette.getPropertyValue("--ios-text").trim() || "#dddddf";
+        const link = palette.getPropertyValue("--ios-accent").trim() || "#8bc5e8";
+        const css = `html[data-duedle-editor-dark] { color-scheme: dark; background-color: ${surface}; }
+            html[data-duedle-editor-dark] body { background-color: ${surface}; color: ${text}; caret-color: ${text}; }
+            html[data-duedle-editor-dark] a { color: ${link}; }`;
+        if (!style) {
+            style = doc.createElement("style");
+            style.id = "duedle-editor-theme";
+            doc.head.appendChild(style);
+        }
+        if (style.textContent !== css) style.textContent = css;
+        doc.documentElement.setAttribute("data-duedle-editor-dark", "");
+    };
+    const registerEditors = root => {
+        if (root?.nodeType !== 1) return;
+        const frames = [...root.querySelectorAll(editorFrames)];
+        if (root.matches(editorFrames)) frames.push(root);
+        for (const frame of frames) {
+            if (!registeredEditors.has(frame)) {
+                registeredEditors.add(frame);
+                frame.addEventListener("load", () => syncEditor(frame));
+            }
+            syncEditor(frame);
+        }
+    };
     const initial = new Set();
     collectRoots(document.body, initial);
     adaptRoots(initial);
+    registerEditors(document.body);
     new MutationObserver(records => {
         const roots = new Set();
         let themeChanged = false;
         for (const record of records) {
             if (record.type === "attributes") {
                 if (record.target === document.body && record.attributeName === "class") themeChanged = true;
+                else if (record.attributeName === "class" && record.target.matches(".mceIframeContainer, .mceEditor")) {
+                    registerEditors(record.target);
+                }
                 if (record.attributeName === "style" && applied.has(record.target)) {
                     const previous = applied.get(record.target);
                     if (inlineColors(record.target).some((value, index) => !same(value, previous[index]))) {
@@ -121,7 +169,10 @@
                     }
                 }
             }
-            for (const node of record.addedNodes) collectRoots(node, roots);
+            for (const node of record.addedNodes) {
+                collectRoots(node, roots);
+                registerEditors(node);
+            }
         }
         adaptRoots(roots);
         if (themeChanged) {
@@ -130,6 +181,7 @@
             document.querySelectorAll(".duedle-content-colors").forEach(node => {
                 if (sources.has(node)) applyImportant(node);
             });
+            document.querySelectorAll(editorFrames).forEach(syncEditor);
         }
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
 })();
