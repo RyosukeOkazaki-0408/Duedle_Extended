@@ -1,6 +1,6 @@
 // Fetch in the Moodle tab so Safari uses the same authenticated session.
 class CourseCollector {
-    static baseURL = "https://cms7.ict.nitech.ac.jp/moodle40a/";
+    static baseURL = (globalThis.DuedleSites?.root() ?? "https://cms7.ict.nitech.ac.jp/moodle40a/");
     static maxCoursePages = 200;
     static courseConcurrency = 1;
 
@@ -186,15 +186,16 @@ class CourseCollector {
     // Follow only read-only section links for this exact course. Strip hashes
     // and unrelated parameters (including editing/session actions).
     static sectionURL(raw, pageURL, courseId) {
+        const baseURL = globalThis.DuedleSites?.root(pageURL) ?? this.baseURL;
         try {
             const url = new URL(raw, pageURL);
             const section = url.searchParams.get("section");
             if (!Number.isSafeInteger(Number(courseId)) || Number(courseId) <= 0
-                || url.origin !== new URL(this.baseURL).origin
+                || url.origin !== new URL(baseURL).origin
                 || url.pathname !== "/moodle40a/course/view.php"
                 || Number(url.searchParams.get("id")) !== Number(courseId)
                 || !/^\d+$/.test(section || "") || !Number.isSafeInteger(Number(section))) return null;
-            return `${this.baseURL}course/view.php?id=${Number(courseId)}&section=${Number(section)}`;
+            return `${baseURL}course/view.php?id=${Number(courseId)}&section=${Number(section)}`;
         } catch { return null; }
     }
 

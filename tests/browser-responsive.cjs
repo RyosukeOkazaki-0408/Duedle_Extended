@@ -89,7 +89,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   await page.keyboard.press('Home');await page.keyboard.press('ArrowDown');
   assert.equal(await page.evaluate(()=>document.activeElement.dataset.mode),'1','Arrow keys move through modes');
   await page.keyboard.press('Space');await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
-  assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'),'false','Selecting a color mode closes menu');
+  assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'),'true','Selecting a color mode keeps settings open for further changes');
   await chooseTheme('2');
   await page.locator('#thememode_selection').click();await page.keyboard.press('Home');for(let i=0;i<4;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Space');
   await page.waitForFunction(()=>document.body.classList.contains('iosmode'));

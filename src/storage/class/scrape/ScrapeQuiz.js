@@ -35,8 +35,14 @@ class ScrapeQuiz extends Scrape {
             && Boolean(doc.querySelector(".quizattempt"));
         const requiredState = requiredGrade ? "known" : !requiredraw && recognizedOverview ? "none" : "unknown";
 
-        const count = [...doc.querySelectorAll("table.quizattemptsummary tbody tr")]
+        const legacyCount = [...doc.querySelectorAll("table.quizattemptsummary tbody tr")]
             .filter(row => row.querySelector("td")).length;
+        // Moodle 4.5 renders one labelled summary card per attempt instead of
+        // the legacy attempt table. Never count grade/detail rows as attempts.
+        const cards = [...doc.querySelectorAll("table.quizreviewsummary")].filter(table =>
+            !table.closest?.("#intro, .activity-description")
+            && /^(?:Attempt|受験|解答|試行)\s*\d+/i.test(table.querySelector("caption")?.textContent.trim() || ""));
+        const count = legacyCount || cards.length;
         const maxcountraw = information.find(text => /^(?:受験可能回数|Attempts allowed)(?:\s|[:：]|$)/i.test(text));
         const maxcountMatch = maxcountraw?.match(/[:：]\s*(\d+)\s*$/);
         const explicitUnlimited = /[:：]\s*(?:無制限|Unlimited)\s*$/i.test(maxcountraw || "");

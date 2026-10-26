@@ -12,23 +12,19 @@
     <header>
       <p class="brand">Duedle</p>
       <h1>導入方法</h1>
-      <p>Duedleは、ブラウザに追加して使う拡張機能です。このページでは、パソコンのChrome（Windows・Mac）への導入方法を案内します。</p>
+      <p>Duedleは、パソコンのChromeに追加して使う拡張機能です。Windows・Macに対応しています。</p>
       <p><a href="help.html">使い方に戻る</a></p>
     </header>
-    <nav aria-label="端末とブラウザを選ぶ">
-      <h2>どの環境で使いますか？</h2>
+    <nav aria-label="導入手順">
+      <h2>Chrome版の導入</h2>
       <ul>
         <li><a href="#chrome">パソコンのChrome（Windows・Mac）</a></li>
-        <!-- Safari公開時: templateの囲みを外すと、案内リンクを再表示できます。 -->
-        <template id="safari-install-links">
-          <li><a href="#iphone">iPhone・iPadのSafari</a></li>
-          <li><a href="#mac">MacのSafari</a></li>
-        </template>
+        <!-- Safari版の公開時に、下のリンクと本文のSafariセクションを再表示する。
+        <li><a href="#iphone">iPhone・iPadのSafari</a></li>
+        <li><a href="#mac">MacのSafari</a></li>
+        -->
       </ul>
       <p>スマホ版ChromeではDuedleを利用できません。</p>
-      <template id="safari-install-note">
-        <p>iPhone・iPadではSafariを使ってください。</p>
-      </template>
     </nav>
 
     <section id="chrome" aria-labelledby="chrome-title">
@@ -58,68 +54,71 @@
       </details>
     </section>
 
-    <!-- Safari公開時: safari-install-links / safari-install-note / safari-install-guidesの
-         templateの囲みを外し、各手順のApp Store入手リンクを設定してください。 -->
-    <template id="safari-install-guides">
-      <section id="iphone" aria-labelledby="iphone-title">
-        <h2 id="iphone-title">iPhone・iPadのSafari</h2>
-        <!-- App Store公開後、この段落をiPhone・iPad版の入手リンクに置き換える。 -->
-        <p class="note">Safari版はApp Storeでの配布を準備しています。公開後、ここに入手リンクを掲載します。以下はアプリを入手してからの手順です。</p>
-        <ol class="steps">
-          <li><strong>Duedleアプリをインストールする</strong>
-            <p>公開後、このページのリンクからApp StoreのDuedleを開いてインストールします。インストール後、Duedleアプリを一度開いてください。</p>
-          </li>
-          <li><strong>Safariの機能拡張の設定を開く</strong>
-            <p>端末の「設定」アプリを開き、「アプリ」→「Safari」→「機能拡張」→「Duedle」と進みます。「アプリ」が見当たらない場合は、「設定」から直接「Safari」を開いてください。</p>
-          </li>
-          <li><strong>DuedleをONにする</strong>
-            <p>「機能拡張を許可」をONにします。OSによって「拡張機能」と表示される場合もあります。</p>
-          </li>
-          <li><strong>Moodleでの利用を許可する</strong>
-            <p>Safariで<a href="https://cms7.ict.nitech.ac.jp/moodle40a/" target="_blank" rel="noopener noreferrer">名工大Moodle</a>を開いてログインします。アドレス欄のページメニューからDuedleを開き、アクセス許可の案内に従って <code>cms7.ict.nitech.ac.jp</code> での利用を許可してください。</p>
-            <p>許可する期間を聞かれた場合は、このサイトで「常に許可」を選ぶと、次回からも使えます。</p>
-          </li>
-          <li><strong>Duedleが表示されるか確認する</strong>
-            <p>左上に「Duedle: Extended」が表示されていれば、拡張機能が動いています。</p>
-          </li>
-        </ol>
-        <details>
-          <summary>設定にDuedleが出てこない</summary>
-          <p>Duedleアプリがインストールされているか確認してください。アプリを一度開いてから、設定アプリでSafariの「機能拡張」を開き直します。</p>
-        </details>
-        <p><a href="https://support.apple.com/ja-jp/guide/iphone/iphab0432bf6/ios" target="_blank" rel="noopener noreferrer">Appleの案内：Safariの機能拡張を設定する</a></p>
-      </section>
+    <!-- Safari版の公開まで非表示。再表示時はApp Storeの入手リンクも設定する。
+    <section id="iphone" aria-labelledby="iphone-title">
+      <h2 id="iphone-title">iPhone・iPadのSafari</h2>
 
-      <section id="mac" aria-labelledby="mac-title">
-        <h2 id="mac-title">MacのSafari</h2>
-        <!-- App Store公開後、この段落をMac版の入手リンクに置き換える。 -->
-        <p class="note">Safari版はApp Storeでの配布を準備しています。公開後、ここに入手リンクを掲載します。以下はアプリを入手してからの手順です。</p>
-        <ol class="steps">
-          <li><strong>Duedleアプリをインストールする</strong>
-            <p>公開後、このページのリンクからApp StoreのDuedleを開いてインストールします。インストール後、Duedleアプリを一度開いてください。</p>
-          </li>
-          <li><strong>Safariの機能拡張の設定を開く</strong>
-            <p>Safariを開き、画面上部のメニューバーで「Safari」→「設定」→「機能拡張」と進みます。</p>
-          </li>
-          <li><strong>DuedleをONにする</strong>
-            <p>「Duedle」にチェックを入れます。</p>
-          </li>
-          <li><strong>Moodleでの利用を許可する</strong>
-            <p>Safariで<a href="https://cms7.ict.nitech.ac.jp/moodle40a/" target="_blank" rel="noopener noreferrer">名工大Moodle</a>を開いてログインします。SafariのツールバーにあるDuedleのアイコンを押し、アクセス許可の案内に従って <code>cms7.ict.nitech.ac.jp</code> での利用を許可してください。</p>
-            <p>許可する期間を聞かれた場合は、このサイトで「常に許可」を選ぶと、次回からも使えます。</p>
-          </li>
-          <li><strong>Duedleが表示されるか確認する</strong>
-            <p>左上に「Duedle: Extended」が表示されていれば、拡張機能が動いています。</p>
-          </li>
-        </ol>
-        <details>
-          <summary>設定にDuedleが出てこない</summary>
-          <p>Duedleアプリがインストールされているか確認してください。アプリを一度開いてから、Safariの「設定」→「機能拡張」を開き直します。</p>
-        </details>
-        <p><a href="https://support.apple.com/ja-jp/102343" target="_blank" rel="noopener noreferrer">Appleの案内：Safariの機能拡張を設定する</a></p>
-      </section>
-    </template>
+      <p class="note">Safari版はApp Storeでの配布を準備しています。公開後、ここに入手リンクを掲載します。以下はアプリを入手してからの手順です。</p>
+      <ol class="steps">
+        <li><strong>Duedleアプリをインストールする</strong>
+          <p>公開後、このページのリンクからApp StoreのDuedleを開いてインストールします。インストール後、Duedleアプリを一度開いてください。</p>
+        </li>
+        <li><strong>Safariの機能拡張の設定を開く</strong>
+          <p>端末の「設定」アプリを開き、「アプリ」→「Safari」→「機能拡張」→「Duedle」と進みます。「アプリ」が見当たらない場合は、「設定」から直接「Safari」を開いてください。</p>
+        </li>
+        <li><strong>DuedleをONにする</strong>
+          <p>「機能拡張を許可」をONにします。OSによって「拡張機能」と表示される場合もあります。</p>
+        </li>
+        <li><strong>Moodleでの利用を許可する</strong>
+          <p>Safariで<a href="https://cms7.ict.nitech.ac.jp/moodle40a/" target="_blank" rel="noopener noreferrer">名工大Moodle</a>を開いてログインします。アドレス欄のページメニューからDuedleを開き、アクセス許可の案内に従って <code>cms7.ict.nitech.ac.jp</code> での利用を許可してください。</p>
+          <p>許可する期間を聞かれた場合は、このサイトで「常に許可」を選ぶと、次回からも使えます。</p>
+        </li>
+        <li><strong>Duedleが表示されるか確認する</strong>
+          <p>左上に「Duedle: Extended」が表示されていれば、拡張機能が動いています。</p>
+        </li>
+      </ol>
+      <details>
+        <summary>設定にDuedleが出てこない</summary>
+        <p>Duedleアプリがインストールされているか確認してください。アプリを一度開いてから、設定アプリでSafariの「機能拡張」を開き直します。</p>
+      </details>
+      <p><a href="https://support.apple.com/ja-jp/guide/iphone/iphab0432bf6/ios" target="_blank" rel="noopener noreferrer">Appleの案内：Safariの機能拡張を設定する</a></p>
+    </section>
+
+    <section id="mac" aria-labelledby="mac-title">
+      <h2 id="mac-title">MacのSafari</h2>
+
+      <p class="note">Safari版はApp Storeでの配布を準備しています。公開後、ここに入手リンクを掲載します。以下はアプリを入手してからの手順です。</p>
+      <ol class="steps">
+        <li><strong>Duedleアプリをインストールする</strong>
+          <p>公開後、このページのリンクからApp StoreのDuedleを開いてインストールします。インストール後、Duedleアプリを一度開いてください。</p>
+        </li>
+        <li><strong>Safariの機能拡張の設定を開く</strong>
+          <p>Safariを開き、画面上部のメニューバーで「Safari」→「設定」→「機能拡張」と進みます。</p>
+        </li>
+        <li><strong>DuedleをONにする</strong>
+          <p>「Duedle」にチェックを入れます。</p>
+        </li>
+        <li><strong>Moodleでの利用を許可する</strong>
+          <p>Safariで<a href="https://cms7.ict.nitech.ac.jp/moodle40a/" target="_blank" rel="noopener noreferrer">名工大Moodle</a>を開いてログインします。SafariのツールバーにあるDuedleのアイコンを押し、アクセス許可の案内に従って <code>cms7.ict.nitech.ac.jp</code> での利用を許可してください。</p>
+          <p>許可する期間を聞かれた場合は、このサイトで「常に許可」を選ぶと、次回からも使えます。</p>
+        </li>
+        <li><strong>Duedleが表示されるか確認する</strong>
+          <p>左上に「Duedle: Extended」が表示されていれば、拡張機能が動いています。</p>
+        </li>
+      </ol>
+      <details>
+        <summary>設定にDuedleが出てこない</summary>
+        <p>Duedleアプリがインストールされているか確認してください。アプリを一度開いてから、Safariの「設定」→「機能拡張」を開き直します。</p>
+      </details>
+      <p><a href="https://support.apple.com/ja-jp/102343" target="_blank" rel="noopener noreferrer">Appleの案内：Safariの機能拡張を設定する</a></p>
+    </section>
+
+    -->
 
     <footer>
       <a href="help.html">使い方に戻る</a>
-      <p>導入でお困りの場合は、<a href="help
+      <p>導入でお困りの場合は、<a href="help.html#contact">こちら</a>からお問い合わせください。</p>
+    </footer>
+  </main>
+</body>
+</html>

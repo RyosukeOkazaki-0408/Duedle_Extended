@@ -1,7 +1,7 @@
 // Automatic collection belongs to a visible Moodle page. The background only
 // coordinates the persisted schedule and the lease shared by all tabs.
 class AutoRefreshController {
-    static root = "https://cms7.ict.nitech.ac.jp/moodle40a/";
+    static root = (globalThis.DuedleSites?.root() ?? "https://cms7.ict.nitech.ac.jp/moodle40a/");
     static heartbeatMs = 30000;
     static ownershipCheckMs = 10000;
 

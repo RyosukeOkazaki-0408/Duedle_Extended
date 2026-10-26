@@ -22,11 +22,19 @@ for (url, expected) in [
 }
 print("PASS Safari/WebKit dashboard URL matching: course, query order, fragment, dashboard and exclusions")
 
+let demoRoot = "https://duedle-35-184-191-167.sslip.io/moodle40a/"
+for page in ["my/", "course/view.php?id=6"] {
+    precondition(patterns.contains { $0.matches(URL(string: demoRoot + page)!) }, "Demo dashboard is not matched")
+}
+precondition(!patterns.contains { $0.matches(URL(string: "https://other.sslip.io/moodle40a/my/")!) }, "Unrelated demo hosts must not be matched")
+print("PASS Safari/WebKit explicit demo hostname and unrelated-host exclusion")
+
 for (script, page) in [
     ("./storage/cs_scrapeAssign.js", "mod/assign/view.php"),
     ("./qol/assign_files.js", "mod/assign/view.php"),
     ("./storage/cs_scrapeQuiz.js", "mod/quiz/view.php"),
     ("./storage/cs_scrapeQuizReview.js", "mod/quiz/review.php"),
+    ("./theme/scorm.js", "mod/scorm/player.php"),
 ] {
     let entry = scripts.first { ($0["js"] as? [String])?.contains(script) == true }!
     let patterns = try (entry["matches"] as! [String]).map { try WKWebExtension.MatchPattern(string: $0) }

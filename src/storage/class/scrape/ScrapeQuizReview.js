@@ -4,7 +4,7 @@ class ScrapeQuizReview extends Scrape {
         if (this.hasTaskDenial(doc)) return null;
         let url;
         try { url = new URL(pageURL); } catch { return null; }
-        if (url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/mod/quiz/review.php") return null;
+        if (url.origin !== (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp") || url.pathname !== "/moodle40a/mod/quiz/review.php") return null;
         const ids = new Set();
         const cmid = Number(url.searchParams.get("cmid"));
         if (Number.isSafeInteger(cmid) && cmid > 0) ids.add(cmid);

@@ -23,7 +23,7 @@ class CalendarEventResolver {
             try {
                 const url = new URL(link.getAttribute('href'), location.href);
                 const id = AutoRefreshCollector.positiveId(link.dataset.eventId);
-                if (id && url.origin === 'https://cms7.ict.nitech.ac.jp'
+                if (id && url.origin === (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp")
                     && url.pathname === '/moodle40a/calendar/view.php') ids.add(id);
             } catch { /* Ignore unrelated links. */ }
         }

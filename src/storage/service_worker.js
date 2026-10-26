@@ -1,6 +1,6 @@
 // Chrome uses a service worker; Safari loads this in a nonpersistent background page.
 if (typeof importScripts === "function") {
-  importScripts("../common/account.js", "../common/common.js", "./class/StorageUtil.js", "./class/RefreshCoordinator.js", "./class/CourseCollector.js");
+  importScripts("../common/sites.js", "../common/account.js", "../common/common.js", "./class/StorageUtil.js", "./class/RefreshCoordinator.js", "./class/CourseCollector.js");
 }
 StorageUtil.isBackground = true;
 
@@ -45,7 +45,7 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         let url;
         try { url = new URL(entry?.url); } catch { throw new Error("履歴が不正です"); }
         if (typeof entry?.title !== "string" || !entry.title.trim()
-          || url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/course/view.php") {
+          || url.origin !== (globalThis.DuedleSites?.origin(sender.url || sender.tab?.url) ?? "https://cms7.ict.nitech.ac.jp") || url.pathname !== "/moodle40a/course/view.php") {
           throw new Error("履歴が不正です");
         }
         const saved = await ext.storage.local.get(["history", "refreshCoordinator", "duedleCollectionTabs"]);
@@ -77,7 +77,7 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           values.history = msg.values.history.filter(entry => {
             try {
               const url = new URL(entry.url);
-              return typeof entry.title === "string" && url.origin === "https://cms7.ict.nitech.ac.jp" && url.pathname.startsWith("/moodle40a/");
+              return typeof entry.title === "string" && url.origin === (globalThis.DuedleSites?.origin(sender.url || sender.tab?.url) ?? "https://cms7.ict.nitech.ac.jp") && url.pathname.startsWith("/moodle40a/");
             } catch { return false; }
           }).map(entry => ({ title: entry.title, url: entry.url }));
         }
@@ -170,6 +170,7 @@ function collectedPageOperation(context, sender, response, tabId, url, operation
 }
 
 async function runTabScraping(refreshToken, sender, context) {
+  const MOODLE_ROOT = globalThis.DuedleSites?.root(sender.url || sender.tab?.url) ?? "https://cms7.ict.nitech.ac.jp/moodle40a/";
   const { courseIds = [] } = await accountSession.run(context, sender, () => ext.storage.local.get("courseIds"));
   const ids = [...new Set(courseIds.map(Number))].filter(id => Number.isInteger(id) && id > 0);
   if (!ids.length) throw new Error("マイコースを表示してから課題情報を更新してください");
@@ -295,6 +296,7 @@ async function runTabScraping(refreshToken, sender, context) {
 }
 
 function navigateTab(tabId, url, timeout = 20000) {
+  const MOODLE_ROOT = globalThis.DuedleSites?.root(url) ?? "https://cms7.ict.nitech.ac.jp/moodle40a/";
   return new Promise((resolve, reject) => {
     let settled = false;
     let timer;

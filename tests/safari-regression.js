@@ -1293,7 +1293,7 @@
         assertNavigationCleaned(env);
     });
 
-    async function displayEnvironment(settings, activities, events) {
+    async function displayEnvironment(settings, activities, events, now = Date.now()) {
         const children = [];
         const display = {
             textContent: "表示するものがありません",
@@ -1323,6 +1323,7 @@
         }
         const ui = production("src/storage/display/displaybox.js", ["displaybox", "changeActivityColor", "transDue"], {
             Scrape: scrapeBindings().Scrape, URL: URLClass,
+            Date: class extends Date { static now() { return now; } },
             document, display, rerender: async () => {}, location: { href: moodle + "my/" },
             ext: { storage: { sync: { async get() { return settings || {}; } } } },
             StorageUtil: { async getAllData() { return []; } }, AssignBox: Box, QuizBox: Box,
@@ -1375,6 +1376,93 @@
         const scoped = await displayEnvironment({ selectedDue: 'week', selectedStatus: 'ex-complete', selectedShow: 'normal' });
         await scoped.displaybox([task(101, null), task(104, null, { status: 'complete' }), task(105, null, { show: false })]);
         equal(scoped.children.map(item => item.assignId), [101], 'Completion and user visibility choices remain effective');
+    });
+
+    test("start filters include exact boundaries and unknown dates and compose with existing filters", async () => {
+        const now = Date.parse('2026-10-26T04:00:00.000Z');
+        const hour = 3600000;
+        const task = (id, offset, extra = {}) => ({ group: 'assign_list', assignId: id,
+            assignName: 'Task ' + id, courseName: 'Course', show: true, status: 'incomplete',
+            start: new Date(now + offset).toISOString(), due: new Date(now + 48 * hour).toISOString(), ...extra });
+        const items = [task(1, -1), task(2, 0), task(3, 1), task(4, 24 * hour),
+            task(5, 24 * hour + 1), task(6, 7 * 24 * hour), task(7, 7 * 24 * hour + 1),
+            task(8, 0, { start: null }), task(9, 0, { start: undefined }),
+            task(10, 0, { start: '' }), task(11, 0, { start: 'invalid' }),
+            task(12, 24 * hour, { group: 'quiz_list', quizId: 12 }), task(13, 0, { start: 0 })];
+        const unknown = [8, 9, 10, 11];
+        const cases = {
+            all: items.map(item => item.assignId), started: [1, 2, ...unknown, 13],
+            today: [3, 4, ...unknown, 12], week: [3, 4, 5, 6, ...unknown, 12],
+            future: [3, 4, 5, 6, 7, ...unknown, 12]
+        };
+        for (const [selectedStart, expected] of Object.entries(cases)) {
+            const env = await displayEnvironment({ selectedStart, selectedStatus: 'all' }, [], [], now);
+            await env.displaybox(items);
+            equal(env.children.map(item => item.assignId), expected, selectedStart);
+        }
+        const scoped = await displayEnvironment({ selectedStart: 'started', selectedDue: 'week',
+            selectedStatus: 'ex-complete', selectedType: 'assign_list', selectedShow: 'normal' }, [], [], now);
+        await scoped.displaybox([task(20, -hour), task(21, -hour, { status: 'complete' }),
+            task(22, -hour, { show: false }), task(23, -hour, { group: 'quiz_list', quizId: 23 }),
+            task(24, hour), task(25, -hour, { due: new Date(now + 8 * 24 * hour).toISOString() }),
+            task(26, -hour, { start: null }), task(27, -hour, { start: null, status: 'complete' }),
+            task(28, -hour, { due: new Date(now - hour).toISOString() })]);
+        equal(scoped.children.map(item => item.assignId), [20, 26], 'All filters intersect; unknown dates do not override other filters');
+        const passing = await displayEnvironment({ selectedStart: 'future', selectedStatus: 'all' }, [], [], now - 1);
+        await passing.displaybox([task(30, 0)]);
+        equal(passing.children.length, 1, 'Not started just before the boundary');
+        const started = await displayEnvironment({ selectedStart: 'future', selectedStatus: 'all' }, [], [], now);
+        await started.displaybox([task(30, 0)]);
+        equal(started.children.length, 0, 'Becomes started at the exact start time without new task data');
+    });
+
+    test("start selector defaults to all, saves choices and restores and synchronizes open controls", async () => {
+        const saved = {};
+        const listeners = [];
+        const ext = { storage: { sync: {
+            async get(keys, callback) {
+                const names = typeof keys === 'string' ? [keys] : keys;
+                const result = Object.fromEntries(names.filter(key => key in saved).map(key => [key, saved[key]]));
+                callback?.(result);
+                return result;
+            },
+            async set(values) {
+                const changes = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, { newValue: value }]));
+                Object.assign(saved, values);
+                listeners.forEach(listener => listener(changes, 'sync'));
+            }
+        }, onChanged: { addListener(listener) { listeners.push(listener); } } } };
+        const document = { createElement(tag) {
+            return { tag, children: [], classList: { add() {} }, listeners: {},
+                setAttribute(key, value) { this[key] = value; },
+                addEventListener(name, handler) { this.listeners[name] = handler; },
+                appendChild(child) { this.children.push(child); }, append(...children) { this.children.push(...children); } };
+        } };
+        const { FilterSelect } = production('src/storage/class/filter/FilterSelect.js', ['FilterSelect'], { ext, document });
+        const source = read('src/storage/display/filter.js');
+        const block = source.slice(source.indexOf('//start filter'), source.indexOf('//due filter'));
+        const open = async () => {
+            const fieldset = document.createElement('fieldset');
+            Function('FilterSelect', 'fieldset', block)(FilterSelect, fieldset);
+            await flushPromises();
+            const [label, select] = fieldset.children[0].children;
+            equal(label.textContent, '開始');
+            equal(label.for, 'startSelect');
+            equal(select.children.map(option => option.textContent),
+                ['すべて', '開始済み', '24時間以内に開始', '1週間以内に開始', '開始前']);
+            return select;
+        };
+        const first = await open();
+        equal(first.value, 'all');
+        equal(saved.selectedStart, 'all');
+        first.value = 'week';
+        await first.listeners.change();
+        equal(saved.selectedStart, 'week');
+        const reopened = await open();
+        equal(reopened.value, 'week', 'A reloaded page restores the saved choice');
+        first.value = 'started';
+        await first.listeners.change();
+        equal(reopened.value, 'started', 'Another open tab follows storage changes');
     });
 
     test("dashboard rendering tolerates events with no date or link", async () => {

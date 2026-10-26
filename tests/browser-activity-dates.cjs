@@ -91,6 +91,12 @@ const path = require('node:path');
                 }
             }
 
+            const standalone = '<div data-region="activity-dates" class="activity-dates"><div>Opened: October 22, 2026, 12:00 AM</div><div>Due: October 28, 2026, 11:59 PM</div></div>';
+            const conflictingDescription = block(['Due: December 31, 2026, 11:59 PM']);
+            equal(pair(assign(standalone + conflictingDescription)), [startISO, dueISO], 'Moodle 4.5 standalone official activity dates take precedence');
+            const standaloneBare = `<div class="activity-dates"><div>${opening}</div><div>${closing}</div></div>`;
+            equal(pair(assign(standaloneBare)), [startISO, dueISO], 'standalone bare dates use their own second row');
+
             // The prose is class-dependent and must not supply a global deadline.
             const reported = dates([`<strong>開始予定:</strong> ${opening}`], true)
                 + '<div id="intro">提出期限は各クラスの授業後の１週間内とします。例：10/22授業なら10/28 23:59まで。</div>';

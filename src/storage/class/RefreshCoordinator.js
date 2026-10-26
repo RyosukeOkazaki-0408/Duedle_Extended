@@ -126,7 +126,7 @@ class RefreshCoordinator {
         if (!Number.isInteger(tabId) || tabId < 0) throw new Error("Moodleのタブから更新してください");
         let url;
         try { url = new URL(sender.url || sender.tab.url); } catch (_) { /* invalid sender */ }
-        const root = new URL(RefreshCoordinator.moodleRoot);
+        const root = new URL(globalThis.DuedleSites?.root(sender.url || sender.tab.url) ?? RefreshCoordinator.moodleRoot);
         if (!url || url.origin !== root.origin || !url.pathname.startsWith(root.pathname)
             || url.pathname.startsWith(root.pathname + "login/")
             || url.pathname.startsWith(root.pathname + "auth/")) {

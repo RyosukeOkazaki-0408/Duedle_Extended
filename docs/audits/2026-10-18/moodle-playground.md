@@ -48,3 +48,8 @@ Moodle 4.4の当該画面では期限が独立した `.activity-dates` にあり
 既存のNode環境で `tests/moodle-playground-regression.cjs` を実行すると、保存した実応答を再照合できる。ブラウザの互換性プローブは既存のPlaywrightとChromeで `tests/probes/moodle-playground-assignment.cjs` を実行する。プローブは上記期限の不一致が残っている間、終了コード1を返す。
 
 環境の仕様：<https://ateeducacion.github.io/moodle-playground/docs/usage/>
+
+
+## 2026-10-26の追記
+
+上記は10月18日時点の記録。新設したMoodle 4.5デモでも `.activity-dates` が `.description-inner` の外にあることを実画面で確認し、共有の解析処理に対応を追加した。保存済みMoodle 4.4 HTMLを使う同じプローブは4項目すべて合格し、期限 `2026-10-18T08:56:00.000Z` を取得できた。Moodle 4.5デモの実応答再生でも開始日時10件・既知の期限9件を取得した。大学の実環境の全ページ・実機を網羅した保証ではない。

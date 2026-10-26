@@ -51,6 +51,7 @@ def main() -> None:
     for suite in (
         "tests/safari-regression.js",
         "tests/account-regression.js",
+        "tests/sites-regression.js",
         "tests/account-collection-regression.js",
         "tests/ui-regression.js",
         "tests/list-state-regression.js",

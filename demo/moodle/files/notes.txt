@@ -1,0 +1,4 @@
+Duedle demo submission
+
+All course names, assignments, submissions and grades in this environment are synthetic.
+This text file can be used to check the inline file preview and browser Back navigation.

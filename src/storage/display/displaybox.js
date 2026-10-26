@@ -2,7 +2,8 @@ const displaybox = async (data, target = null) => {
     if (globalThis.duedleAccountActive === false) return 0;
     const display = target || document.querySelector("#display");
     let rendered = 0;
-    const settings = await ext.storage.sync.get(["selectedType", "selectedStatus", "selectedDue", "selectedShow"]);
+    const settings = await ext.storage.sync.get(["selectedType", "selectedStatus", "selectedStart", "selectedDue", "selectedShow"]);
+    const now = Date.now();
     if (data) {
         for (const savedItem of data) {
             const item = { ...savedItem, status: Scrape.statusAt(savedItem.status, savedItem.due) };
@@ -11,6 +12,7 @@ const displaybox = async (data, target = null) => {
             const savedStatus = ({ qualify: "complete", stuck: "expired" })[settings.selectedStatus]
                 ?? settings.selectedStatus ?? "ex-complete";
             const savedDue = settings.selectedDue ?? "all";
+            const savedStart = settings.selectedStart ?? "all";
             const savedShow = settings.selectedShow ?? "normal";
             const currentURL = new URL(location.href);
             if (currentURL.pathname === "/moodle40a/course/view.php") {
@@ -48,7 +50,16 @@ const displaybox = async (data, target = null) => {
             if (savedStatus === "ex-complete" && statusGroups.complete.includes(item.status)) {
                 continue;
             }
-            const remainhours = item.due ? (item.due - Date.now()) / (1000 * 60 * 60) : NaN;
+            const startsAt = item.start == null || item.start === "" ? NaN : new Date(item.start).getTime();
+            // Keep unknown/invalid dates visible, while respecting other filters.
+            if (Number.isFinite(startsAt)) {
+                const untilStart = startsAt - now;
+                if (savedStart === "started" && untilStart > 0) continue;
+                if (savedStart === "future" && untilStart <= 0) continue;
+                if (savedStart === "today" && (untilStart <= 0 || untilStart > 24 * 60 * 60 * 1000)) continue;
+                if (savedStart === "week" && (untilStart <= 0 || untilStart > 7 * 24 * 60 * 60 * 1000)) continue;
+            }
+            const remainhours = item.due ? (item.due - now) / (1000 * 60 * 60) : NaN;
             // An unknown deadline must remain visible so it cannot hide urgent work.
             if (Number.isFinite(remainhours) && savedDue !== "all" && savedDue !== "progressing") {
                 // 期限フィルタのロジックをここに追加
@@ -136,7 +147,7 @@ const changeActivityColor = (item) => {
 const taskLinkMatches = (link, type, id) => {
     try {
         const url = new URL(link.getAttribute("href"), location.href);
-        return url.origin === "https://cms7.ict.nitech.ac.jp"
+        return url.origin === (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp")
             && url.pathname === `/moodle40a/mod/${type}/view.php`
             && Number(url.searchParams.get("id")) === Number(id);
     } catch { return false; }
@@ -149,7 +160,7 @@ const calendarEventId = element => {
     try {
         const url = new URL(link.getAttribute("href"), location.href);
         const id = Number(link.getAttribute("data-event-id"));
-        return url.origin === "https://cms7.ict.nitech.ac.jp" && url.pathname === "/moodle40a/calendar/view.php"
+        return url.origin === (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp") && url.pathname === "/moodle40a/calendar/view.php"
             && Number.isSafeInteger(id) && id > 0 ? id : null;
     } catch { return null; }
 };
@@ -166,7 +177,7 @@ const calendarEventMatches = (element, item, tasks) => {
     if (!link) return false;
     try {
         const url = new URL(link.getAttribute("href"), location.href);
-        if (url.origin !== "https://cms7.ict.nitech.ac.jp" || url.pathname !== "/moodle40a/calendar/view.php") return false;
+        if (url.origin !== (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp") || url.pathname !== "/moodle40a/calendar/view.php") return false;
     } catch { return false; }
     const normalize = value => String(value || "").replace(/\s+/g, " ").trim();
     const text = normalize(link.textContent);

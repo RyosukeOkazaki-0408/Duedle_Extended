@@ -17,7 +17,7 @@ class QuizBox extends TaskBox {
         quiz.querySelector(".li4").textContent = `受験回数: ${count} / ${maxcount}`;
 
         const link = document.createElement("a");
-        link.href = `https://cms7.ict.nitech.ac.jp/moodle40a/mod/quiz/view.php?id=${this.data.quizId}`;
+        link.href = `${globalThis.DuedleSites?.root() ?? "https://cms7.ict.nitech.ac.jp/moodle40a/"}mod/quiz/view.php?id=${this.data.quizId}`;
         link.textContent = this.data.quizName;
         quiz.querySelector(".taskbox").appendChild(link);
 

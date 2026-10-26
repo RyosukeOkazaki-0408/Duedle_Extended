@@ -9,7 +9,7 @@ class AssignBox extends TaskBox {
         assign.querySelector(".li3").textContent = `最初のファイル名: ${this.data.file ? this.data.file : "不明"}`;
         assign.querySelector(".li4").textContent = `提出ファイル数: ${this.data.filenum}`;
         const link = document.createElement("a");
-        link.href = `https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=${this.data.assignId}`;
+        link.href = `${globalThis.DuedleSites?.root() ?? "https://cms7.ict.nitech.ac.jp/moodle40a/"}mod/assign/view.php?id=${this.data.assignId}`;
         link.textContent = this.data.assignName;
         assign.querySelector(".taskbox").appendChild(link);
 

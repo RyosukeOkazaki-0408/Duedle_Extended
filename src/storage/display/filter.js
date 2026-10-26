@@ -138,6 +138,16 @@ statusFilter.applyDefault("ex-complete");
     });
 })();
 
+//start filter
+const startValues = ["all", "started", "today", "week", "future"];
+const startOptionsText = ["すべて", "開始済み", "24時間以内に開始", "1週間以内に開始", "開始前"];
+const startFilter = new FilterSelect("startSelect", "開始", startValues, startOptionsText, "selectedStart");
+startFilter.applyDefault("all");
+(async () => {
+    const startFilterel = await startFilter.getElement();
+    startFilterel.forEach(el => fieldset.appendChild(el));
+})();
+
 //due filter
 const dueValues = ["all", "progressing", "week", "today", "dueweek", "overdue"];
 const dueOptionsText = ["すべて", "進行中", "今週", "24時間以内", "直近1週間に終了", "終了"];

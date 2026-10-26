@@ -60,6 +60,15 @@ const files = ['common/utils.js', 'storage/class/scrape/Scrape.js', 'storage/cla
             if (savedUnknown.statusDetail.kind !== 'unknown' || savedUnknown.needsDetailRetry !== true || savedUnknown.status !== 'complete') throw new Error('Internal reason must survive display-state preservation');
             const recovered = StorageUtil.mergeTask([savedUnknown], 'quizId', english)[0];
             if (recovered.statusDetail.kind !== 'known' || recovered.needsDetailRetry) throw new Error('Successful reread must clear the prior diagnostic');
+            const modern = (grade) => ScrapeQuiz.getData(documentFor(
+                '<div class="quizattempt"></div><div class="quizinfo"><p>Attempts allowed: 1</p><p>Grade to pass: 6.00 out of 10.00</p></div>'
+                + (grade === null ? '' : `<div id="feedback"><h3>Your final grade for this quiz is ${grade}.00/10.00.</h3></div>`)
+                + '<div class="card"><table class="quizreviewsummary"><caption>Attempt 1 summary</caption><tr><th>Status</th><td>Finished</td></tr><tr><th>Grade</th><td>0.00 / 10.00</td></tr></table></div>'), root + 'mod/quiz/view.php?id=101');
+            const modernFailed = modern(0), modernPassed = modern(10), modernHidden = modern(null);
+            if (modernFailed.point !== 0 || modernFailed.count !== 1 || modernFailed.status !== 'stuck') throw new Error('Modern failed attempt must keep its zero grade and exhausted limit');
+            if (modernPassed.point !== 10 || modernPassed.count !== 1 || modernPassed.status !== 'complete') throw new Error('Modern passed attempt must use its aggregate grade');
+            if (modernHidden.point !== null || modernHidden.count !== 1 || modernHidden.status !== 'unknown') throw new Error('An attempt card grade must never replace a hidden aggregate grade');
+            if (Scrape.gradeRatio('1 / 1.2.3.') !== null) throw new Error('Malformed grade ratios must still be rejected');
             const rendered = [];
             for (const maxcount of [undefined, null, 0, 2]) {
                 const box = await new QuizBox({ ...english, maxcount }).getElement();

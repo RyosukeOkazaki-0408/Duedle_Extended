@@ -17,7 +17,7 @@ class Scrape {
         const match = url.pathname.match(/^\/moodle40a\/mod\/(assign|quiz)\/view\.php$/);
         const id = Number(url.searchParams.get('id'));
         const action = url.searchParams.get('action');
-        if (url.origin !== 'https://cms7.ict.nitech.ac.jp' || !match || !Number.isSafeInteger(id) || id <= 0
+        if (url.origin !== (globalThis.DuedleSites?.origin() ?? "https://cms7.ict.nitech.ac.jp") || !match || !Number.isSafeInteger(id) || id <= 0
             || action && action !== 'view' || !this.hasTaskDenial(doc)) return null;
         return { type: match[1], id, available: false };
     }
@@ -56,7 +56,8 @@ class Scrape {
 
     // Grade ratios occur both as "8 / 10" and "8 out of 10" in Moodle.
     static gradeRatio(text) {
-        const match = String(text ?? "").replace(/\u00a0/g, " ")
+        // Moodle 4.5's aggregate grade is a sentence ending in a full stop.
+        const match = String(text ?? "").replace(/\u00a0/g, " ").replace(/\.\s*$/, "")
             .match(/(?:^|[^\d.,-])(\d+(?:\.\d+)?)\s*(?:\/|out of)\s*(\d+(?:\.\d+)?)(?![\d.,])/i);
         if (!match) return null;
         const point = Number(match[1]), maxp = Number(match[2]);
@@ -64,7 +65,8 @@ class Scrape {
     }
 
     static activityDate(kind, doc = document) {
-        const rows = [...doc.querySelectorAll(".description-inner div")];
+        const modernRows = [...doc.querySelectorAll('.activity-dates div')];
+        const rows = modernRows.length ? modernRows : [...doc.querySelectorAll(".description-inner div")];
         // Moodle changes the label when the timestamp passes; both forms
         // describe the same date and must survive a later detail refresh.
         const startLabel = /^(?:開始(?:日時|予定|済み)?|利用開始|オープン|Opened?|Opens|Available from|Allows submissions from)\s*[:：]/i;
@@ -82,7 +84,7 @@ class Scrape {
             // A wrapper can contain both date rows; textContent joins them.
             const datesOnly = new RegExp(`^(?:(?:${japaneseDate}|${englishDate})\\s*){1,2}$`, "i");
             if (rows.every(item => datesOnly.test(item.textContent.trim()))) {
-                const second = doc.querySelector(".description-inner div:nth-child(2)");
+                const second = modernRows.length ? rows[1] : doc.querySelector(".description-inner div:nth-child(2)");
                 row = second ? (kind === "start" ? rows[0] : second) : kind === "due" ? rows[0] : null;
                 // In the legacy bare-date layout, unwrap to the selected date
                 // before looking for <time>, without including its sibling.

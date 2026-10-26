@@ -23,15 +23,19 @@ class AccountSession {
         const id = sender?.tab?.id;
         const url = new URL(sender?.url || sender?.tab?.url || "about:blank");
         if (!Number.isInteger(id) || id < 0 || (sender.frameId ?? 0) !== 0
-            || url.origin !== "https://cms7.ict.nitech.ac.jp" || !url.pathname.startsWith("/moodle40a/")) {
+            || !(globalThis.DuedleSites?.allowed(url.origin + url.pathname) ?? (url.origin === "https://cms7.ict.nitech.ac.jp")) || !url.pathname.startsWith("/moodle40a/")) {
             throw new Error("Moodleのページから操作してください");
         }
         return id;
     }
 
+    static accountKey(user, pageURL) {
+        return globalThis.DuedleSites?.accountKey(user, pageURL) ?? user;
+    }
+
     register(message, sender, resume = false) {
         const tab = AccountSession.senderTab(sender);
-        const user = AccountSession.userId(message.accountId);
+        const user = AccountSession.accountKey(AccountSession.userId(message.accountId), sender.url || sender.tab?.url);
         if (typeof message.pageId !== "string" || !message.pageId || message.pageId.length > 160) {
             throw new Error("ページの識別子が不正です");
         }
@@ -41,7 +45,7 @@ class AccountSession {
             // cookies/DOM cannot switch that account while a sweep is running.
             const collector = saved.duedleCollectionTabs?.[tab];
             if ((collector || saved.refreshCoordinator?.temporaryTabId === tab)
-                && (!user || saved.duedleAccount !== user || collector && collector !== user)) {
+                && (!user || saved.duedleAccount !== user || collector && AccountSession.accountKey(collector, sender.url || sender.tab?.url) !== user)) {
                 throw new Error("Moodleのアカウントが変わったか、ログイン状態を確認できません。更新を中止しました。");
             }
             // A history-restored document may refresh its registration, but must
@@ -68,7 +72,7 @@ class AccountSession {
             tabs[tab] = { accountId: user, pageId: message.pageId, documentId: sender.documentId || null };
             update.duedleAccountTabs = tabs;
             await this.storage.set(update);
-            return { ok: true, accountId: user };
+            return { ok: true, accountId: AccountSession.userId(message.accountId) };
         });
     }
 
@@ -76,7 +80,7 @@ class AccountSession {
         const tab = AccountSession.senderTab(sender);
         const saved = await this.storage.get(["duedleAccount", "duedleAccountTabs"]);
         const registered = saved.duedleAccountTabs?.[tab];
-        const user = AccountSession.userId(message.accountId);
+        const user = AccountSession.accountKey(AccountSession.userId(message.accountId), sender.url || sender.tab?.url);
         if (!user || user !== saved.duedleAccount) {
             throw new Error("Moodleのアカウントが変わりました。このページを再読み込みしてください。");
         }
@@ -173,7 +177,7 @@ class AccountSession {
         }).then(async reply => {
             if (!reply?.ok) throw new Error(reply?.error || "Moodleのユーザー情報を確認できません。");
             const active = await native.storage.local.get("duedleAccount");
-            globalThis.duedleAccountActive = Boolean(accountId && active.duedleAccount === accountId);
+            globalThis.duedleAccountActive = Boolean(accountId && active.duedleAccount === AccountSession.accountKey(accountId, pageURL));
         }).catch(error => { globalThis.duedleAccountActive = false; console.warn(error); });
         const send = async message => {
             await ready;
@@ -235,7 +239,7 @@ class AccountSession {
                 const reply = await native.runtime.sendMessage({ type: "ACCOUNT_RESUME", accountId, pageId });
                 if (!reply?.ok) throw new Error(reply?.error || "ページの登録を復元できませんでした。");
                 const active = await native.storage.local.get("duedleAccount");
-                if (!accountId || active.duedleAccount !== accountId) throw new Error("Moodleのアカウントが変わりました。");
+                if (!accountId || active.duedleAccount !== AccountSession.accountKey(accountId, pageURL)) throw new Error("Moodleのアカウントが変わりました。");
                 globalThis.duedleAccountActive = true;
                 const refreshed = await native.runtime.sendMessage({ type: "REFRESH_PAGE_READY", accountId, pageId });
                 if (!refreshed?.ok) throw new Error(refreshed?.error || "ページの復元に失敗しました。");
@@ -273,7 +277,7 @@ class AccountSession {
             return { accountId, pageId };
         };
         native.storage.onChanged.addListener((changes, area) => {
-            if (area === "local" && changes.duedleAccount && changes.duedleAccount.newValue !== accountId) invalidate();
+            if (area === "local" && changes.duedleAccount && changes.duedleAccount.newValue !== AccountSession.accountKey(accountId, pageURL)) invalidate();
         });
         // WebExtension namespaces can expose inherited/non-enumerable members.
         // Forward native APIs rather than copying only enumerable properties.
