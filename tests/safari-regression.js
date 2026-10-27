@@ -1392,7 +1392,7 @@
         const unknown = [8, 9, 10, 11];
         const cases = {
             all: items.map(item => item.assignId), started: [1, 2, ...unknown, 13],
-            today: [3, 4, ...unknown, 12], week: [3, 4, 5, 6, ...unknown, 12],
+            today: [1, 2, 3, 4, ...unknown, 12, 13], week: [1, 2, 3, 4, 5, 6, ...unknown, 12, 13],
             future: [3, 4, 5, 6, 7, ...unknown, 12]
         };
         for (const [selectedStart, expected] of Object.entries(cases)) {
@@ -1414,6 +1414,15 @@
         const started = await displayEnvironment({ selectedStart: 'future', selectedStatus: 'all' }, [], [], now);
         await started.displaybox([task(30, 0)]);
         equal(started.children.length, 0, 'Becomes started at the exact start time without new task data');
+        const reportedNow = Date.parse('2026-10-28T00:55:00+09:00');
+        const reportedQuiz = { group: 'quiz_list', quizId: 104, quizName: '小テスト（第04回）',
+            courseName: '信号処理', show: true, status: 'incomplete',
+            start: '2026-10-23T08:00:00+09:00', due: '2026-10-30T00:00:00+09:00' };
+        for (const selectedStart of ['started', 'today', 'week']) {
+            const env = await displayEnvironment({ selectedStart, selectedDue: 'progressing', selectedStatus: 'all' }, [], [], reportedNow);
+            await env.displaybox([reportedQuiz]);
+            equal(env.children.map(item => item.quizId), [104], `Reported already-open quiz stays visible: ${selectedStart}`);
+        }
     });
 
     test("start selector defaults to all, saves choices and restores and synchronizes open controls", async () => {
