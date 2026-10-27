@@ -56,8 +56,8 @@ const displaybox = async (data, target = null) => {
                 const untilStart = startsAt - now;
                 if (savedStart === "started" && untilStart > 0) continue;
                 if (savedStart === "future" && untilStart <= 0) continue;
-                if (savedStart === "today" && (untilStart <= 0 || untilStart > 24 * 60 * 60 * 1000)) continue;
-                if (savedStart === "week" && (untilStart <= 0 || untilStart > 7 * 24 * 60 * 60 * 1000)) continue;
+                if (savedStart === "today" && untilStart > 24 * 60 * 60 * 1000) continue;
+                if (savedStart === "week" && untilStart > 7 * 24 * 60 * 60 * 1000) continue;
             }
             const remainhours = item.due ? (item.due - now) / (1000 * 60 * 60) : NaN;
             // An unknown deadline must remain visible so it cannot hide urgent work.
