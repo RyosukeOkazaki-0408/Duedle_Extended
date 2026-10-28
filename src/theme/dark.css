@@ -345,12 +345,56 @@ body.darkmode .alert-danger:not(.duedle-authored-content, .duedle-authored-conte
     background-color: #562e2e;
     border-color: #af7771;
 }
+/* Moodle's notification popover has its own light surface outside #region-main. */
+body.darkmode #nav-notification-popover-container .popover-region-container,
+body.darkmode #nav-notification-popover-container .popover-region-footer-container {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode #nav-notification-popover-container .popover-region-header-container,
+body.darkmode #nav-notification-popover-container .content-item-container {
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode #nav-notification-popover-container .popover-region-toggle::before {
+    border-bottom-color: var(--ios-separator, #52616d);
+}
+body.darkmode #nav-notification-popover-container .popover-region-toggle::after {
+    border-bottom-color: var(--ios-surface, #263541);
+}
+body.darkmode #nav-notification-popover-container .content-item-container.unread,
+body.darkmode #nav-notification-popover-container .content-item-container:hover,
+body.darkmode #nav-notification-popover-container .content-item-container:focus-within {
+    background-color: var(--ios-control, #3c4e5c);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode .message-app {
+    background-color: var(--ios-background, #1d2831);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode .message-app [data-region="contact-request-sent-message-container"] {
+    background-color: var(--ios-background, #1d2831);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
+}
 body.darkmode .message-app .message.send,
 body.darkmode .message-app .message.received,
 body.darkmode .content-item-container.unread {
     background-color: #263541;
     color: #dddddf;
     border-color: #788a99;
+}
+body.darkmode .message-app .message.send,
+body.darkmode .message-app .message.received {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode .message-app .message .tail {
+    border-bottom-color: var(--ios-surface, #263541);
+}
+body.darkmode .message-app .day,
+body.darkmode .message-app .message .time {
+    color: var(--ios-secondary, #b6c1cb);
 }
 /* The activity header owns the padding around the intro and completion dates. */
 /* Moodle's multiply blend darkens both the completion badge and its text. */

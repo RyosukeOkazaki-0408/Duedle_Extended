@@ -179,6 +179,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
 - **テーマ**: Moodleの通常UIと教員作成コンテンツを区別し、対象を限定したセレクタを使います。文字色と背景色を組み合わせて確認し、画像・図、リンク、問題の正誤表示、ライトへの復帰にも注意します。
   アンケート（Questionnaire）の設問 `.qn-question` と番号 `.qn-info` は小テストの `.que` とは別の要素です。`path-mod-questionnaire` 内で背景・文字色を対にして補正します。
   アンケートとページ教材の教員作成本文も配色補正の対象です。Attoの編集領域や `contenteditable` 内に表示用の属性を追加しないでください。SCORM教材の明るいパネルが本文の文字色を継承する場合は、教材全体の元の配色を維持します。
+  ナビゲーションの通知ポップアップとメッセージドロワーも確認します。背景・本文・時刻・未読表示・吹き出しの矢印を対にし、ライトやほのぼのへの復帰、キーボード操作、入力中の下書きを確認します。
   提出画面のファイル選択・ファイル情報は `#region-main` の外に追加されるYUIダイアログです。`.moodle-dialogue-wrap` とリポジトリメニューを対象にし、ライセンス欄の `select.form-control`、iOS風ON/OFF、ダイアログの再表示も確認します。
   ファイル一覧の詳細表、ドラッグ中の領域、サムネイルのホバー／キーボードフォーカスと、コースリンクをクリックした後の配色も確認します。フォーカスの位置が分かる表示は維持します。
   ダーク時の `color-scheme: dark` を課題一覧のCSSなどで `light dark` に上書きしないでください。モード分離はダークCSSの有効／無効比較と、OS配色変更時の明示設定の維持も検証します。
@@ -213,6 +214,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 課題カードの操作・欠損値・絞り込み | `node tests/browser-task-cards.cjs` |
 | 共通ナビゲーション・教材見出し・提出ファイル | `node tests/browser-common-ui.cjs` |
 | 教員作成本文・Atto入力欄の配色 | `node tests/browser-author-content.cjs` |
+| 通知ポップアップ・メッセージドロワー | `node tests/browser-notifications-messages.cjs` |
 | 小テストのTinyMCE解答欄・タイマー | `node tests/browser-quiz-editor-theme.cjs` |
 | 設定メニュー・使い方ガイド | `node tests/browser-support.cjs` |
 | アカウント切替・DOM表示 | `node tests/browser-review-fixes.cjs` |
