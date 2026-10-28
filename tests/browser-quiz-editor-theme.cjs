@@ -100,7 +100,7 @@ const assert = require('node:assert/strict');
                     }
                     assert.equal((await style(frame.locator('html'))).scheme,'dark');
                     for (const selector of ['td:not(.mceSelected)','th','pre']) assert.equal((await style(frame.locator(selector))).color,text,'Tables and preformatted text inherit the readable editor color');
-                    assert.equal((await style(frame.locator('.mceSelected'))).bg,'rgb(60, 78, 92)','Selected cells keep a readable contrasting background');
+                    assert.equal((await style(frame.locator('.mceSelected'))).bg,ios?'rgb(58, 58, 60)':'rgb(60, 78, 92)','Selected cells keep a readable contrasting background');
                     assert.notEqual((await style(page.locator('#bold .mceIcon'))).filter,'none','Sprite icons become readable');
                     assert.equal((await style(page.locator('#disabled .mceIcon'))).opacity,'0.3','Disabled buttons stay visibly disabled');
                     await page.locator('#bold').hover();

@@ -3,6 +3,7 @@ body.iosmode {
     --ios-background: #f2f2f7;
     --ios-surface: #ffffff;
     --ios-control: #e9e9ef;
+    --ios-hover: #dddde3;
     --ios-text: #1c1c1e;
     --ios-secondary: #636366;
     --ios-separator: #c6c6c8;
@@ -13,6 +14,7 @@ body.iosmode.darkmode {
     --ios-background: #000000;
     --ios-surface: #1c1c1e;
     --ios-control: #2c2c2e;
+    --ios-hover: #3a3a3c;
     --ios-text: #f2f2f7;
     --ios-secondary: #aeaeb2;
     --ios-separator: #48484a;
@@ -160,6 +162,35 @@ body.iosmode:not(.honobono) #fieldcolor input[type="color"] {
     border: 1px solid var(--ios-separator);
     background-color: var(--ios-surface);
 }
+/* Menus and pagination are also used on profile, grades, reports and file pages.
+   Pair each interactive state; keep authored examples and honobono untouched. */
+body.iosmode:not(.honobono) :is(.dropdown-menu, .page-link):not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface);
+    color: var(--ios-text);
+    border-color: var(--ios-separator);
+}
+body.iosmode:not(.honobono) .dropdown-divider:not(.duedle-authored-content, .duedle-authored-content *) {
+    border-color: var(--ios-separator);
+}
+body.iosmode:not(.honobono) .dropdown-item:not(.duedle-authored-content, .duedle-authored-content *) {
+    color: var(--ios-text);
+}
+body.iosmode:not(.honobono) :is(.dropdown-item, .page-link):is(:hover, :focus):not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-control);
+    color: var(--ios-text);
+}
+body.iosmode:not(.honobono) .dropdown-item:is(.active, :active):not(.duedle-authored-content, .duedle-authored-content *),
+body.iosmode:not(.honobono) .page-item.active .page-link:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-accent);
+    color: var(--ios-background);
+    border-color: var(--ios-accent);
+}
+body.iosmode:not(.honobono) .dropdown-item:is(.disabled, :disabled):not(.duedle-authored-content, .duedle-authored-content *),
+body.iosmode:not(.honobono) .page-item.disabled .page-link:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface);
+    color: var(--ios-secondary);
+    border-color: var(--ios-separator);
+}
 @media (prefers-contrast: more) {
     body.iosmode {
         --ios-separator: #636366;
@@ -173,6 +204,7 @@ body.iosmode:not(.honobono) #fieldcolor input[type="color"] {
         --ios-background: Canvas;
         --ios-surface: Canvas;
         --ios-control: ButtonFace;
+        --ios-hover: Highlight;
         --ios-text: CanvasText;
         --ios-secondary: CanvasText;
         --ios-separator: ButtonText;

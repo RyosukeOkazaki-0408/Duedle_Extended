@@ -173,8 +173,8 @@ const fs = require('node:fs');
                     assert.equal((await style('#submission-files .btn-secondary')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(46, 62, 74)', 'Submission toolbar buttons are dark outside dialogs');
                     assert.equal((await style('.fp-select label')).color, text, 'File properties labels remain readable');
                     for (const selector of ['.fp-setlicense select', '.fp-license select', '.fp-path select']) {
-                        assert.equal((await style(selector)).bg, 'rgb(38, 53, 65)', 'Plain form-control selects are dark too');
-                        assert.equal((await style(selector)).color, 'rgb(221, 221, 223)');
+                        assert.equal((await style(selector)).bg, surface, 'Plain form-control selects are dark too');
+                        assert.equal((await style(selector)).color, text);
                     }
                     assert.notEqual((await style('.fp-repo .nav-link')).bg, (await style('.fp-repo .active')).bg, 'Selected repository is distinct');
                     assert.notEqual((await style('.fp-viewbar .checked')).bg, (await style('#file-dialog .btn-secondary')).bg, 'Selected file view is distinct');
@@ -191,7 +191,7 @@ const fs = require('node:fs');
                 // Mouse clicks must stay readable, while Tab focus remains visible.
                 for (const selector of ['#focus-course', '#focus-plain', '#focus-arrow', '#focus-activity']) {
                     await page.locator(selector).click();
-                    assert.equal((await style(selector)).bg, mode === 1 ? 'rgb(60, 78, 92)' : 'rgb(211, 232, 250)', 'Focused links use the current theme background');
+                    assert.equal((await style(selector)).bg, mode === 1 ? (ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)') : 'rgb(211, 232, 250)', 'Focused links use the current theme background');
                     assert.equal((await style(selector)).color, mode === 1 ? 'rgb(255, 255, 255)' : 'rgb(33, 37, 41)', 'Focused link text remains readable');
                     if (mode === 1) assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
                 }
@@ -199,7 +199,7 @@ const fs = require('node:fs');
                 await page.keyboard.press('Tab');
                 assert(await page.locator('#focus-course').evaluate(el => el === document.activeElement && el.matches(':focus-visible')), 'Tab focus is preserved');
                 if (mode === 1) {
-                    assert.equal((await style('#focus-class')).bg, 'rgb(60, 78, 92)', 'Moodle focus classes match actual focus');
+                    assert.equal((await style('#focus-class')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)', 'Moodle focus classes match actual focus');
                     await page.locator('#submission-files .fp-thumbnail').focus();
                     assert.equal((await style('#submission-files .fp-thumbnail')).bg, ios ? 'rgb(44, 44, 46)' : 'rgb(60, 78, 92)', 'Keyboard focus highlights thumbnails too');
                 }
@@ -237,11 +237,11 @@ const fs = require('node:fs');
                 const eventStyle = await style('.event');
                 assert.equal(eventStyle.border,eventStyle.bg,'Upcoming event left edge uses the same status color as its background');
                 if (mode===1) {
-                    assert.equal(description.bg,'rgb(38, 53, 65)');
+                    assert.equal(description.bg,ios ? 'rgb(28, 28, 30)' : 'rgb(38, 53, 65)');
                     assert.equal((await style('.draghome.group1')).bg,'rgb(38, 53, 65)');
                     assert.equal((await style('.draghome.group1')).color,'rgb(221, 221, 223)');
                     assert.notEqual((await style('.draghome.group3')).bg,(await style('.draghome.group1')).bg,'Drag groups keep different colors');
-                    assert.equal((await style('.drop.active')).border,'rgb(120, 138, 153)');
+                    assert.equal((await style('.drop.active')).border,ios ? 'rgb(72, 72, 74)' : 'rgb(120, 138, 153)');
                     assert.equal((await style('#course-black')).color,'rgb(221, 221, 223)');
                     assert.notEqual((await style('#course-blue')).color,'rgb(0, 0, 255)');
                     assert.notEqual((await style('#course-yellow')).bg,'rgb(255, 255, 0)');
@@ -250,11 +250,11 @@ const fs = require('node:fs');
                     assert.equal(description.color,'rgb(221, 221, 223)');
                     assert.equal(intro.bg,'rgba(0, 0, 0, 0)');
                     for (const selector of ['#quiz-header', '#assign-header']) {
-                        assert.equal((await style(selector)).bg,'rgb(38, 53, 65)','The outer activity header, including padding, must be dark');
-                        assert.equal((await style(selector)).color,'rgb(221, 221, 223)');
+                        assert.equal((await style(selector)).bg,ios ? 'rgb(28, 28, 30)' : 'rgb(38, 53, 65)','The outer activity header, including padding, must be dark');
+                        assert.equal((await style(selector)).color,ios ? 'rgb(242, 242, 247)' : 'rgb(221, 221, 223)');
                     }
-                    assert.equal((await style('.gradedattempt')).bg,'rgb(36, 60, 70)');
-                    assert.equal((await style('.icons-collapse-expand .icon')).color,'rgb(221, 221, 223)');
+                    assert.equal((await style('.gradedattempt')).bg,ios ? 'rgb(44, 44, 46)' : 'rgb(36, 60, 70)');
+                    assert.equal((await style('.icons-collapse-expand .icon')).color,ios ? 'rgb(242, 242, 247)' : 'rgb(221, 221, 223)');
                     assert((await style('.custom-select')).image.includes('b6c1cb'));
                     assert.notEqual((await style('#fieldcolor input')).bg,'rgb(255, 255, 255)');
                     assert.equal((await style('#fieldcolor input')).image,'none','Select arrows never appear on color inputs');

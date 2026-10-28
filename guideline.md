@@ -182,6 +182,7 @@ Chromeはservice worker、Safariは非永続背景ページで同じ保存・調
   ナビゲーションの通知ポップアップとメッセージドロワーも確認します。背景・本文・時刻・未読表示・吹き出しの矢印を対にし、ライトやほのぼのへの復帰、キーボード操作、入力中の下書きを確認します。
   提出画面のファイル選択・ファイル情報は `#region-main` の外に追加されるYUIダイアログです。`.moodle-dialogue-wrap` とリポジトリメニューを対象にし、ライセンス欄の `select.form-control`、iOS風ON/OFF、ダイアログの再表示も確認します。
   ファイル一覧の詳細表、ドラッグ中の領域、サムネイルのホバー／キーボードフォーカスと、コースリンクをクリックした後の配色も確認します。フォーカスの位置が分かる表示は維持します。
+  プロフィール／カレンダーのメニュー、ページ番号の選択・無効状態、通知設定の補助ツールチップ、ファイルピッカーの選択中リポジトリも確認します。中立色は `--ios-surface`・`--ios-control`・`--ios-hover` などを使い、iOS風OFFでは既存色へ戻します。警告・正誤・課題状態の意味を持つ色は保持します。Moodle側の `.active:not(:disabled):not(.disabled).active` のような強いセレクタもテストに含めます。
   ダーク時の `color-scheme: dark` を課題一覧のCSSなどで `light dark` に上書きしないでください。モード分離はダークCSSの有効／無効比較と、OS配色変更時の明示設定の維持も検証します。
   通常のリンクはiOS風ONで `--ios-accent` に揃えます。ほのぼのの配色、ボタン・メニュー・フォーカス状態と教員指定の書式は既存の役割を維持します。状態色付きカードのリンクは同じアクセント色を基準に、必要な場合だけコントラストを補正します。
   TinyMCEの解答欄は別フレームです。`theme/content.js` がエディタの同一オリジンフレームのheadとhtml要素だけに表示用スタイルを設定します。解答本文のHTMLやbody属性は変更せず、ライト復帰・遅延初期化・再読込も検証します。残り時間は通常時を暗色化し、最後の17秒の警告色を維持します。
@@ -210,6 +211,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 変更対象 | 主な確認コマンド |
 | --- | --- |
 | テーマ・Moodle部品の配色 | `node tests/browser-theme-components.cjs` |
+| メニュー・ページ番号・遅延ダイアログのiOS配色 | `node tests/browser-ios-secondary-ui.cjs` |
 | アンケートの設問・番号、回答・集計画面 | `node tests/browser-questionnaire-theme.cjs` |
 | 課題カードの操作・欠損値・絞り込み | `node tests/browser-task-cards.cjs` |
 | 共通ナビゲーション・教材見出し・提出ファイル | `node tests/browser-common-ui.cjs` |

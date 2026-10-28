@@ -1,8 +1,8 @@
 /* Flat selectors support Safari 16. Color pairs are scoped to dark mode. */
 body.darkmode {
     color-scheme: dark;
-    color: #dddddf;
-    background-color: #1d2831;
+    color: var(--ios-text, #dddddf);
+    background-color: var(--ios-background, #1d2831);
 }
 body.darkmode #page,
 body.darkmode #page-content,
@@ -10,30 +10,30 @@ body.darkmode #region-main,
 body.darkmode #region-main-box,
 body.darkmode #ext_dashboard,
 body.darkmode #duedle-theme-toolbar {
-    background-color: #1d2831;
-    color: #dddddf;
+    background-color: var(--ios-background, #1d2831);
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode .card:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .block:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .generalbox:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .list-group-item:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .modal-content:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #52616d;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .card-header:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .card-footer:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .modal-header:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .modal-footer:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #52616d;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .navbar.fixed-top,
 body.darkmode .navbar-bootswatch {
-    background-color: #1d2831;
-    border-bottom-color: #52616d;
+    background-color: var(--ios-background, #1d2831);
+    border-bottom-color: var(--ios-separator, #52616d);
 }
 body.darkmode .navbar .nav-link,
 body.darkmode .navbar .navbar-brand,
@@ -41,7 +41,7 @@ body.darkmode .navbar .usertext,
 body.darkmode .page-header-headings,
 body.darkmode .duedle-section-title,
 body.darkmode .coursemenubtn {
-    color: #dddddf;
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode a:not(.btn, .duedle-authored-content, .duedle-authored-content *) {
     color: var(--ios-accent, #8bc5e8);
@@ -64,39 +64,39 @@ body.darkmode .arrow_link.focus:not(.duedle-authored-content, .duedle-authored-c
 body.darkmode a:not([class]):focus:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .activityinstance > a:focus:not(.btn, .duedle-authored-content, .duedle-authored-content *),
 body.darkmode .activityinstance > a.focus:not(.btn, .duedle-authored-content, .duedle-authored-content *) {
-    background-color: #3c4e5c;
+    background-color: var(--ios-control, #3c4e5c);
     color: #ffffff;
     outline: 2px solid var(--ios-accent, #8bc5e8);
     outline-offset: 2px;
     box-shadow: none;
 }
 body.darkmode .text-dark:not(.duedle-authored-content, .duedle-authored-content *) {
-    color: #dddddf !important;
+    color: var(--ios-text, #dddddf) !important;
 }
 body.darkmode .text-muted:not(.duedle-authored-content, .duedle-authored-content *) {
-    color: #b6c1cb !important;
+    color: var(--ios-secondary, #b6c1cb) !important;
 }
 body.darkmode .border-bottom:not(.duedle-authored-content, .duedle-authored-content *) {
-    border-bottom-color: #52616d !important;
+    border-bottom-color: var(--ios-separator, #52616d) !important;
 }
 body.darkmode .bg-white:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .bg-light:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541 !important;
-    color: #dddddf;
+    background-color: var(--ios-surface, #263541) !important;
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode #region-main table:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode #region-main table:not(.duedle-authored-content, .duedle-authored-content *) th,
 body.darkmode #region-main table:not(.duedle-authored-content, .duedle-authored-content *) td {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #52616d;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .table-striped:not(.duedle-authored-content *) tbody tr:nth-of-type(odd) {
-    background-color: #2e3e4a;
+    background-color: var(--ios-control, #2e3e4a);
 }
 body.darkmode tr[bgcolor="lightblue"]:not(.duedle-authored-content *) {
-    background-color: #363f45;
-    color: #dddddf;
+    background-color: var(--ios-control, #363f45);
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode input.form-control:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode textarea.form-control:not(.duedle-authored-content, .duedle-authored-content *),
@@ -104,35 +104,35 @@ body.darkmode select.form-control:not(.duedle-authored-content, .duedle-authored
 body.darkmode .custom-select:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode #jump-to-activity,
 body.darkmode #fieldfilter select {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #788a99;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode input.form-control:not(.duedle-authored-content, .duedle-authored-content *)::placeholder,
 body.darkmode textarea.form-control:not(.duedle-authored-content, .duedle-authored-content *)::placeholder {
-    color: #b6c1cb;
+    color: var(--ios-secondary, #b6c1cb);
 }
 body.darkmode .btn-outline-secondary:not(.duedle-authored-content, .duedle-authored-content *) {
-    color: #dddddf;
-    border-color: #788a99;
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode .btn-outline-secondary:not(.duedle-authored-content, .duedle-authored-content *):hover,
 body.darkmode .btn-outline-secondary:not(.duedle-authored-content, .duedle-authored-content *):focus-visible {
-    background-color: #3c4e5c;
+    background-color: var(--ios-control, #3c4e5c);
     color: #ffffff;
 }
 body.darkmode .dropdown-menu:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .page-link:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #788a99;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode .dropdown-item:not(.duedle-authored-content, .duedle-authored-content *) {
-    color: #dddddf;
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode .dropdown-item:not(.duedle-authored-content, .duedle-authored-content *):hover,
 body.darkmode .dropdown-item:not(.duedle-authored-content, .duedle-authored-content *):focus {
-    background-color: #3c4e5c;
+    background-color: var(--ios-control, #3c4e5c);
     color: #ffffff;
 }
 /* Moodle's YUI file dialogs are appended outside #region-main and do not use
@@ -163,11 +163,11 @@ body.darkmode .filemanager .btn-secondary:hover,
 body.darkmode .filemanager .btn-secondary:focus-visible,
 body.darkmode .file-picker .fp-repo .nav-link:hover,
 body.darkmode .file-picker .fp-repo .nav-link:focus-visible,
-body.darkmode .file-picker .fp-repo .nav-link.active,
+body.darkmode .file-picker .fp-repo .nav-link.active:not(:disabled):not(.disabled),
 body.darkmode .file-picker .fp-viewbar:not(.disabled) a.checked {
-    background-color: #3c4e5c;
+    background-color: var(--ios-hover, #3c4e5c);
     color: #ffffff;
-    border-color: #788a99;
+    border-color: var(--ios-separator, #788a99);
 }
 /* The submission file list also paints filename tiles and thumbnail frames. */
 body.darkmode .fp-iconview .fp-filename-field .fp-filename {
@@ -216,22 +216,22 @@ body.darkmode .fp-select .fp-info hr {
 }
 body.darkmode #filter,
 body.darkmode #display {
-    background-color: #1d2831;
-    color: #dddddf;
+    background-color: var(--ios-background, #1d2831);
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode #display li {
-    color: #dddddf;
+    color: var(--ios-text, #dddddf);
 }
 /* Change standard question panels as a foreground/background pair. */
 body.darkmode .que .info {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #788a99;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode .que .formulation {
-    background-color: #243c46;
-    color: #dddddf;
-    border-color: #788a99;
+    background-color: var(--ios-control, #243c46);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 /* Questionnaire uses separate panels from the standard quiz questions. */
 body.darkmode.path-mod-questionnaire .qn-info {
@@ -252,7 +252,7 @@ body.darkmode.path-mod-questionnaire .nav-tabs .nav-link:not(.active, .duedle-au
     border-color: var(--ios-separator, #52616d);
 }
 body.darkmode.path-mod-questionnaire .nav-tabs .nav-link.active:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: var(--ios-control, #3c4e5c);
+    background-color: var(--ios-hover, #3c4e5c);
     color: #ffffff;
     border-color: var(--ios-separator, #52616d);
 }
@@ -312,7 +312,7 @@ body.darkmode .moodleSkin .mceColorSplitMenu a.mceMoreColors:hover {
     color: #ffffff;
 }
 body.darkmode .moodleSkin .mceMenuItemDisabled .mceText {
-    color: #b6c1cb;
+    color: var(--ios-secondary, #b6c1cb);
 }
 body.darkmode .moodleSkin a.mceButton:focus-visible {
     outline: 2px solid var(--ios-accent, #8bc5e8);
@@ -380,9 +380,9 @@ body.darkmode .message-app [data-region="contact-request-sent-message-container"
 body.darkmode .message-app .message.send,
 body.darkmode .message-app .message.received,
 body.darkmode .content-item-container.unread {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #788a99;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode .message-app .message.send,
 body.darkmode .message-app .message.received {
@@ -402,20 +402,20 @@ body.darkmode .automatic-completion-conditions .badge:not(.duedle-authored-conte
     mix-blend-mode: normal;
 }
 body.darkmode .activity-header:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541;
-    color: #dddddf;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
 }
 /* Moodle 4 course descriptions and activity restrictions use their own surfaces. */
 body.darkmode .description .course-description-item:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .activity-item.hiddenactivity,
 body.darkmode .activity-information:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode .availabilityinfo:not(.duedle-authored-content, .duedle-authored-content *) {
-    background-color: #263541;
-    color: #dddddf;
-    border-color: #52616d;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .description .description-inner {
-    border-color: #52616d;
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .activity-item.hiddenactivity .course-description-item,
 body.darkmode .activity-item.hiddenactivity .activityiconcontainer,
@@ -425,13 +425,13 @@ body.darkmode .activity-item.hiddenactivity .badge {
 body.darkmode.path-mod-quiz .gradedattempt,
 body.darkmode.path-mod-quiz table tbody tr.gradedattempt > td,
 body.darkmode#page-mod-quiz-view table.quizattemptsummary tr.bestrow td {
-    background-color: #243c46;
-    color: #dddddf;
-    border-color: #52616d;
+    background-color: var(--ios-control, #243c46);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
 body.darkmode .course-content .icons-collapse-expand,
 body.darkmode .course-content .icons-collapse-expand .icon {
-    color: #dddddf;
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode .custom-select:not(.duedle-authored-content, .duedle-authored-content *),
 body.darkmode select.form-select:not(.duedle-authored-content, .duedle-authored-content *),
@@ -443,12 +443,12 @@ body.darkmode #fieldfilter select {
     background-position: right .75rem center;
     background-size: 10px 14px;
     padding-right: 2rem;
-    background-color: #263541;
-    color: #dddddf;
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
 }
 body.darkmode #fieldcolor input[type="color"] {
-    background-color: #263541;
-    border-color: #788a99;
+    background-color: var(--ios-surface, #263541);
+    border-color: var(--ios-separator, #788a99);
 }
 /* Rich text stays dark; content.js adjusts hues for readable contrast. */
 body.darkmode .que.ddwtos .draghome.duedle-content-colors,
@@ -458,7 +458,7 @@ body.darkmode .que.ddwtos .drop.active.duedle-content-colors {
 }
 body.darkmode .que.ddwtos .draghome,
 body.darkmode .que.ddwtos .drop.active {
-    border-color: #788a99;
+    border-color: var(--ios-separator, #788a99);
 }
 body.darkmode .que.ddwtos .drop:focus,
 body.darkmode .que.ddwtos .drop.valid-drag-over-drop,
@@ -504,4 +504,11 @@ body.darkmode.pagelayout-login .login-divider {
 }
 body.darkmode.pagelayout-login .login-container .divider {
     background-color: var(--ios-separator, #52616d);
+}
+
+/* Notification preferences show a separate hover hint beside processor settings. */
+body.darkmode#page-message-notificationpreferences .hover-tooltip {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
 }
