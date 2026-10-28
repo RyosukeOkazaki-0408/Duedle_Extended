@@ -33,16 +33,10 @@ class TaskBox { //親クラス
             </div>
         `;
         element.insertAdjacentHTML("beforeend", inner);
-        //edit style
-        if ((await ext.storage.sync.get(["selectedShow"])).selectedShow === "all") {
-            const ddm = element.querySelector(".dropdown-menu");
-            ddm.setAttribute("hidden", "");
-        }
-
         const listatus = element.querySelector(".liStatus");
         const title = element.querySelector(".title");
         const courseName = this.data.courseName || "コース名不明";
-        title.textContent = (courseName.match(/^(.+?)\s\d/)?.[1] || courseName).trim();
+        title.textContent = courseName.trim();
         switch (this.data.status) {
             case "complete":
                 listatus.textContent = "状態: 完了";

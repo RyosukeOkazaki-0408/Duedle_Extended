@@ -1,5 +1,5 @@
 //言語選択ボタン
-const el = document.querySelector(".list-unstyled.pt-3");
+const el = document.querySelector("footer .list-unstyled.pt-3");
 if(el) el.remove();
 
 //Homeボタン
@@ -11,13 +11,13 @@ home.forEach((el) => {
 });
 
 //ログイン表示
-const logininfo = document.querySelector(".logininfo");
+const logininfo = document.querySelector("footer .logininfo");
 if (logininfo) {
     logininfo.remove();
 }
 
 //ログイン表示まわりの空行
-const icon = document.querySelector("i.fa-envelope-o");
+const icon = document.querySelector("footer i.fa-envelope-o");
 if (icon) {
     const space = icon.closest("div.pb-3");
     if (space) {

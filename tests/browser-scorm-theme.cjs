@@ -55,6 +55,20 @@ const wrapper = `<!doctype html><html><head><style>html,body{background:#fff;col
                 assert.equal((await colors(canvas.locator('body'))).color, 'rgb(0, 0, 0)');
             }
         }
+        // A white teaching panel with inherited body text must stay readable,
+        // including when it appears after the SCORM player has loaded.
+        await page.evaluate(() => duedleApplyTheme(1, false));
+        await waitBackground('rgb(29, 40, 49)');
+        await canvas.locator('body').evaluate(body => {
+            const panel = document.createElement('div');
+            panel.id = 'inherited-panel'; panel.style.background = 'white';
+            panel.textContent = '白い背景の教材'; body.appendChild(panel);
+        });
+        await waitBackground('rgb(255, 255, 255)');
+        assert.deepEqual(await colors(canvas.locator('#inherited-panel')), { bg: 'rgb(255, 255, 255)', color: 'rgb(0, 0, 0)' });
+        await canvas.locator('#inherited-panel').evaluate(element => element.remove());
+        await waitBackground('rgb(29, 40, 49)');
+        assert.equal(await canvas.locator('body').innerHTML(), original);
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.evaluate(() => duedleApplyTheme(0));
         await waitBackground('rgb(29, 40, 49)');

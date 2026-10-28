@@ -127,7 +127,7 @@ typeFilter.applyDefault("all");
 
 //status filter
 const statusValues = ["all", "complete", "ex-complete", "incomplete", "expired", "unknown"];
-const statusOptionsText = ["すべて", "完了", "完了以外", "未提出", "行き詰まり・期限切れ", "点数不明(小テストのみ)"];
+const statusOptionsText = ["すべて", "完了", "完了以外", "未提出", "行き詰まり・期限切れ", "不明"];
 const statusFilter = new FilterSelect("statusSelect", "状態", statusValues, statusOptionsText, "selectedStatus");
 statusFilter.valueAliases = { qualify: "complete", stuck: "expired" };
 statusFilter.applyDefault("ex-complete");
@@ -531,7 +531,7 @@ const colorTypesTitle = [
     "提出していない / 小テストに答えていない",
     "小テストの受験回数上限に達して合格していない / 未完了のまま期限を過ぎている",
     "期限が3日以内だが未提出",
-    "点数が非公開のため評価できない (小テストのみ)",
+    "提出状況や小テストの結果を判定できない",
     "まだ確認していないタスク"
 ];
 colorTypesValue.map((value, index) => {

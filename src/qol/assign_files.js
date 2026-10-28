@@ -24,10 +24,23 @@
         const originalURL = link.href;
         let url;
         try { url = new URL(originalURL); } catch { return; }
+        const linkTarget = (link.target || "").toLowerCase();
         // Download-only and unknown formats keep the browser's native handling.
-        if (!url.pathname.includes("submission_files") || !["http:", "https:"].includes(url.protocol)
+        if (url.origin !== location.origin || !url.pathname.includes("submission_files")
+            || !["http:", "https:"].includes(url.protocol)
+            || (linkTarget && linkTarget !== "_self" && linkTarget !== "_blank")
             || !/\.(pdf|jpe?g|png|gif|webp|avif|txt)$/i.test(url.pathname)) return;
+        // Open while the click is active so pop-up blockers do not discard the
+        // native separate-tab behavior while the authenticated fetch runs.
+        const previewWindow = linkTarget === "_blank" ? window.open("about:blank", "_blank") : null;
+        if (linkTarget === "_blank" && !previewWindow) return;
+        if (previewWindow) previewWindow.opener = null;
         event.preventDefault();
+        const navigate = url => {
+            if (previewWindow) {
+                if (!previewWindow.closed) previewWindow.location.assign(url);
+            } else location.assign(url);
+        };
         try {
             const response = await fetch(inlineUrl(originalURL), { credentials: "include" });
             if (!response.ok || response.redirected && /\/(login|auth)\//.test(new URL(response.url).pathname)) {
@@ -36,18 +49,17 @@
             const type = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
             if (!["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "text/plain"].includes(type)) {
                 await response.body?.cancel();
-                location.assign(originalURL);
+                navigate(originalURL);
                 return;
             }
             const blob = await response.blob();
             const blobURL = URL.createObjectURL(blob);
-            // Stay on the assignment while loading; navigate only when ready.
-            // A Blob URL avoids Moodle's attachment header without a waiting tab.
-            location.assign(blobURL);
+            // A Blob URL avoids Moodle's attachment header.
+            navigate(blobURL);
             window.setTimeout(() => URL.revokeObjectURL(blobURL), 10 * 60 * 1000);
         } catch (error) {
             console.warn("Duedle: submitted file preview fell back to the Moodle link", error);
-            location.assign(originalURL);
+            navigate(originalURL);
         }
     });
 })();

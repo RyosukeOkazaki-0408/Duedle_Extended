@@ -91,6 +91,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   await page.keyboard.press('Space');await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
   assert.equal(await page.locator('#thememode_selection').getAttribute('aria-expanded'),'true','Selecting a color mode keeps settings open for further changes');
   await chooseTheme('2');
+  if (await page.locator('body').evaluate(el => el.classList.contains('iosmode'))) await chooseTheme('ios-toggle');
   await page.locator('#thememode_selection').click();await page.keyboard.press('Home');for(let i=0;i<4;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Space');
   await page.waitForFunction(()=>document.body.classList.contains('iosmode'));
   assert.equal(await page.locator('#thememode_selection').getAttribute('value'),'2','Appearance checkbox does not change color mode');

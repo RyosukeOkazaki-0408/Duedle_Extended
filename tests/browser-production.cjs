@@ -40,6 +40,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
         };
         assert.equal(await page.locator('#thememode_selection').getAttribute('value'),'2');
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('darkmode')),false);
+        assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('iosmode')),true);
         assert(await page.locator('#display').isVisible());
         await chooseTheme('1');
         await page.evaluate(()=>{
@@ -63,7 +64,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
         assert.equal(await page.locator('#display').isVisible(),false);
         // Exercise real storage/menu/media listeners, not only the theme helper.
         for (const ios of [false,true]) {
-            if (ios) await chooseTheme('ios-toggle');
+            if (await page.locator('body').evaluate(el=>el.classList.contains('iosmode')) !== ios) await chooseTheme('ios-toggle');
             for (const mode of [0,1,2,3]) {
                 await chooseTheme(String(mode));
                 for (const scheme of ['dark','light']) {

@@ -233,6 +233,35 @@ body.darkmode .que .formulation {
     color: #dddddf;
     border-color: #788a99;
 }
+/* Questionnaire uses separate panels from the standard quiz questions. */
+body.darkmode.path-mod-questionnaire .qn-info {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode.path-mod-questionnaire .qn-question {
+    background-color: var(--ios-control, #243c46);
+    color: var(--ios-text, #dddddf);
+}
+body.darkmode.path-mod-questionnaire .nav-tabs:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface, #263541);
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode.path-mod-questionnaire .nav-tabs .nav-link:not(.active, .duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-accent, #8bc5e8);
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode.path-mod-questionnaire .nav-tabs .nav-link.active:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-control, #3c4e5c);
+    color: #ffffff;
+    border-color: var(--ios-separator, #52616d);
+}
+/* Do not decorate Atto's editable HTML; only theme the editing surface. */
+body.darkmode .editor_atto_content[contenteditable] {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    caret-color: var(--ios-text, #dddddf);
+}
 body.darkmode .que .outcome,
 body.darkmode .que .comment {
     background-color: #493922;

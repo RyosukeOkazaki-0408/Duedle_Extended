@@ -43,10 +43,14 @@ if (sel) {
 
 
 
-//マイコースとコースの非表示
-const my_cource = document.querySelectorAll(".breadcrumb-item");
-my_cource.forEach((el) => {
-    if (el.textContent.includes("マイコース") || el.textContent.includes("コース")) {
-        el.remove();
-    }
+// Hide only the global course-list breadcrumbs, never named courses/activities.
+document.querySelectorAll(".breadcrumb-item").forEach((item) => {
+    const link = item.querySelector("a[href]");
+    if (!link) return;
+    try {
+        const url = new URL(link.href, location.href);
+        const isCourseList = url.pathname === "/moodle40a/my/courses.php"
+            || (url.pathname === "/moodle40a/course/index.php" && !url.search);
+        if (url.origin === location.origin && isCourseList) item.remove();
+    } catch { /* An invalid link is not a course-list breadcrumb. */ }
 });

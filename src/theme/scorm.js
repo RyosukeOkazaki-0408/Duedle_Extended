@@ -3,6 +3,7 @@
 (() => {
     if (location.pathname !== "/moodle40a/mod/scorm/player.php" || !document.body) return;
     const registered = new WeakSet();
+    const contentObservers = new WeakMap();
     const styleId = "duedle-scorm-canvas-theme";
     const neutral = (value, light) => {
         const channels = String(value).match(/[\d.]+/g)?.map(Number);
@@ -10,6 +11,25 @@
         if (channels.length === 4 && channels[3] === 0) return light;
         return Math.max(...channels.slice(0, 3)) - Math.min(...channels.slice(0, 3)) < 25
             && (light ? Math.min(...channels.slice(0, 3)) >= 220 : Math.max(...channels.slice(0, 3)) <= 100);
+    };
+    const hasInheritedTextOnLightSurface = doc => {
+        // A white panel may inherit its text colour from body. Test inheritance
+        // without touching teaching content or flattening explicitly styled text.
+        const probe = doc.createElement("style");
+        probe.textContent = "body { color: rgb(1, 2, 3) !important; }";
+        doc.head.appendChild(probe);
+        try {
+            if (doc.defaultView.getComputedStyle(doc.body).color !== "rgb(1, 2, 3)") return true;
+            for (const element of doc.body.querySelectorAll("*")) {
+                if (!element.textContent.trim()) continue;
+                const style = doc.defaultView.getComputedStyle(element);
+                if (style.color !== "rgb(1, 2, 3)") continue;
+                const channels = style.backgroundColor.match(/[\d.]+/g)?.map(Number);
+                const opaque = channels && (channels.length < 4 || channels[3] > 0);
+                if ((opaque && neutral(style.backgroundColor, true)) || style.backgroundImage !== "none") return true;
+            }
+            return false;
+        } finally { probe.remove(); }
     };
     const sync = frame => {
         if (!frame.isConnected) return;
@@ -19,6 +39,18 @@
             if (!doc?.head || !doc.body || new URL(doc.URL).origin !== location.origin
                 || !new URL(doc.URL).pathname.startsWith("/moodle40a/")) return;
         } catch { return; } // External teaching services keep their own origin/security rules.
+        const observed = contentObservers.get(frame);
+        if (observed?.doc !== doc) {
+            observed?.observer.disconnect();
+            let pending = false;
+            const observer = new MutationObserver(() => {
+                if (pending) return;
+                pending = true;
+                requestAnimationFrame(() => { pending = false; sync(frame); });
+            });
+            observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+            contentObservers.set(frame, { doc, observer });
+        }
         let style = doc.getElementById(styleId);
         if (!document.body.classList.contains("darkmode")) {
             style?.remove();
@@ -34,7 +66,8 @@
         const rules = [];
         // Keep authored background images and colored canvases intact. Nested
         // images, videos, panels and foreign iframes are never selected here.
-        if (rootStyle.backgroundImage === "none" && bodyStyle.backgroundImage === "none") {
+        if (rootStyle.backgroundImage === "none" && bodyStyle.backgroundImage === "none"
+            && !(neutral(bodyStyle.color, false) && hasInheritedTextOnLightSurface(doc))) {
             if (neutral(rootStyle.backgroundColor, true)) rules.push(`html { background-color: ${background} !important; }`);
             if (neutral(bodyStyle.backgroundColor, true)) {
                 rules.push(`body { background-color: ${background} !important;${neutral(bodyStyle.color, false) ? ` color: ${color} !important;` : ""} }`);

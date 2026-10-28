@@ -18,7 +18,7 @@ body.iosmode.darkmode {
     --ios-separator: #48484a;
     --ios-accent: #64adff;
 }
-body.iosmode :is(.card, .block):not(.assign):not(.quiz),
+body.iosmode :is(.card, .block):not(.assign, .quiz, .duedle-authored-content, .duedle-authored-content *),
 body.iosmode :is(#filter, #duedle-settings-content) {
     border-radius: 16px;
     box-shadow: none;
@@ -100,10 +100,10 @@ body.iosmode:not(.honobono) :is(.navbar.fixed-top, .navbar-bootswatch) {
     background-color: var(--ios-surface) !important;
     border-bottom: 1px solid var(--ios-separator);
 }
-body.iosmode:not(.honobono) :is(.navbar-brand, .navbar .nav-link, #region-main h1, #region-main h2) {
+body.iosmode:not(.honobono) :is(.navbar-brand, .navbar .nav-link, #region-main h1, #region-main h2):not(.duedle-authored-content, .duedle-authored-content *) {
     color: var(--ios-text) !important;
 }
-body.iosmode:not(.honobono) :is(.card, .block):not(.assign):not(.quiz) {
+body.iosmode:not(.honobono) :is(.card, .block):not(.assign, .quiz, .duedle-authored-content, .duedle-authored-content *) {
     background-color: var(--ios-surface) !important;
     border: 1px solid var(--ios-separator);
 }

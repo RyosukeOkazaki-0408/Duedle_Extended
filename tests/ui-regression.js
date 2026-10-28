@@ -300,11 +300,16 @@ globalThis.URL = FakeURL;
 const source = readSource("src/qol/assign_files.js");
 async function fileClick(options = {}) {
     const events = [];
-    const link = new Element("https://example.test/submission_files/report." + (options.ext || "pdf") + "?forcedownload=1&token=keep");
+    const link = new Element("https://" + (options.external ? "other.test" : "example.test") + "/submission_files/report." + (options.ext || "pdf") + "?forcedownload=1&token=keep");
+    link.target = options.target || "";
     let handler;
-    globalThis.location = {href:"https://example.test/assign", assign(url) {events.push(["navigate",url]);}};
+    globalThis.location = {href:"https://example.test/assign", origin:"https://example.test", assign(url) {events.push(["navigate",url]);}};
     globalThis.document = {querySelectorAll() {return [link];}, addEventListener(name, callback) {handler=callback;}};
-    globalThis.window = {open() {throw new Error("No waiting tabs");}, setTimeout() {}};
+    globalThis.window = {open() {
+        events.push(["open"]);
+        if (options.blocked) return null;
+        return {closed:false, opener:{}, location:{assign(url) {events.push(["tab-navigate",url]);}}};
+    }, setTimeout() {}};
     globalThis.fetch = async url => {
         events.push(["fetch",url]);
         if(options.fail) throw new Error("Offline");
@@ -321,6 +326,14 @@ async function fileClick(options = {}) {
     const pdf=await fileClick();
     assert(pdf.some(e=>e[0]==="fetch" && !e[1].includes("forcedownload") && e[1].includes("token=keep")), "Preview fetch preserves authentication parameters");
     assert(pdf.some(e=>e[0]==="navigate" && e[1]==="blob:preview"), "PDF opens inline in the current tab");
+    const separate = await fileClick({target:"_blank"});
+    assert(separate.some(e=>e[0]==="open") && separate.some(e=>e[0]==="tab-navigate" && e[1]==="blob:preview") && !separate.some(e=>e[0]==="navigate"), "A separate-tab link keeps the assignment open while previewing");
+    const failedSeparate = await fileClick({target:"_blank",fail:true});
+    assert(failedSeparate.some(e=>e[0]==="tab-navigate" && e[1].includes("forcedownload=1")) && !failedSeparate.some(e=>e[0]==="navigate"), "A separate-tab fetch failure falls back in that tab");
+    const blocked = await fileClick({target:"_blank",blocked:true});
+    assert(!blocked.some(e=>["prevent","fetch","navigate"].includes(e[0])), "Blocked previews retain native link behavior");
+    assert((await fileClick({target:"named-window"})).length===0,"Named targets retain native behavior");
+    assert((await fileClick({external:true})).length===0,"External links retain native behavior");
     for(const ext of ["zip","docx","xlsx","bin"]) assert((await fileClick({ext})).length===0, "Download-only formats remain native: "+ext);
     assert((await fileClick({modified:true})).length===0,"Modified clicks remain native");
     for(const options of [{fail:true},{type:"application/zip"},{type:"text/html"}]) {
@@ -328,5 +341,5 @@ async function fileClick(options = {}) {
         assert(events.some(e=>e[0]==="navigate" && e[1].includes("forcedownload=1")),"Failure/unsupported MIME uses original link");
         assert(!events.some(e=>e[0]==="blob"),"Unsupported content never becomes an inline Blob");
     }
-    log("PASS inline submitted PDF without waiting tabs; native downloads; MIME and failure fallbacks");
+    log("PASS inline submitted files in current or separate tabs; blocked popups, native downloads, MIME and failure fallbacks");
 })().catch(error=>{log(error);throw error;});

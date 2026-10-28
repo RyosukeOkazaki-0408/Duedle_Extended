@@ -1159,15 +1159,22 @@
         equal(env.ext.runtime.onMessage.count(), 1);
     });
 
-    test("fresh installs use light while upgrades and explicit themes are preserved", async () => {
+    test("fresh installs use light and iOS appearance while upgrades and explicit themes are preserved", async () => {
         for (const reason of ["install", "update"]) {
             for (const mode of [undefined, 0, 1, 2, 3, 4]) {
                 const env = backgroundEnvironment(mode === undefined ? {} : { thememode: mode });
                 await env.initializeInstallation({ reason });
                 equal(env.state.themeDefault, reason === "install" ? 2 : 0);
                 equal(env.state.thememode, mode);
+                equal(env.state.iosAppearance, reason === "install" ? true : undefined);
                 await env.initializeInstallation({ reason: "update" });
                 equal(env.state.themeDefault, reason === "install" ? 2 : 0);
+                equal(env.state.iosAppearance, reason === "install" ? true : undefined);
+            }
+            for (const iosAppearance of [false, true]) {
+                const env = backgroundEnvironment({ iosAppearance });
+                await env.initializeInstallation({ reason });
+                equal(env.state.iosAppearance, iosAppearance);
             }
         }
     });

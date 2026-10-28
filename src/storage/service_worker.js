@@ -362,6 +362,9 @@ async function initializeInstallation(details) {
   if (settings.themeDefault === undefined) {
     await ext.storage.local.set({ themeDefault: details.reason === "install" ? 2 : 0 });
   }
+  if (details.reason === "install" && settings.iosAppearance === undefined) {
+    await ext.storage.local.set({ iosAppearance: true });
+  }
 }
 ext.runtime.onInstalled.addListener(details => {
   installationReady = initializeInstallation(details);

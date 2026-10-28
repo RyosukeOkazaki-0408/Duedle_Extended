@@ -2,7 +2,12 @@
 (() => {
     const selector = ".qtext, .que .answer, .generalfeedback, .specificfeedback, .rightanswer, .quizgradefeedback, .quizteacherfeedback, .activity-description, .activity-altcontent, .mod_introbox, .onlinetextsubmission, .course-content .summary, .course-content .contentafterlink, .description .description-inner"
         + ", .que.ddwtos .answercontainer, .course-content .contentwithoutlink, .course-content .summarytext, .course-content .no-overflow"
-        + (/\/mod\/(?:assign|quiz)\//.test(location.pathname) ? ", #intro" : "");
+        + (/\/mod\/(?:assign|quiz)\//.test(location.pathname) ? ", #intro" : "")
+        + (/\/mod\/questionnaire\//.test(location.pathname) ? ", .qn-question" : "")
+        + (/\/mod\/page\/view\.php$/.test(location.pathname) ? ", #region-main .generalbox.center.clearfix" : "");
+    // These are live answer HTML, not rendered teacher content. Decorating any
+    // part of an editor can leak our classes/styles into a submitted answer.
+    const editable = ".mceEditor, .moodleSkin, .editor_atto_content, [contenteditable]";
     const sources = new WeakMap();
     const originals = new WeakMap();
     const applied = new WeakMap();
@@ -62,7 +67,7 @@
     const adapt = root => {
         const nodes = [root, ...root.querySelectorAll("*")]
             .filter(node => node.style && !node.matches("img, svg, svg *, canvas, video, iframe, picture, source")
-                && !node.closest(".mceEditor, .moodleSkin"));
+                && !node.closest(editable));
         // Remember page edits, but never adopt our own adapted inline values.
         for (const node of nodes) {
             const current = inlineColors(node), previous = applied.get(node);
@@ -91,7 +96,7 @@
         }
     };
     const collectRoots = (root, roots) => {
-        if (root?.nodeType !== 1 || !root.isConnected) return;
+        if (root?.nodeType !== 1 || !root.isConnected || root.closest(editable)) return;
         // Nested Moodle content selectors share one author-color read.
         let parent = root.closest(".duedle-authored-content");
         while (parent?.parentElement?.closest(".duedle-authored-content")) {
@@ -99,7 +104,7 @@
         }
         if (parent) roots.add(parent);
         else if (root.matches(selector)) roots.add(root);
-        root.querySelectorAll(selector).forEach(node => roots.add(node));
+        root.querySelectorAll(selector).forEach(node => { if (!node.closest(editable)) roots.add(node); });
     };
     const adaptRoots = roots => {
         for (const root of roots) {

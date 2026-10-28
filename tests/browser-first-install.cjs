@@ -28,7 +28,7 @@ const setupScripts = idle.js.filter(file => /(?:theme\/(?:state|main)|document_s
             onChanged: { addListener: listener => listeners.push(listener) } }
         };
         globalThis.finishSettings = () => {
-          saved = { themeDefault: 2 };
+          saved = { themeDefault: 2, iosAppearance: true };
           resolveSettings({ ok: true, ...saved });
           listeners.forEach(listener => listener({ themeDefault: { newValue: 2 } }, 'local'));
         };
@@ -53,6 +53,8 @@ const setupScripts = idle.js.filter(file => /(?:theme\/(?:state|main)|document_s
       assert(await page.locator('#filter').isVisible());
       await page.evaluate(() => finishSettings());
       await page.waitForFunction(() => document.querySelector('#thememode_selection')?.value === '2');
+      await page.waitForFunction(() => document.body.classList.contains('iosmode') &&
+        document.querySelector('#thememode_selection')?.dataset.iosAppearance === 'true');
       assert.equal(await settings.evaluate(node => node.open), true, 'Async settings must not reset a user-opened panel');
       await page.setViewportSize({ width: 1024, height: 844 });
       await page.waitForFunction(() => !document.querySelector('#duedle-course-settings'));

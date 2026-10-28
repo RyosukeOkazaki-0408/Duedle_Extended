@@ -58,7 +58,7 @@ ${states.map((s,i)=>`<div class="activity-item" id="activity-${s}"><div class="a
    await checkPalette('#225544','#663344',course);
    await worker.evaluate(async()=>chrome.storage.local.set({thememode:2}));
    await checkPalette('#336699','#996633',course);
-   assert.deepEqual(await page.locator('#statusSelect option').allTextContents(),['すべて','完了','完了以外','未提出','行き詰まり・期限切れ','点数不明(小テストのみ)']);
+   assert.deepEqual(await page.locator('#statusSelect option').allTextContents(),['すべて','完了','完了以外','未提出','行き詰まり・期限切れ','不明']);
    // One filter change must commit once, never clear/repopulate the visible list.
    await page.waitForTimeout(1100);
    await page.evaluate(()=>{
