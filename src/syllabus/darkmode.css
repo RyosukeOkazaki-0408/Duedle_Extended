@@ -1,21 +1,14 @@
-/* table tr td:nth-child(odd) { */
-/*   background-color: #71abcf; */
-/* } */
-/**/
-/* table tr td:nth-child(even) { */
-/*   background-color: #1d2831; */
-/* } */
 body.darkmode {
   background-color: #1d2831;
   color: #dddddf;
 }
-body.darkmode a {
+body.darkmode a[href] {
   color: var(--ios-accent, #f0f0f2);
 }
 
 /* Use CSS so system appearance changes restore the original syllabus colors. */
 body.darkmode td[bgcolor="lightsteelblue"],
 body.darkmode tr > td > div[style*="lightsteelblue"] {
-  background-color: black !important;
-  color: white !important;
+  background-color: var(--ios-control, #263541) !important;
+  color: var(--ios-text, #dddddf) !important;
 }

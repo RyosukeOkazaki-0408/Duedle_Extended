@@ -184,12 +184,15 @@
       ],
       "js": [
         "./theme/state.js",
+        "./document_start/pre.js",
         "./syllabus/darkmode.js"
       ],
       "css": [
+        "./document_start/pre.css",
         "./syllabus/darkmode.css",
         "./theme/ios.css"
-      ]
+      ],
+      "run_at": "document_start"
     },
     {
       "matches": [

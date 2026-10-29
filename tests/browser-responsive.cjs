@@ -314,7 +314,7 @@ body{margin:0} #region-main{min-width:0} #usernavigation{display:flex;min-height
   await page.waitForFunction(()=>document.body.classList.contains('iosmode'));
   await page.evaluate(()=>{const table=document.createElement('table');table.innerHTML='<tbody><tr><td id="syllabus-cell" bgcolor="lightsteelblue">Syllabus</td></tr></tbody>';document.body.append(table);});
   await page.emulateMedia({colorScheme:'dark'});await page.waitForFunction(()=>document.body.classList.contains('darkmode'));
-  assert.equal(await page.locator('#syllabus-cell').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(0, 0, 0)');
+  assert.equal(await page.locator('#syllabus-cell').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(44, 44, 46)');
   await page.emulateMedia({colorScheme:'light'});await page.waitForFunction(()=>!document.body.classList.contains('darkmode'));
   assert.equal(await page.locator('#syllabus-cell').getAttribute('bgcolor'),'lightsteelblue','Syllabus attributes stay intact');
   assert.equal(await page.locator('#syllabus-cell').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(176, 196, 222)');

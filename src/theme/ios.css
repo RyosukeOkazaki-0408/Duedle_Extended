@@ -144,7 +144,7 @@ body.iosmode:not(.honobono) #display > :is(.assign, .quiz) {
 }
 /* Standard navigation links share the iOS accent. Controls, authored content
    and focus states keep their own paired colors; status cards adjust contrast. */
-body.iosmode:not(.honobono) a:not(.btn, .nav-link, .dropdown-toggle, .dropdown-item, [role="button"], .focus, :focus, .moodleSkin *, .duedle-authored-content, .duedle-authored-content *),
+body.iosmode:not(.honobono) a[href]:not(.btn, .nav-link, .dropdown-toggle, .dropdown-item, [role="button"], .focus, :focus, .moodleSkin *, .duedle-authored-content, .duedle-authored-content *),
 body.iosmode:not(.honobono) .activity-navigation a.btn-link {
     color: var(--ios-accent);
 }
