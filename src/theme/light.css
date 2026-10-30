@@ -29,3 +29,7 @@ body:not(.darkmode):not(.honobono) #page-footer a[href]:focus:not(.btn) {
     outline: 2px solid var(--ios-accent, #0068d9);
     outline-offset: 2px;
 }
+/* Moodle sets the support envelope itself to white, independently of its link. */
+body:not(.darkmode):not(.honobono) #page-footer .fa-envelope-o {
+    color: inherit !important;
+}
