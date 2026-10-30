@@ -211,6 +211,9 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 変更対象 | 主な確認コマンド |
 | --- | --- |
 | テーマ・Moodle部品の配色 | `node tests/browser-theme-components.cjs` |
+| コース検索の表・リンクのコントラスト | `node tests/browser-course-search-theme.cjs` |
+| 課題コメント欄・ヘルプ吹き出し | `node tests/browser-comments-popovers.cjs` |
+| 直近イベントのアンケートアイコン | `node tests/browser-questionnaire-event-icon.cjs` |
 | シラバスの見出し帯・リンクと本文の区別 | `node tests/browser-syllabus-theme.cjs` |
 | フッターのテーマ分離・文字コントラスト | `node tests/browser-footer-theme.cjs` |
 | シラバスの初回描画（ログイン情報なし） | `node tests/browser-syllabus-startup.cjs` |

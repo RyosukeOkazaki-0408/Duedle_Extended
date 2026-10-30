@@ -33,3 +33,7 @@ body:not(.darkmode):not(.honobono) #page-footer a[href]:focus:not(.btn) {
 body:not(.darkmode):not(.honobono) #page-footer .fa-envelope-o {
     color: inherit !important;
 }
+/* Course search uses a light-grey legacy table instead of Moodle cards. */
+body:not(.darkmode):not(.honobono)#page-course-course_search #region-main table[bgcolor="lightgrey"] a[href]:not(:focus) {
+    color: #004c9f;
+}

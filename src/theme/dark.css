@@ -529,3 +529,35 @@ body.darkmode #page-footer a[href]:focus:not(.btn) {
     outline: 2px solid var(--ios-accent, #8bc5e8);
     outline-offset: 2px;
 }
+
+/* Moodle comment prompts use inline grey/black colors instead of form-control. */
+body.darkmode .comment-ctrl .comment-area .db > textarea[name="content"]:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface, #263541) !important;
+    color: var(--ios-text, #dddddf) !important;
+    border-color: var(--ios-separator, #788a99);
+    caret-color: var(--ios-text, #dddddf);
+}
+/* General help popovers are distinct from the notification popover. */
+body.darkmode .popover:not(.duedle-authored-content, .duedle-authored-content *),
+body.darkmode .popover-header:not(.duedle-authored-content, .duedle-authored-content *),
+body.darkmode .popover-body:not(.duedle-authored-content, .duedle-authored-content *) {
+    background-color: var(--ios-surface, #263541);
+    color: var(--ios-text, #dddddf);
+    border-color: var(--ios-separator, #52616d);
+}
+body.darkmode .popover.footer .popover-body .footer-section a:not(.duedle-authored-content, .duedle-authored-content *),
+body.darkmode .popover.footer .popover-body .footer-section a .icon:not(.duedle-authored-content, .duedle-authored-content *) {
+    color: var(--ios-accent, #8bc5e8);
+}
+body.darkmode :is(.bs-popover-top, .bs-popover-auto[x-placement^="top"]) > .arrow:not(.duedle-authored-content *)::before { border-top-color: var(--ios-separator, #52616d); }
+body.darkmode :is(.bs-popover-top, .bs-popover-auto[x-placement^="top"]) > .arrow:not(.duedle-authored-content *)::after { border-top-color: var(--ios-surface, #263541); }
+body.darkmode :is(.bs-popover-bottom, .bs-popover-auto[x-placement^="bottom"]) > .arrow:not(.duedle-authored-content *)::before { border-bottom-color: var(--ios-separator, #52616d); }
+body.darkmode :is(.bs-popover-bottom, .bs-popover-auto[x-placement^="bottom"]) > .arrow:not(.duedle-authored-content *)::after { border-bottom-color: var(--ios-surface, #263541); }
+body.darkmode :is(.bs-popover-left, .bs-popover-auto[x-placement^="left"]) > .arrow:not(.duedle-authored-content *)::before { border-left-color: var(--ios-separator, #52616d); }
+body.darkmode :is(.bs-popover-left, .bs-popover-auto[x-placement^="left"]) > .arrow:not(.duedle-authored-content *)::after { border-left-color: var(--ios-surface, #263541); }
+body.darkmode :is(.bs-popover-right, .bs-popover-auto[x-placement^="right"]) > .arrow:not(.duedle-authored-content *)::before { border-right-color: var(--ios-separator, #52616d); }
+body.darkmode :is(.bs-popover-right, .bs-popover-auto[x-placement^="right"]) > .arrow:not(.duedle-authored-content *)::after { border-right-color: var(--ios-surface, #263541); }
+/* The questionnaire icon is legible on a muted tile, without changing its artwork. */
+body.darkmode .block_calendar_upcoming .activityiconcontainer.none:has(> img[src*="/questionnaire/"]) {
+    background-color: var(--ios-control, #2e3e4a);
+}
