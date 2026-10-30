@@ -212,6 +212,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | --- | --- |
 | テーマ・Moodle部品の配色 | `node tests/browser-theme-components.cjs` |
 | シラバスの見出し帯・リンクと本文の区別 | `node tests/browser-syllabus-theme.cjs` |
+| フッターのテーマ分離・文字コントラスト | `node tests/browser-footer-theme.cjs` |
 | シラバスの初回描画（ログイン情報なし） | `node tests/browser-syllabus-startup.cjs` |
 | メニュー・ページ番号・遅延ダイアログのiOS配色 | `node tests/browser-ios-secondary-ui.cjs` |
 | アンケートの設問・番号、回答・集計画面 | `node tests/browser-questionnaire-theme.cjs` |
@@ -231,7 +232,7 @@ Playwrightを利用できるNode.js環境とChromeを別途用意します。Pla
 | 更新の進捗・中断表示 | `node tests/browser-refresh-progress.cjs` |
 | タブ権限・別タブ収集・認証転送 | `node tests/browser-permissions.cjs` |
 
-シラバスは `document_start` で初期テーマを決め、共有のテーマ設定をネイティブAPIから読みます。ユーザー情報のないページなので、アカウント判定を待つストレージラッパーをテーマに使用しないでください。見出し帯は本文背景と区別し、`href` のないアンカーにはリンク色を付けません。
+シラバスは `document_start` で初期テーマを決め、共有のテーマ設定をネイティブAPIから読みます。ユーザー情報のないページなので、アカウント判定を待つストレージラッパーをテーマに使用しないでください。共通のアカウント登録用スクリプトもmanifestでシラバスから除外し、テーマだけを読み込みます。見出し帯は本文背景と区別し、`href` のないアンカーにはリンク色を付けません。
 
 テーマ変更時は4つのカラーモードとiOS風ON/OFF、狭い画面、繰り返しの切替を確認します。取得処理の変更時は未取得・0件・部分失敗・ログイン切れ・複数タブも確認します。
 

@@ -512,3 +512,20 @@ body.darkmode#page-message-notificationpreferences .hover-tooltip {
     color: var(--ios-text, #dddddf);
     border-color: var(--ios-separator, #52616d);
 }
+
+body.darkmode #page-footer {
+    background-color: var(--ios-surface, #263541) !important;
+    color: var(--ios-text, #dddddf) !important;
+}
+body.darkmode #page-footer :is(.text-light, .text-white) {
+    color: var(--ios-text, #dddddf) !important;
+}
+body.darkmode #page-footer a[href]:not(.btn, :focus) {
+    color: var(--ios-accent, #8bc5e8);
+}
+body.darkmode #page-footer a[href]:focus:not(.btn) {
+    background-color: var(--ios-control, #3c4e5c);
+    color: var(--ios-text, #dddddf);
+    outline: 2px solid var(--ios-accent, #8bc5e8);
+    outline-offset: 2px;
+}

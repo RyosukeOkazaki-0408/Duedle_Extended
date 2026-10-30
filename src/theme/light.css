@@ -11,3 +11,21 @@ body.honobono:not(.darkmode) .card:not(.duedle-authored-content, .duedle-authore
 body.honobono:not(.darkmode) .block:not(.duedle-authored-content, .duedle-authored-content *) {
     background-color: #dbeff7;
 }
+
+/* Moodle's footer carries bg-dark/text-light utilities even in light mode. */
+body:not(.darkmode):not(.honobono) #page-footer {
+    background-color: var(--ios-surface, #f8f9fa) !important;
+    color: var(--ios-text, #212529) !important;
+}
+body:not(.darkmode):not(.honobono) #page-footer :is(.text-light, .text-white) {
+    color: var(--ios-text, #212529) !important;
+}
+body:not(.darkmode):not(.honobono) #page-footer a[href]:not(.btn, :focus) {
+    color: var(--ios-accent, #0068d9);
+}
+body:not(.darkmode):not(.honobono) #page-footer a[href]:focus:not(.btn) {
+    background-color: var(--ios-control, #e9ecef);
+    color: var(--ios-text, #212529);
+    outline: 2px solid var(--ios-accent, #0068d9);
+    outline-offset: 2px;
+}
