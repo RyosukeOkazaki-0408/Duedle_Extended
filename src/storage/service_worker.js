@@ -84,9 +84,16 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await ext.storage.local.set(values);
         return { ok: true };
       }
-      case "SAVE_TASK":
-        await StorageUtil.saveData(msg.table, msg.idproperty, msg.data);
-        return { ok: true };
+      case "SAVE_TASK": {
+        const state = await ext.storage.local.get(["duedleCollectionTabs", "refreshCoordinator"]);
+        // The tab collector commits with its pre-navigation snapshot below.
+        // Its content script must not also save the same document unguarded.
+        if (state.duedleCollectionTabs?.[sender.tab.id] || state.refreshCoordinator?.temporaryTabId === sender.tab.id) {
+          return { ok: true, saved: false };
+        }
+        const saved = await StorageUtil.saveData(msg.table, msg.idproperty, msg.data, msg.expectedFetchedAt);
+        return { ok: true, saved };
+      }
       case "SET_COURSE_AVAILABILITY":
         await StorageUtil.setCourseAvailability(msg.courseId, msg.items, msg.complete ?? false, msg.detailsCheckedSince ?? null, msg.inventoryComplete ?? false);
         return { ok: true };
@@ -240,7 +247,11 @@ async function runTabScraping(refreshToken, sender, context) {
             seen.add(key);
             if (refreshToken) await requireTabLease(refreshToken, sender, context);
             const taskURL = `${MOODLE_ROOT}mod/${item.type}/view.php?id=${item.id}`;
+            const table = item.type + "_list";
+            const idproperty = item.type === "assign" ? "assignId" : "quizId";
             try {
+              const expectedFetchedAt = await accountSession.run(context, sender, () =>
+                StorageUtil.getTaskFetchedAt(table, idproperty, item.id));
               await navigateTab(tab.id, taskURL);
               const detail = await ext.tabs.sendMessage(tab.id, { type: "COLLECT_TASK" });
               if (detail?.ok && detail.unavailable) {
@@ -257,14 +268,12 @@ async function runTabScraping(refreshToken, sender, context) {
                 if (detail?.code === "AUTH_REQUIRED") error.code = detail.code;
                 throw error;
               }
-              const table = item.type === "assign" ? "assign_list" : "quiz_list";
-              const idproperty = item.type === "assign" ? "assignId" : "quizId";
               if (detail.data.group !== table || Number(detail.data[idproperty]) !== item.id) throw new Error("課題の取得結果が一致しません");
               if (refreshToken) await requireTabLease(refreshToken, sender, context);
-              await collectedPageOperation(context, sender, detail, tab.id, taskURL, () =>
+              const saved = await collectedPageOperation(context, sender, detail, tab.id, taskURL, () =>
                 StorageUtil.saveData(table, idproperty,
-                  { ...detail.data, courseId, fetchedAt: detail.data.fetchedAt ?? Date.now() }));
-              result.saved++;
+                  { ...detail.data, courseId, fetchedAt: detail.data.fetchedAt ?? Date.now() }, expectedFetchedAt));
+              if (saved !== false) result.saved++;
             } catch (error) {
               if (error.name === "RefreshLeaseLost" || error.code === "AUTH_REQUIRED") throw error;
               result.failed++;

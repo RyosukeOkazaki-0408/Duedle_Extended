@@ -8,6 +8,7 @@ nav.forEach((el) => {
 
         if (el.textContent === "マイコース") {
             el.removeAttribute("href");
+            el.classList.add("duedle-my-courses-label");
             el.style.pointerEvents = "none";
 
             const parent = el.closest("p.tree_item.branch");

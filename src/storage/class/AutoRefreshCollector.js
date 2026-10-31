@@ -41,6 +41,11 @@ class AutoRefreshCollector {
 
     static detailDue(task, now = Date.now()) {
         const fetched = this.fetchedTime(task.fetchedAt);
+        const due = Date.parse(task.due);
+        // Verify unfinished pre-deadline snapshots once after closing, before
+        // the longer overdue TTL can leave a submitted task marked expired.
+        if (task.show !== false && ["incomplete", "warning", "expired", "unknown"].includes(task.status)
+            && fetched !== null && Number.isFinite(due) && fetched < due && due <= now) return true;
         return fetched === null || fetched > now || now - fetched >= this.detailInterval(task, now);
     }
 
@@ -300,7 +305,9 @@ class AutoRefreshCollector {
             const type = task.group === "assign_list" ? "assign" : task.group === "quiz_list" ? "quiz" : null;
             const item = AutoRefreshCollector.taskRef(type, task.assignId || task.quizId);
             const courseId = AutoRefreshCollector.positiveId(task.courseId);
-            if (!item || courseId && !state.courses[courseId] || !AutoRefreshCollector.detailDue(task, now)) continue;
+            // Cached tasks already pass membership and availability checks above.
+            // Calendar/UI discovery may not have seen their course in this session.
+            if (!item || !AutoRefreshCollector.detailDue(task, now)) continue;
             const key = item.type + ":" + item.id;
             if (!state.pending[key]) this.queue(state, { ...item, courseId, due: Date.parse(task.due) || null }, false);
         }
@@ -452,19 +459,28 @@ class AutoRefreshCollector {
                 const url = AutoRefreshCollector.baseURL + "mod/" + item.type + "/view.php?id=" + item.id;
                 try {
                     if (!this.detailAvailable(item, local.get(key), await this.storage.getCourseAvailability())) continue;
+                    const idproperty = item.type === "assign" ? "assignId" : "quizId";
+                    const expectedFetchedAt = await this.storage.getTaskFetchedAt(item.type + "_list", idproperty, item.id);
                     const doc = await this.fetchDocument(url);
                     if (!await this.storage.markUnavailableDocument(doc, url, this.scrapers[item.type])) {
                         const scraped = this.scrapers[item.type].getData(doc, url);
-                        const idproperty = item.type === "assign" ? "assignId" : "quizId";
                         if (!scraped || scraped.group !== item.type + "_list" || Number(scraped[idproperty]) !== item.id) throw this.error("invalid", "課題の情報を読み取れませんでした");
                         const data = { ...scraped, fetchedAt: this.now(),
                             courseId: AutoRefreshCollector.positiveId(scraped.courseId) || item.courseId || null };
                         await this.checkpoint();
-                        await this.storage.saveData(data.group, idproperty, data);
-                        result.saved++;
-                        const old = local.get(key);
-                        local.set(key, { ...old, ...data, show: old?.show ?? data.show,
-                            status: old?.status === "complete" && data.status === "unknown" ? old.status : data.status });
+                        const saved = await this.storage.saveData(data.group, idproperty, data, expectedFetchedAt);
+                        if (saved === false) {
+                            const latest = (await this.storage.getAllData({ includeUnavailable: true }))
+                                .find(task => task.group === data.group && Number(task[idproperty]) === item.id);
+                            if (latest) local.set(key, latest);
+                            const fetched = AutoRefreshCollector.fetchedTime(latest?.fetchedAt);
+                            if (fetched === null || fetched > this.now() || fetched < state.pending[key].neededAt) continue;
+                        } else {
+                            result.saved++;
+                            const old = local.get(key);
+                            local.set(key, { ...old, ...data, show: old?.show ?? data.show,
+                                status: old?.status === "complete" && data.status === "unknown" ? old.status : data.status });
+                        }
                     }
                     delete state.pending[key];
                 } catch (error) {

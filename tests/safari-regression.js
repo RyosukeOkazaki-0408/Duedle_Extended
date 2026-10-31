@@ -237,6 +237,39 @@
         equal((await env.StorageUtil.getAllData()).map(item => item.assignId || item.quizId), [2, 4, 5, 3, 6, 1]);
     });
 
+    test("guarded detail saves reject changed snapshots but allow corrected grades", async () => {
+        const old = { group: "quiz_list", quizId: 7, status: "complete", point: 100, count: 1, show: false, fetchedAt: 100 };
+        const env = mockStorage({ quiz_list: [old] });
+        equal(await env.StorageUtil.getTaskFetchedAt("quiz_list", "quizId", 7), 100);
+        const latest = { ...old, count: 2, fetchedAt: 200 };
+        await env.StorageUtil.saveData("quiz_list", "quizId", latest);
+        equal(await env.StorageUtil.saveData("quiz_list", "quizId", { ...old, status: "incomplete", count: 0, fetchedAt: 300 }, 100), false);
+        equal(env.state.quiz_list, [latest]);
+        equal(await env.StorageUtil.saveData("quiz_list", "quizId", { ...latest, point: 40, status: "incomplete", show: true, fetchedAt: 400 }, 200), true);
+        equal([env.state.quiz_list[0].point, env.state.quiz_list[0].status, env.state.quiz_list[0].show], [40, "incomplete", false]);
+        equal(await env.StorageUtil.getTaskFetchedAt("assign_list", "assignId", 8), null);
+        await env.StorageUtil.saveData("assign_list", "assignId", { assignId: 8, status: "complete", fetchedAt: 500 });
+        equal(await env.StorageUtil.saveData("assign_list", "assignId", { assignId: 8, status: "incomplete", fetchedAt: 600 }, null), false);
+        equal(env.state.assign_list[0].status, "complete", "An absent baseline cannot replace a task created meanwhile");
+    });
+
+    test("normal collection preserves a task saved while its detail response is in flight", async () => {
+        const env = deltaEnvironment();
+        delete env.state.courseAvailability[1].detailsCheckedSince;
+        const latest = { ...env.state.assign_list[0], status: "complete", fetchedAt: 500 };
+        const fetch = env.collector.fetch;
+        env.collector.fetch = async (...args) => {
+            const response = await fetch(...args);
+            if (args[0].endsWith("mod/assign/view.php?id=10")) {
+                await env.StorageUtil.saveData("assign_list", "assignId", latest);
+            }
+            return response;
+        };
+        const result = await env.collector.run([1]);
+        equal(env.state.assign_list[0], latest);
+        equal([result.saved, result.failed, result.skipped], [1, 0, 1]);
+    });
+
     test("a storage write failure rejects and does not poison later saves", async () => {
         const { state, api, StorageUtil } = mockStorage();
         const set = api.set;

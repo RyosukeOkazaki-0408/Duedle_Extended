@@ -30,6 +30,14 @@ python3 scripts/prepare_safari.py --resources-only
 
 標準の準備コマンドは既存のネイティブプロジェクトを再利用します。`--regenerate-project` はSwiftや署名設定などのネイティブ側の編集を置き換えるため、再生成が必要な場合だけ使ってください。`src/` の直下に新しいリソースフォルダーを追加する場合はXcodeプロジェクトへの追加も必要です。
 
+## Xcode Cloud
+
+`safari/Duedle/ci_scripts/ci_post_clone.sh` がチェックアウト直後に既存の `prepare_safari.py --resources-only` を実行します。Git管理外の `safari/build/extension/` を生成してから、同じXcodeプロジェクトをビルドします。ローカルでの準備手順は従来どおりです。
+
+このフックは署名・ネイティブプロジェクト・Apple側のバージョンを変更しません。Chrome側manifestとApple側のバージョンを揃える作業や、審査への提出は別途行います。過去のCloud失敗ログ全体は未取得のため、今回の資材欠落以外の失敗原因が残っていないかは次回のCloud実行結果で確認が必要です。
+
+配置の根拠：[Apple — Writing custom build scripts](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts)。
+
 ## iPhone・iPadで確認する
 
 1. Schemeを `Duedle (iOS)` にして、接続したiPhone・iPadを選択します。
