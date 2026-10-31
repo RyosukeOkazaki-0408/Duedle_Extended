@@ -1,2 +1,0 @@
-CANCELLATION_STATE {"ui":"","disabled":false,"stored":{"refreshCoordinator":{"collectorState":null,"failures":0,"lease":null,"nextListAt":1791959925603,"nextWorkAt":1791959847011,"pendingWork":true,"temporaryTabId":null,"version":1},"refreshHistory":{"attempt":{"at":1791959765938,"mode":"manual","outcome":"cancelled","reason":"navigation"}}}}
-PASS browser progress: counters survive viewer reload; owner reload cancels without cooldown; preparation and stalled counts expire and allow retry

@@ -1,1 +1,0 @@
-drawbox=x=526:y=110:w=90:h=72:color=0x343b45:t=fill:enable='lt(t,10.7)+between(t,13.1,165.2)+gte(t,193.5)',pad=666:1664:0:0:color=0x14171c,ass=/Users/ryosuke/1_Local/1_Development/1_Projects/Duedle_Extension/output/review-video-ios/Duedle-iOS-review.ass

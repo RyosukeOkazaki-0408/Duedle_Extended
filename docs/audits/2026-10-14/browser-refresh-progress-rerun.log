@@ -1,5 +1,0 @@
-page.waitForFunction: Timeout 30000ms exceeded.
-    at /Users/ryosuke/Local/1_Development/1_Projects/Duedle_Extension/tests/browser-refresh-progress.cjs:32:16 {
-  log: [],
-  name: 'TimeoutError'
-}
