@@ -127,16 +127,23 @@ const root = 'https://cms7.ict.nitech.ac.jp/moodle40a/';
         await a.goto(root + 'mod/quiz/review.php?attempt=1&cmid=9');
         await a.waitForSelector('.qtext.duedle-authored-content');
         await a.waitForFunction(() => document.body.classList.contains('darkmode'));
-        const colors = await a.evaluate(() => Object.fromEntries(['.info', '.formulation', '.outcome', '.qtext', '.answer', '#intro', '.qtext span', '.qtext table'].map(selector => {
-            const style = getComputedStyle(document.querySelector(selector)); return [selector, [style.backgroundColor, style.color]];
-        })));
-        assert.deepEqual(colors['.info'], ['rgb(38, 53, 65)', 'rgb(221, 221, 223)']);
-        assert.deepEqual(colors['.formulation'], ['rgb(36, 60, 70)', 'rgb(221, 221, 223)']);
-        assert.equal(colors['.qtext'][0], 'rgba(0, 0, 0, 0)');
-        assert.equal(colors['.qtext'][1], 'rgb(221, 221, 223)');
-        assert.deepEqual(colors['.answer'], colors['.qtext']); assert.deepEqual(colors['#intro'], colors['.qtext']);
-        assert.notEqual(colors['.qtext span'][1], 'rgb(192, 0, 0)', 'Dark red is brightened for dark backgrounds');
-        assert.deepEqual(colors['.qtext table'], ['rgb(38, 53, 65)', 'rgb(221, 221, 223)']);
+        assert(await a.locator('body').evaluate(el => el.classList.contains('iosmode')), 'Default iOS appearance is enabled');
+        for (const ios of [true, false]) {
+            await worker.evaluate(ios => chrome.storage.local.set({ iosAppearance: ios }), ios);
+            await a.waitForFunction(ios => document.body.classList.contains('iosmode') === ios, ios);
+            const colors = await a.evaluate(() => Object.fromEntries(['.info', '.formulation', '.outcome', '.qtext', '.answer', '#intro', '.qtext span', '.qtext table'].map(selector => {
+                const style = getComputedStyle(document.querySelector(selector)); return [selector, [style.backgroundColor, style.color]];
+            })));
+            const text = ios ? 'rgb(242, 242, 247)' : 'rgb(221, 221, 223)';
+            assert.deepEqual(colors['.info'], [ios ? 'rgb(28, 28, 30)' : 'rgb(38, 53, 65)', text]);
+            assert.deepEqual(colors['.formulation'], [ios ? 'rgb(44, 44, 46)' : 'rgb(36, 60, 70)', text]);
+            assert.deepEqual(colors['.qtext'], ['rgba(0, 0, 0, 0)', 'rgb(221, 221, 223)']);
+            assert.deepEqual(colors['.answer'], colors['.qtext']); assert.deepEqual(colors['#intro'], colors['.qtext']);
+            assert.notEqual(colors['.qtext span'][1], 'rgb(192, 0, 0)', 'Dark red is brightened for dark backgrounds');
+            assert.deepEqual(colors['.qtext table'], ['rgb(38, 53, 65)', 'rgb(221, 221, 223)']);
+        }
+        await worker.evaluate(() => chrome.storage.local.set({ iosAppearance: true }));
+        await a.waitForFunction(() => document.body.classList.contains('iosmode'));
         await a.evaluate(() => {
             const dynamic = document.createElement('div'); dynamic.className = 'qtext'; dynamic.id = 'late-question';
             dynamic.textContent = '後から追加された問題文'; document.querySelector('.formulation').append(dynamic);

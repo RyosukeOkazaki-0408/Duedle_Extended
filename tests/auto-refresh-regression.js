@@ -328,6 +328,7 @@
             equal([args.timesortfrom, args.timesortto, args.aftereventid], [cursor.from, cursor.to, 100]);
             return { events: [], lastid: null };
         } });
+        follow.advance(env.clock() - epoch); // A later batch must not reset the clock before the saved fetch.
         const second = await follow.collector.run({ listDue: false, state: first.state });
         equal(second.listComplete, true);
         equal(second.saved, 0);
@@ -415,6 +416,73 @@
         assert(!result.state.courses[99], "Historical inactive course IDs expire");
         assert(result.state.courses[42].discoveredAt > 0);
         equal(result.moreWork, true);
+    });
+
+    test("deadline crossing rechecks unfinished visible details once without bypassing terminal or hidden TTLs", async () => {
+        const cls = environment().AutoRefreshCollector;
+        const task = { status: "incomplete", show: true, fetchedAt: epoch - 3600000,
+            due: new Date(epoch).toISOString() };
+        assert(!cls.detailDue(task, epoch - 1), "Future deadline retains the usual TTL");
+        for (const status of ["incomplete", "warning", "expired", "unknown"]) {
+            assert(cls.detailDue({ ...task, status }, epoch), "Recheck unfinished state at its deadline: " + status);
+        }
+        assert(!cls.detailDue({ ...task, fetchedAt: epoch }, epoch + 1000), "A deadline-time fetch is already current");
+        assert(!cls.detailDue({ ...task, fetchedAt: epoch + 1000 }, epoch + 2000), "Do not repeatedly recheck after the deadline");
+        for (const status of ["complete", "qualify", "stuck"]) {
+            assert(!cls.detailDue({ ...task, status }, epoch), "Terminal state keeps its usual TTL: " + status);
+        }
+        assert(!cls.detailDue({ ...task, show: false }, epoch), "Hidden tasks keep their daily TTL");
+        assert(!cls.detailDue({ ...task, due: null }, epoch), "Missing deadlines do not trigger a crossing");
+        assert(!cls.detailDue({ ...task, due: "invalid" }, epoch), "Invalid deadlines do not trigger a crossing");
+    });
+
+    test("post-deadline recheck saves the completed quiz score and attempt count without fetching again", async () => {
+        const due = new Date(epoch - 26 * 60000).toISOString();
+        const old = { group: "quiz_list", quizId: 301, courseId: 42, status: "incomplete", show: true,
+            count: 0, maxcount: 1, point: null, maxp: null, due, fetchedAt: epoch - 106 * 60000 };
+        const env = environment({ confirmed: ["quiz:301"], initial: { quiz_list: [old] }, routes: {
+            "mod/quiz/view.php?id=301": { data: { status: "complete", count: 1, maxcount: 1, point: 100, maxp: 100, due } }
+        } });
+        const result = await env.collector.run({ state: discoveredState() });
+        equal(result.saved, 1, "A fresh pre-deadline cache must not suppress the post-deadline check");
+        const saved = env.storage.state.quiz_list[0];
+        equal([saved.status, saved.count, saved.maxcount, saved.point, saved.maxp], ["complete", 1, 1, 100, 100]);
+        assert(saved.fetchedAt >= epoch);
+        const next = await env.collector.run({ state: result.state });
+        equal(next.saved, 0);
+        equal(env.requests.filter(request => request.path === "mod/quiz/view.php?id=301").length, 1);
+    });
+
+    test("fresh collector rechecks cached tasks without course discovery and still excludes unavailable tasks", async () => {
+        const due = new Date(epoch - 1000).toISOString();
+        const task = { group: "quiz_list", quizId: 301, courseId: 42, status: "incomplete", show: true,
+            due, fetchedAt: epoch - 60000 };
+        for (const available of [true, false]) {
+            const env = environment({ initial: { enrolledCourseIds: [42], quiz_list: [task],
+                courseAvailability: { 42: { items: { "quiz:301": available }, complete: true } } }, routes: {
+                "mod/quiz/view.php?id=301": { data: { status: "complete", count: 1, point: 100, maxp: 100, due } }
+            } });
+            const result = await env.collector.run({ state: null, listDue: true, courseIds: [] });
+            equal(result.saved, available ? 1 : 0);
+            equal(env.requests.filter(request => request.path === "mod/quiz/view.php?id=301").length, available ? 1 : 0);
+            equal(Object.keys(result.state.courses), [], "Detail refresh does not invent course discovery");
+            equal(result.failed, 0);
+            if (available) equal(env.storage.state.quiz_list[0].status, "complete");
+        }
+    });
+
+    test("a failed deadline-crossing recheck retains retry backoff", async () => {
+        const old = { group: "quiz_list", quizId: 301, courseId: 42, status: "expired", show: true,
+            due: new Date(epoch - 1000).toISOString(), fetchedAt: epoch - 3600000 };
+        const env = environment({ confirmed: ["quiz:301"], initial: { quiz_list: [old] }, routes: {
+            "mod/quiz/view.php?id=301": { error: new Error("Temporary network failure") }
+        } });
+        const result = await env.collector.run({ state: discoveredState() });
+        equal(result.failed, 1);
+        assert(result.state.pending["quiz:301"].retryAt > env.clock());
+        const next = await env.collector.run({ state: result.state });
+        equal(next.saved, 0);
+        equal(env.requests.length, 1, "Crossing must not bypass a pending retry's backoff");
     });
 
     test("confirmed membership excludes departed courses from discovery and detail refresh", async () => {
@@ -532,6 +600,25 @@
         timeout.timers.advance(15000);
         equal((await stalled).stopReason, "temporary");
         equal(timeout.timers.count(), 0);
+    });
+
+    test("a late automatic detail cannot replace a result saved during its request", async () => {
+        const old = { group: "quiz_list", quizId: 301, courseId: 42, status: "incomplete", show: true,
+            count: 0, point: null, maxp: null, due: null, fetchedAt: epoch - 2 * 86400000 };
+        const latest = { ...old, status: "complete", count: 1, point: 100, maxp: 100, fetchedAt: epoch + 1 };
+        const env = environment({ confirmed: ["quiz:301"], initial: { quiz_list: [old] },
+            routes: { "mod/quiz/view.php?id=301": { data: { status: "incomplete", count: 0, point: null, maxp: null } } },
+            async onRequest(current, path) {
+                if (path === "mod/quiz/view.php?id=301") {
+                    current.advance(1);
+                    await current.storage.StorageUtil.saveData("quiz_list", "quizId", latest);
+                }
+            }
+        });
+        const result = await env.collector.run({ state: discoveredState() });
+        equal(env.storage.state.quiz_list[0], latest);
+        equal([result.saved, result.failed], [0, 0], "Discarding superseded data is neither a save nor a failure");
+        assert(!result.state.pending["quiz:301"], "The newer page already satisfied this detail request");
     });
 
     test("detail saves use StorageUtil preference merges and never infer completion from calendar absence", async () => {

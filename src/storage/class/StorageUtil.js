@@ -81,6 +81,7 @@ class StorageUtil {
         if (!response?.ok) {
             throw new Error(response?.error || "課題情報を保存できませんでした");
         }
+        return response;
     }
 
     static validateTable(table, idproperty) {
@@ -117,20 +118,38 @@ class StorageUtil {
             String(item[idproperty]) === String(id) ? { ...item, [property]: value } : item));
     }
 
-    static async saveData(table, idproperty, data) {
+    // Capture before a detail request, rather than when its response arrives.
+    static async getTaskFetchedAt(table, idproperty, id) {
+        this.validateTable(table, idproperty);
+        const saved = await ext.storage.local.get(table);
+        return (saved[table] || []).find(item => Number(item[idproperty]) === Number(id))?.fetchedAt ?? null;
+    }
+
+    static async saveData(table, idproperty, data, expectedFetchedAt = undefined) {
         this.validateTable(table, idproperty);
         if (!data || !Number.isInteger(Number(data[idproperty])) || Number(data[idproperty]) <= 0) {
             throw new Error("Invalid task ID");
         }
+        if (expectedFetchedAt !== undefined && expectedFetchedAt !== null
+            && !(typeof expectedFetchedAt === "number" && Number.isFinite(expectedFetchedAt) && expectedFetchedAt >= 0)
+            && !(typeof expectedFetchedAt === "string" && expectedFetchedAt.length <= 80 && Number.isFinite(Date.parse(expectedFetchedAt)))) {
+            throw new Error("Invalid task snapshot");
+        }
         if (!this.isBackground) {
-            return this.requestMutation({ type: "SAVE_TASK", table, idproperty, data });
+            const response = await this.requestMutation({ type: "SAVE_TASK", table, idproperty, data, expectedFetchedAt });
+            return response.saved;
         }
         const availability = await this.getCourseAvailability();
+        let saved = false;
         await this.mutate(table, items => {
             const old = items.find(item => Number(item[idproperty]) === Number(data[idproperty]));
-            return this.taskAvailable({ ...old, ...data, courseId: data.courseId || old?.courseId }, availability)
-                ? this.mergeTask(items, idproperty, data) : items;
+            // A page may have saved a newer result while this request was in flight.
+            if (expectedFetchedAt !== undefined && (old?.fetchedAt ?? null) !== expectedFetchedAt) return items;
+            if (!this.taskAvailable({ ...old, ...data, courseId: data.courseId || old?.courseId }, availability)) return items;
+            saved = true;
+            return this.mergeTask(items, idproperty, data);
         });
+        return saved;
     }
 
     // A review fetches the authoritative overview, but must not roll back an

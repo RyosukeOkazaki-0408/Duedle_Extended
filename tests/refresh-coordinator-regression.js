@@ -475,6 +475,26 @@
         equal(env.timers.size, 0);
     });
 
+    test("tab collection rejects both its unguarded self-save and a superseded result", async () => {
+        const old = { group: "assign_list", assignId: 42, courseId: 5, status: "incomplete", fetchedAt: 100, show: true };
+        const latest = { ...old, status: "complete", fetchedAt: 200 };
+        let env;
+        env = background({ ...dueState(), courseIds: [5], assign_list: [old] }, {
+            async sendMessage(id, message) {
+                if (message.type === "COLLECT_COURSE_ITEMS") return { ok: true, items: [{ type: "assign", id: 42 }] };
+                const fresh = await env.message({ type: "SAVE_TASK", table: "assign_list", idproperty: "assignId", data: latest }, sender(2));
+                equal(fresh.saved, true);
+                const duplicate = await env.message({ type: "SAVE_TASK", table: "assign_list", idproperty: "assignId", data: { ...old, fetchedAt: 300 } }, sender(id));
+                equal(duplicate.saved, false, "Only the parent collector commits a temporary tab's result");
+                return { ok: true, data: { ...old, fetchedAt: 300 } };
+            }
+        });
+        const response = await env.message({ type: "TAB_COURSE" });
+        equal([response.result.saved, response.result.failed], [0, 0]);
+        equal(env.state.assign_list, [latest]);
+        equal(env.removed, [77]);
+    });
+
     test("failed task save prevents successful manual cooldown", async () => {
         const env = background({ ...dueState(), courseIds: [1] }, {
             async sendMessage(id, message) {

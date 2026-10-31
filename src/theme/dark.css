@@ -46,6 +46,10 @@ body.darkmode .coursemenubtn {
 body.darkmode a:not(.btn, .duedle-authored-content, .duedle-authored-content *) {
     color: var(--ios-accent, #8bc5e8);
 }
+/* My courses is a navigation label after its link is disabled. */
+body.darkmode a.duedle-my-courses-label:not([href]) {
+    color: inherit;
+}
 /* Activity navigation uses .btn-link, which is excluded from ordinary links. */
 body.darkmode .activity-navigation a.btn-link {
     color: var(--ios-accent, #8bc5e8);

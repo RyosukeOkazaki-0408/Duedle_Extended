@@ -527,6 +527,8 @@ class CourseCollector {
                             }
                             const taskURL = `${CourseCollector.baseURL}mod/${item.type}/view.php?id=${item.id}`;
                             try {
+                                const idproperty = item.type === "assign" ? "assignId" : "quizId";
+                                const expectedFetchedAt = await StorageUtil.getTaskFetchedAt(item.type + "_list", idproperty, item.id);
                                 const taskDoc = await fetchDocument(taskURL);
                                 const scraper = item.type === "assign" ? ScrapeAssign : ScrapeQuiz;
                                 if (await commit(() => StorageUtil.markUnavailableDocument(taskDoc, taskURL, scraper))) {
@@ -539,8 +541,9 @@ class CourseCollector {
                                 finally { timing.taskParseMs += this.now() - parseStarted; }
                                 if (!data) throw new Error("課題の情報を読み取れませんでした");
                                 await commit(async () => {
-                                    await StorageUtil.saveData(data.group, item.type === "assign" ? "assignId" : "quizId", { ...data, courseId });
-                                    result.saved++;
+                                    const saved = await StorageUtil.saveData(data.group, idproperty, { ...data, courseId }, expectedFetchedAt);
+                                    if (saved !== false) result.saved++;
+                                    else { result.skipped++; timing.skippedTasks++; }
                                 });
                             } catch (error) {
                                 if (stopped || CourseCollector.shouldStop(error)) throw stopped || error;
