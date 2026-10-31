@@ -1,4 +1,4 @@
-(function () {
+(async function () {
     const read = typeof require === 'function' ? p => require('fs').readFileSync(p, 'utf8') : readFile;
     const log = typeof print === 'function' ? print : console.log;
     const State = Function(read('src/storage/class/TaskListState.js') + ';return TaskListState')();
@@ -60,5 +60,49 @@
     assert(!manifest.permissions.includes('notifications') && !manifest.permissions.includes('alarms'), 'Production does not request notification or alarm permissions');
     assert(!/notifications\.|alarms\./.test(read('src/storage/service_worker.js')), 'No delivery or alarm API remains');
     assert(!JSON.stringify(manifest).includes('dev/'), 'Production does not include developer entry');
-    log('List state, full-refresh timestamp and packaging checks passed');
-})();
+    const filterSource = read('src/storage/display/filter.js');
+    const visibilitySource = filterSource.slice(filterSource.indexOf('// Missing preferences show the menu.'),
+        filterSource.indexOf('const upcomingResolver'));
+    const clickSource = filterSource.slice(filterSource.indexOf('//display show button'),
+        filterSource.indexOf('// Explicitly selected cards'));
+    const changesSource = filterSource.slice(filterSource.indexOf('ext.storage.onChanged?.addListener'),
+        filterSource.indexOf('document.addEventListener("duedle:tasks-updated"'));
+    async function visibilityCase(initial, action, expected) {
+        let resolveInitial, changed, click;
+        const display = { hidden: true }, filter = { hidden: true };
+        const button = { textContent: '一覧を隠す', setAttribute(name, value) { this[name] = value; },
+            addEventListener(name, handler) { click = handler; } };
+        let saved = initial;
+        const ext = { storage: { sync: {
+            get: () => new Promise(resolve => { resolveInitial = resolve; }),
+            set: value => { saved = value.displayShow; }
+        }, onChanged: { addListener: listener => { changed = listener; } } } };
+        const document = { querySelector: selector => ({ '#display': display, '#filter': filter,
+            '#displaybutton': button })[selector] || null };
+        const ready = Function('ext', 'document', `
+            const display = document.querySelector('#display'), filter = document.querySelector('#filter');
+            function setTaskSelection() {} function updateTaskSelection() {}
+            ${clickSource}\n${visibilitySource}\n${changesSource}\nreturn menuReady;
+        `)(ext, document);
+        if (action === 'click') click();
+        if (action === 'click-notified' || action === 'external') {
+            if (action === 'click-notified') click();
+            else saved = expected;
+            changed({ displayShow: { newValue: saved } }, 'sync');
+        }
+        resolveInitial({ displayShow: initial });
+        await ready;
+        assert(display.hidden === !expected && filter.hidden === !expected,
+            `Initial visibility read respects ${action}: ${initial} -> ${expected}`);
+        assert(button.textContent === (expected ? '一覧を隠す' : '一覧を表示')
+            && button['aria-expanded'] === String(expected), 'Visibility label and expanded state agree');
+        if (action !== 'none') assert(saved === expected, 'Rendered visibility agrees with latest preference');
+    }
+    await visibilityCase(false, 'click', true);
+    await visibilityCase(false, 'click-notified', true);
+    await visibilityCase(false, 'external', true);
+    await visibilityCase(true, 'external', false);
+    await visibilityCase(undefined, 'none', true);
+    await visibilityCase(false, 'none', false);
+    log('List state, visibility ordering, full-refresh timestamp and packaging checks passed');
+})().catch(error => { console.error(error); throw error; });

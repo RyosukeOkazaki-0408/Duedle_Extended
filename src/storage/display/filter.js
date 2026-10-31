@@ -563,7 +563,9 @@ colorTypesValue.map((value, index) => {
 
 
 // Missing preferences show the menu. A saved false is never overwritten.
+let menuVisibilityChanged = false;
 function applyMenuVisibility(value) {
+    menuVisibilityChanged = true;
     const visible = value !== false;
     display.hidden = !visible;
     filter.hidden = !visible;
@@ -576,7 +578,10 @@ function applyMenuVisibility(value) {
     if (!visible) setTaskSelection(false);
     updateTaskSelection();
 }
-const menuReady = ext.storage.sync.get("displayShow").then(saved => applyMenuVisibility(saved.displayShow));
+const menuReady = ext.storage.sync.get("displayShow").then(saved => {
+    // A click or storage notification takes precedence over this earlier read.
+    if (!menuVisibilityChanged) applyMenuVisibility(saved.displayShow);
+});
 const upcomingResolver = new CalendarEventResolver();
 let upcomingGeneration = 0;
 async function resolveUpcomingEvents(stored) {
