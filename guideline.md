@@ -7,7 +7,7 @@
 
 Duedleは、名古屋工業大学のMoodleで課題・小テストの確認とコースの閲覧を補助するManifest V3のブラウザ拡張機能です。対象は `https://cms7.ict.nitech.ac.jp/moodle40a/` です。
 
-この文書はソースから導入する開発者・保守担当者向けです。利用者向けの[導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)と[使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)はGitHub Pagesで公開しており、拡張機能なしでも閲覧できます。概要・配布状況・問い合わせ先は[README](readme.md)で案内します。
+この文書はソースから導入する開発者・保守担当者向けです。利用者向けの[導入方法](https://ryosukeokazaki-0408.github.io/duedle-extension/install.html)と[使い方](https://ryosukeokazaki-0408.github.io/duedle-extension/help.html)はGitHub Pagesで公開しており、拡張機能なしでも閲覧できます。概要・配布状況・問い合わせ先は[README](readme.md)で案内します。
 
 ## 主な機能と範囲
 
@@ -251,7 +251,7 @@ python3 scripts/prepare_pages.py
 
 公開用ファイルは `build/pages/` に生成されます。対象は `src/common/help*`、`install.html`、`support-config.js` です。サイトの入口となる `index.html` は `help.html` と同じ内容で生成します。生成先は直接編集しません。
 
-`.github/workflows/pages.yml` は、上記のソース・生成スクリプト・ワークフロー自体の変更を `main` にpushすると公開します。READMEやこのガイドだけの変更ではPagesの再公開は実行されません。必要な場合はActionsの「Publish guides to GitHub Pages」から手動実行できます。公開先は[GitHub Pages](https://ryosukeokazaki-0408.github.io/Duedle_Extended/)です。
+`.github/workflows/pages.yml` は、上記のソース・生成スクリプト・ワークフロー自体の変更を `main` にpushすると公開します。READMEやこのガイドだけの変更ではPagesの再公開は実行されません。必要な場合はActionsの「Publish guides to GitHub Pages」から手動実行できます。公開先は[GitHub Pages](https://ryosukeokazaki-0408.github.io/duedle-extension/)です。
 
 問い合わせ先を変更するときは `src/common/support-config.js` の `contactFormUrl` とREADMEのフォームリンクを更新します。設定メニューと使い方ページはこの設定を参照します。Safari同梱版へ反映するには、従来どおりリソース生成と再ビルドが必要です。
 
@@ -272,8 +272,8 @@ python3 scripts/prepare_pages.py
 ## 関連文書
 
 - [README・概要と配布状況](readme.md)
-- [利用者向け導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)
-- [利用者向け使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)
+- [利用者向け導入方法](https://ryosukeokazaki-0408.github.io/duedle-extension/install.html)
+- [利用者向け使い方](https://ryosukeokazaki-0408.github.io/duedle-extension/help.html)
 - [自動更新の仕様](docs/auto-refresh.md)
 - [オフラインの開発用環境](docs/debug.md)
 - [Safari版のビルド・検証](docs/safari.md)

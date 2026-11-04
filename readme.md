@@ -6,8 +6,8 @@
 
 ## 導入方法・使い方・お問い合わせ
 
-- [導入方法](https://ryosukeokazaki-0408.github.io/Duedle_Extended/install.html)
-- [使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)
+- [導入方法](https://ryosukeokazaki-0408.github.io/duedle-extension/install.html)
+- [使い方](https://ryosukeokazaki-0408.github.io/duedle-extension/help.html)
 - [お問い合わせ（Googleフォーム）](https://forms.gle/DkUKfGv2Eqx12jhC6)
 
 拡張機能を入れていない方も、上記のリンクから閲覧・問い合わせができます。導入後は、Moodle右上の「Duedle設定」からも使い方と問い合わせ先を開けます。
@@ -39,7 +39,7 @@ iPhone・iPad向けはSafari版の配布準備中です。スマホ版Chromeで�
 - 自動更新はログイン済みのMoodleを表示している間に行われます。ブラウザを閉じている間の常時取得や、OSの締切通知はありません。
 - 課題情報や設定はブラウザに保存されます。Duedle独自の端末間同期・ブラウザ間のデータ移行機能はありません。
 
-更新方法や表示設定、困ったときの対処は[使い方](https://ryosukeokazaki-0408.github.io/Duedle_Extended/help.html)をご覧ください。
+更新方法や表示設定、困ったときの対処は[使い方](https://ryosukeokazaki-0408.github.io/duedle-extension/help.html)をご覧ください。
 
 ## 開発経緯
 
@@ -61,4 +61,4 @@ Duedleは、Ryosuke Okazakiを含む5人のチームで共同開発したプロ�
 
 この拡張機能の使用により生じたいかなる損害についても、開発者は一切の責任を負いません。
 
-[プライバシーポリシー](https://ryosukeokazaki-0408.github.io/Duedle_Extended/privacy.html)
+[プライバシーポリシー](https://ryosukeokazaki-0408.github.io/duedle-extension/privacy.html)
