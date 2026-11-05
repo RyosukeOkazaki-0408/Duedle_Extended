@@ -75,6 +75,9 @@ function installThemeSelector() {
         else document.body.prepend(settings);
       }
     }
+    // The dashboard may be inserted after this control during page startup.
+    const display = document.getElementById("display");
+    if (display && settings.nextElementSibling !== display) display.before(settings);
     const settingsContent = settings.querySelector(".duedle-course-settings-content");
     const controls = [
       document.getElementById("notion"),

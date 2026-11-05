@@ -93,6 +93,15 @@ const fs = require('node:fs');
             document.body.insertAdjacentHTML('beforeend', '<nav class="breadcrumb"><a id="breadcrumb-link" href="#">コース</a></nav><div class="block_navigation"><a id="sidebar-link" href="#">マイコース</a></div><a id="section-link" class="notionnavlink" href="#">セクション</a><div class="duedle-history-list"><a id="history-link" href="#">履歴</a></div>');
         });
         const darkStyles = await page.addStyleTag({path:'src/theme/dark.css'});
+        await page.evaluate(() => {
+            document.body.classList.add('darkmode');
+            document.querySelector('#region-main').insertAdjacentHTML('beforeend', '<div class="que stack"><div class="stackinputfeedback standard" id="stack-validation" style="padding:8px">入力の確認 <span id="stack-math">−4 + 2√3</span></div></div>');
+        });
+        await page.addStyleTag({content:'.que.stack .stackinputfeedback.standard { background: white; border: 1px solid white }'});
+        const stackColors = await page.locator('#stack-validation').evaluate(el => ({ background: getComputedStyle(el).backgroundColor, color: getComputedStyle(el.querySelector('span')).color }));
+        assert.equal(stackColors.background, 'rgb(38, 53, 65)', 'STACK validation background follows dark mode');
+        assert.equal(stackColors.color, 'rgb(221, 221, 223)', 'STACK validation math inherits readable foreground');
+        await page.evaluate(() => document.body.classList.remove('darkmode'));
         for (const file of ['theme/light.css','theme/ios.css','storage/display/style.css','common/common.css']) await page.addStyleTag({path:'src/'+file});
         await page.addScriptTag({path:'src/theme/state.js'});
         await page.addScriptTag({path:'src/theme/content.js'});

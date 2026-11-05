@@ -9,14 +9,14 @@ const setupScripts = idle.js.filter(file => /(?:theme\/(?:state|main)|document_s
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
   try {
-    for (const early of [false, true]) {
+    for (const early of [false, true]) for (const course of [false, true]) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
       await page.route('https://cms7.ict.nitech.ac.jp/**', route => route.fulfill({ contentType: 'text/html',
         body: '<html><body><nav id="usernavigation"></nav><header>Moodle</header><main id="region-main"></main></body></html>' }));
-      await page.goto('https://cms7.ict.nitech.ac.jp/moodle40a/my/');
+      await page.goto('https://cms7.ict.nitech.ac.jp/moodle40a/' + (course ? 'course/view.php?id=1' : 'my/'));
       await page.evaluate(() => {
         const listeners = [];
         let saved = {};
@@ -37,12 +37,14 @@ const setupScripts = idle.js.filter(file => /(?:theme\/(?:state|main)|document_s
         for (const file of ['src/theme/state.js', 'src/document_start/pre.js']) await page.addScriptTag({ path: path.resolve(file) });
       }
       for (const file of setupScripts) await page.addScriptTag({ path: path.resolve('src', file) });
+      if (course) await page.waitForSelector('#duedle-course-settings', { state: 'attached' });
       // The dashboard can arrive after the theme scripts, as in the real manifest.
-      await page.evaluate(() => document.querySelector('main').insertAdjacentHTML('beforeend',
+      await page.evaluate(() => document.querySelector('header').insertAdjacentHTML('afterend',
         '<div id="ext_dashboard"><div id="filter"><select><option>すべて</option></select></div><div id="display">課題一覧</div></div>'));
       await page.locator('#thememode_selection').waitFor({ state: 'visible', timeout: 3000 });
       const settings = page.locator('#duedle-course-settings');
       await settings.waitFor({ state: 'visible', timeout: 3000 });
+      await page.waitForFunction(() => document.querySelector('#duedle-course-settings')?.nextElementSibling?.id === 'display');
       assert.equal(await settings.evaluate(node => node.open), false, 'First task settings must be collapsed');
       assert.equal(await page.locator('#filter').isVisible(), false);
       assert(await page.locator('#display').isVisible());
@@ -65,7 +67,7 @@ const setupScripts = idle.js.filter(file => /(?:theme\/(?:state|main)|document_s
       assert.equal(await page.locator('#thememode_selection').count(), 1);
       assert.deepEqual(errors, []);
       await page.close();
-      console.log(`PASS first-run settings UI: document_start=${early}, pending background, late dashboard, menus and responsive layout`);
+      console.log(`PASS first-run settings UI: document_start=${early}, course=${course}, late dashboard, menus and responsive layout`);
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
