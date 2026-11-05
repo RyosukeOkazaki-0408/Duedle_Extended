@@ -95,13 +95,17 @@ const fs = require('node:fs');
         const darkStyles = await page.addStyleTag({path:'src/theme/dark.css'});
         await page.evaluate(() => {
             document.body.classList.add('darkmode');
-            document.querySelector('#region-main').insertAdjacentHTML('beforeend', '<div class="que stack"><div class="stackinputfeedback standard" id="stack-validation" style="padding:8px">入力の確認 <span id="stack-math">−4 + 2√3</span></div></div>');
+            document.querySelector('#region-main').insertAdjacentHTML('beforeend', '<div class="que stack"><div class="stackinputfeedback standard" id="stack-validation" style="padding:8px">入力の確認 <span id="stack-math">−4 + 2√3</span> <span class="stacksyntaxexample" id="stack-example">test</span><div class="stackinputerror" style="background:#562f30"><span class="stacksyntaxexample" id="stack-error-example">test</span></div></div></div>');
         });
-        await page.addStyleTag({content:'.que.stack .stackinputfeedback.standard { background: white; border: 1px solid white }'});
+        await page.addStyleTag({content:'.que.stack .stackinputfeedback.standard { background: white; border: 1px solid white } .que.stack .stacksyntaxexample { color: #1f536b }'});
         const stackColors = await page.locator('#stack-validation').evaluate(el => ({ background: getComputedStyle(el).backgroundColor, color: getComputedStyle(el.querySelector('span')).color }));
         assert.equal(stackColors.background, 'rgb(38, 53, 65)', 'STACK validation background follows dark mode');
         assert.equal(stackColors.color, 'rgb(221, 221, 223)', 'STACK validation math inherits readable foreground');
+        for (const id of ['stack-example', 'stack-error-example']) {
+            assert.equal(await page.locator('#'+id).evaluate(el => getComputedStyle(el).color), 'rgb(168, 215, 239)', 'STACK syntax remains readable on validation and error backgrounds');
+        }
         await page.evaluate(() => document.body.classList.remove('darkmode'));
+        assert.equal(await page.locator('#stack-example').evaluate(el => getComputedStyle(el).color), 'rgb(31, 83, 107)', 'Light mode retains the original STACK syntax color');
         for (const file of ['theme/light.css','theme/ios.css','storage/display/style.css','common/common.css']) await page.addStyleTag({path:'src/'+file});
         await page.addScriptTag({path:'src/theme/state.js'});
         await page.addScriptTag({path:'src/theme/content.js'});

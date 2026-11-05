@@ -243,6 +243,10 @@ body.darkmode .que.stack .stackinputfeedback.standard {
     color: var(--ios-text, #dddddf);
     border-color: var(--ios-separator, #788a99);
 }
+/* STACK's syntax examples otherwise retain a dark blue intended for white. */
+body.darkmode .que.stack .stackinputfeedback .stacksyntaxexample {
+    color: #a8d7ef;
+}
 /* Questionnaire uses separate panels from the standard quiz questions. */
 body.darkmode.path-mod-questionnaire .qn-info {
     background-color: var(--ios-surface, #263541);
