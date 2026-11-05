@@ -32,6 +32,17 @@ const assert = require('node:assert/strict');
             assert.equal(await page.locator('.usertext').innerText(),'');
             if (route === 'my/') assert.equal(await page.locator('#greeting').innerText(),'おかえりなさい！👋');
         }
+        // Navigation may omit the full name; Moodle can add/replace greetings later.
+        await page.goto('https://cms7.ict.nitech.ac.jp/moodle40a/my/');
+        await page.evaluate(() => {
+            document.querySelector('.usertext').remove();
+            document.querySelector('#greeting').textContent = 'おかえりなさい！架空 利用者 👋';
+        });
+        await page.addScriptTag({path:'src/common/hide_username.js'});
+        assert.equal(await page.locator('#greeting').innerText(),'おかえりなさい！👋');
+        await page.evaluate(() => document.querySelector('#greeting').textContent = 'おかえりなさい！別の架空名');
+        await page.waitForFunction(() => document.querySelector('#greeting').textContent === 'おかえりなさい！👋');
+        assert.equal(await page.locator('#teacher-heading').innerText(),'講義の注意事項');
         await page.goto('https://cms7.ict.nitech.ac.jp/moodle40a/mod/assign/view.php?id=4');
         await page.addScriptTag({path:'src/qol/assign_files.js'});
         const [popup] = await Promise.all([page.waitForEvent('popup'), page.locator('#preview').click()]);
